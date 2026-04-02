@@ -1,9 +1,9 @@
 ---
-description: "Use when creating or editing content in the key prinipales folder. Organize all information by topic/xxx and follow core Diátaxis documentation rules."
-name: "Key Prinipales Content Rules"
-applyTo: "key prinipales/**"
+description: "Use when creating or editing content in the key-principles folder. Organize all information by topic/xxx and follow core Diátaxis documentation rules."
+name: "Key Principles Content Rules"
+applyTo: "key-principles/**"
 ---
-# Key Prinipales Content Rules
+# Key Principles Content Rules
 
 - Sort all information by `topic/xxx`.
 - Follow the core Diátaxis framework:
