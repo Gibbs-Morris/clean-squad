@@ -57,6 +57,76 @@ In VS Code, this role can come from:
 - custom agents that define instructions, tools, and optional model choices
 - orchestration patterns where one agent coordinates subagents with narrower duties
 
+## Agents in the wider GitHub Copilot system
+
+One reason this topic overlaps with nearby customization topics is that agents sit inside a broader GitHub Copilot system. Agents are important, but they are not the only reusable AI mechanism in the ecosystem.
+
+A useful distinction is:
+
+- **agents** execute work
+- **instruction files** define rules and conventions
+- **prompt files** define reusable task requests
+- **skill files** package repeatable workflows and supporting resources
+
+These pieces can work together, but they are not interchangeable.
+
+### Agents versus instruction files
+
+An instruction file tells the AI how it should behave when working in a certain context.
+
+Examples of instruction-file behavior include:
+
+- use a certain folder structure
+- follow a certain writing framework
+- prefer one code pattern over another
+- keep content self-contained
+
+An agent, by contrast, is the active worker that reads context, uses tools, and moves the task forward.
+
+A simple way to say it is:
+
+- an instruction file provides guidance
+- an agent performs the work
+
+### Agents versus prompt files
+
+A prompt file is a reusable request or workflow entry point.
+
+It helps with asking for a task in a consistent way, but it is not itself the worker. The agent is still the system that interprets the request, chooses tools, and executes the task.
+
+So:
+
+- a prompt file helps start the work
+- an agent carries the work through
+
+### Agents versus skill files
+
+Skill files package reusable task knowledge, procedures, references, scripts, or assets.
+
+A skill is closer to a capability bundle than to an autonomous worker. It can help an agent perform a specialized task, but it is not the agent itself.
+
+So:
+
+- a skill provides reusable operational knowledge
+- an agent loads and uses that knowledge when it is relevant
+
+### Why this distinction matters
+
+This distinction matters because teams often confuse configuration artifacts with execution systems.
+
+If those are mixed up, the result is confusion such as:
+
+- expecting an instruction file to behave like a workflow engine
+- expecting a skill file to replace an agent role
+- expecting an agent to automatically know local rules without instructions
+
+The broader Copilot system works best when each part does its own job:
+
+- agents execute
+- instructions constrain
+- prompts trigger
+- skills package repeatable know-how
+
 ## Why the system has multiple kinds of agents
 
 A single agent design would be simpler to describe, but it would not match real development work very well. Development tasks vary along a few important axes:
@@ -578,6 +648,6 @@ This does not remove the need for human judgment. Instead, it changes the role o
 
 GitHub Copilot agents in Visual Studio Code form a family of agentic workflows rather than a single mode. Local agents handle interactive, tool-rich work in the editor. Copilot CLI handles autonomous background work on your machine, often with isolation options. Cloud agents handle autonomous remote work integrated with GitHub collaboration and pull requests.
 
-Around those main environments are important supporting ideas: built-in agents such as Agent, Plan, and Ask; subagents for focused delegation; custom agents for specialized roles; tools and permissions for controlled capability; and memory for continuity across work.
+Around those main environments are important supporting ideas: built-in agents such as Agent, Plan, and Ask; subagents for focused delegation; custom agents for specialized roles; tools and permissions for controlled capability; memory for continuity across work; and adjacent customization mechanisms such as instruction files, prompt files, and skill files.
 
 The most important principle is to match the agent to the task. The best GitHub Copilot workflow is not the one with the most autonomy. It is the one where the execution environment, role, tools, and level of oversight fit the real job to be done.
