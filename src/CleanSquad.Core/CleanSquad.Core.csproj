@@ -2,4 +2,7 @@
   <PropertyGroup>
     <Description>Core business logic for the CleanSquad starter solution.</Description>
   </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="GitHub.Copilot.SDK" />
+  </ItemGroup>
 </Project>
