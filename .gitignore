@@ -11,6 +11,7 @@
 *.sln.docstates
 *.env
 CleanSquad.sln
+workflow-runs/
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs

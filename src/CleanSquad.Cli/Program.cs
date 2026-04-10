@@ -1,5 +1,5 @@
 using System;
 using CleanSquad.Cli;
 
-string output = CliApplication.BuildOutput(args);
+string output = await CliApplication.BuildOutputAsync(args);
 Console.WriteLine(output);
