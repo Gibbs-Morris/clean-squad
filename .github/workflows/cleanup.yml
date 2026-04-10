@@ -1,0 +1,176 @@
+name: ReSharper Cleanup Check
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+      - feature/**
+      - topic/**
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  DOTSETTINGS_PATH: ${{ github.workspace }}/Directory.DotSettings
+  CONFIGURATION: Release
+
+jobs:
+  cleanup:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest ]
+        solution: [ CleanSquad.slnx ]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Cache GitVersion tools
+        uses: actions/cache@v4
+        with:
+          path: ~/.gitversion
+          key: ${{ runner.os }}-gitversion
+          restore-keys: ${{ runner.os }}-gitversion
+
+      - name: Cache nugets
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json', '**/packages.*.lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json', '**/packages.*.lock.json') }}
+
+      - name: Cache JetBrains analysis caches
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/.jb-caches
+          key: jb-${{ runner.os }}-${{ matrix.solution }}-${{ hashFiles('**/*.slnx', '**/*.csproj', '**/*.editorconfig', '**/*.DotSettings', '**/Directory.Build.props') }}
+          restore-keys: |
+            jb-${{ runner.os }}-${{ matrix.solution }}-
+            jb-${{ runner.os }}-
+
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v3.2.1
+        with:
+          versionSpec: "6.0.5"
+
+      - name: Determine Version
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v3.2.1
+        with:
+          useConfigFile: true
+
+      - name: Restore dotnet packages
+        run: |
+          dotnet restore ${{ github.workspace }}/${{ matrix.solution }}
+
+      - name: Build dotnet projects
+        run: |
+          dotnet build ${{ github.workspace }}/${{ matrix.solution }} --configuration ${{ env.CONFIGURATION }} --no-restore --no-incremental -warnaserror -p:Version=${{ steps.gitversion.outputs.SemVer }}
+
+      - name: Check for dotnet tools manifest
+        id: check-tools-manifest
+        shell: pwsh
+        run: |
+          if (Test-Path ".config/dotnet-tools.json") {
+            echo "manifest_exists=true" >> $env:GITHUB_OUTPUT
+          } else {
+            echo "manifest_exists=false" >> $env:GITHUB_OUTPUT
+          }
+
+      - name: Restore .NET Tools
+        if: steps.check-tools-manifest.outputs.manifest_exists == 'true'
+        shell: pwsh
+        run: |
+          Write-Host "Restoring dotnet tools..."
+          dotnet tool restore
+
+      - name: Install ReSharper Global Tools
+        if: steps.check-tools-manifest.outputs.manifest_exists != 'true'
+        shell: pwsh
+        run: |
+          Write-Host "Installing JetBrains.ReSharper.GlobalTools..."
+          dotnet tool install -g JetBrains.ReSharper.GlobalTools
+
+      - name: Generate legacy .sln from .slnx
+        shell: pwsh
+        run: |
+          $slnxPath = Join-Path "${{ github.workspace }}" "${{ matrix.solution }}"
+          $slnPath = $slnxPath -replace '\.slnx$', '.sln'
+          Write-Host "Generating $slnPath from $slnxPath ..."
+          dotnet tool run slngen "$slnxPath" --solutionfile "$slnPath" --launch false
+          Get-Item "$slnPath" | Format-List
+
+      - name: Run ReSharper Cleanup Code
+        shell: pwsh
+        run: |
+          $slnxPath = Join-Path "${{ github.workspace }}" "${{ matrix.solution }}"
+          $slnPath = $slnxPath -replace '\.slnx$', '.sln'
+          Write-Host "Running ReSharper Cleanup Code on $slnPath ..."
+          $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+          dotnet tool run jb cleanupcode `
+            --profile="Built-in: Full Cleanup" `
+            --settings="${{ env.DOTSETTINGS_PATH }}" `
+            --caches-home="${{ runner.temp }}/.jb-caches" `
+            --no-updates `
+            "$slnPath" `
+            --LogLevel=TRACE
+          $stopwatch.Stop()
+          $elapsed = $stopwatch.Elapsed
+          Write-Host ""
+          Write-Host "========================================" -ForegroundColor Cyan
+          Write-Host "CLEANUP TIMING SUMMARY" -ForegroundColor Cyan
+          Write-Host "========================================" -ForegroundColor Cyan
+          Write-Host "Solution: ${{ matrix.solution }}"
+          Write-Host "Duration: $($elapsed.ToString('hh\:mm\:ss\.fff'))"
+          Write-Host "Minutes:  $([math]::Round($elapsed.TotalMinutes, 2))"
+          Write-Host "========================================" -ForegroundColor Cyan
+          Write-Host ""
+          Write-Host "Cleanup completed."
+          echo "SLN_PATH=$slnPath" >> $env:GITHUB_ENV
+          $slnFileName = Split-Path -Path $slnPath -Leaf
+          echo "SLN_FILE_NAME=$slnFileName" >> $env:GITHUB_ENV
+
+      - name: Remove generated legacy solution
+        shell: pwsh
+        run: |
+          if ($env:SLN_PATH -and (Test-Path $env:SLN_PATH)) {
+            Remove-Item $env:SLN_PATH -Force
+          }
+
+      - name: Check for Uncommitted Changes
+        shell: pwsh
+        run: |
+          Write-Host "Checking for modifications after cleanup..."
+          $changes = git status --porcelain | Where-Object { $_ -notmatch 'packages.*\.lock\.json$' }
+          if ($changes) {
+            Write-Host "ERROR: ReSharper cleanup modified files. The following changes are required:"
+            git diff --color=always -- . ':!**/packages*.lock.json'
+            Write-Host ""
+            Write-Host "To resolve this locally run:"
+            $slnFileName = $env:SLN_FILE_NAME
+            if (-not $slnFileName -and $env:SLN_PATH) {
+              $slnFileName = Split-Path -Path $env:SLN_PATH -Leaf
+            }
+            if ([string]::IsNullOrWhiteSpace($slnFileName)) {
+              Write-Host "Unable to determine the solution file name for local cleanup. Check workflow logs for details."
+            } else {
+              $localCommand = "dotnet tool run slngen CleanSquad.slnx --solutionfile CleanSquad.sln --launch false; dotnet tool run jb cleanupcode --profile=`"Built-in: Full Cleanup`" --settings=`"Directory.DotSettings`" CleanSquad.sln"
+              Write-Host "Run the following from the repository root:"
+              Write-Host $localCommand
+            }
+            exit 1
+          } else {
+            Write-Host "No modifications detected. Cleanup check passed."
+          }
