@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Command-line entry point for the CleanSquad starter solution.</Description>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CleanSquad.Core\CleanSquad.Core.csproj" />
+  </ItemGroup>
+</Project>

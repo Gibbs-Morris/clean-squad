@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Unit tests for CleanSquad.Cli.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\CleanSquad.Cli\CleanSquad.Cli.csproj" />
+  </ItemGroup>
+</Project>

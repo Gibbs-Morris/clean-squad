@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Core business logic for the CleanSquad starter solution.</Description>
+  </PropertyGroup>
+</Project>

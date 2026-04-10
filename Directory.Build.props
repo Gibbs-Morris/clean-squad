@@ -1,0 +1,93 @@
+<Project>
+  <PropertyGroup>
+    <Deterministic>true</Deterministic>
+    <AnalysisMode>All</AnalysisMode>
+    <AnalysisLevel>9</AnalysisLevel>
+    <IsPackable>false</IsPackable>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>14.0</LangVersion>
+    <ImplicitUsings>false</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/Gibbs-Morris/clean-squad</RepositoryUrl>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <_ProjectIdentityName Condition="$([System.String]::Copy('$(MSBuildProjectName)').StartsWith('CleanSquad.'))">$(MSBuildProjectName)</_ProjectIdentityName>
+    <_ProjectIdentityName Condition="'$(_ProjectIdentityName)' == ''">CleanSquad.$(MSBuildProjectName)</_ProjectIdentityName>
+    <PackageId>$(_ProjectIdentityName)</PackageId>
+    <AssemblyName>$(_ProjectIdentityName)</AssemblyName>
+    <RootNamespace>$(_ProjectIdentityName.Replace(&quot; &quot;, &quot;_&quot;))</RootNamespace>
+    <NoWarn>
+      SA1633,SA1111,SA1200,SA1009,SA1507,SA1101,SA1202,SA1204,CA1014,CA2007,CA1040,CA1812,CA1303,VSTHRD111,SA1201,S2436
+    </NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(EmitCompilerGeneratedFilesOptIn)' == 'true'">
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <CompilerGeneratedFilesOutputPath>$(IntermediateOutputPath)Generated</CompilerGeneratedFilesOutputPath>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(IsPackable)' == 'true'">
+    <None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="\" Link="README.md" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('Tests'))">
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="$(AssemblyName).Tests" />
+    <InternalsVisibleTo Include="$(AssemblyName).UnitTests" />
+    <InternalsVisibleTo Include="$(AssemblyName).IntegrationTests" />
+    <InternalsVisibleTo Include="$(AssemblyName).L0Tests" />
+    <InternalsVisibleTo Include="$(AssemblyName).L1Tests" />
+    <InternalsVisibleTo Include="$(AssemblyName).L2Tests" />
+    <InternalsVisibleTo Include="$(AssemblyName).L3Tests" />
+    <InternalsVisibleTo Include="$(AssemblyName).L4Tests" />
+    <InternalsVisibleTo Include="$(AssemblyName).Benchmarks" />
+    <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="SonarAnalyzer.CSharp">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="IDisposableAnalyzers">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="StyleCop.Analyzers.Unstable">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup Condition="$(MSBuildProjectName.EndsWith('Tests'))">
+    <PackageReference Include="Moq" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="coverlet.collector">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <Using Include="Xunit" />
+  </ItemGroup>
+</Project>
