@@ -22,7 +22,6 @@ public sealed class WorkflowCliTests
 
         try
         {
-            await File.WriteAllTextAsync(Path.Combine(tempDirectoryPath, "CleanSquad.slnx"), "<Solution />", System.Text.Encoding.UTF8);
             string requestPath = Path.Combine(tempDirectoryPath, "request.md");
             await File.WriteAllTextAsync(requestPath, "# Request\n", System.Text.Encoding.UTF8);
 
@@ -58,8 +57,6 @@ public sealed class WorkflowCliTests
 
         try
         {
-            await File.WriteAllTextAsync(Path.Combine(tempDirectoryPath, "CleanSquad.slnx"), "<Solution />", System.Text.Encoding.UTF8);
-
             string output = await CliApplication.BuildOutputAsync(["workflow", "missing.md"], currentDirectory: tempDirectoryPath);
 
             Assert.StartsWith("Request markdown file not found:", output, StringComparison.Ordinal);
@@ -81,7 +78,6 @@ public sealed class WorkflowCliTests
 
         try
         {
-            await File.WriteAllTextAsync(Path.Combine(tempDirectoryPath, "CleanSquad.slnx"), "<Solution />", System.Text.Encoding.UTF8);
             string requestPath = Path.Combine(tempDirectoryPath, "request.txt");
             await File.WriteAllTextAsync(requestPath, "request", System.Text.Encoding.UTF8);
 
