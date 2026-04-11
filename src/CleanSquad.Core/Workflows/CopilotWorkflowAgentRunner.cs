@@ -13,16 +13,16 @@ namespace CleanSquad.Core.Workflows;
 /// </summary>
 public sealed class CopilotWorkflowAgentRunner : IWorkflowAgentRunner
 {
-    private readonly string repositoryRootPath;
+    private readonly string workspaceRootPath;
 
     /// <summary>
     ///     Initializes a new instance of the <see cref="CopilotWorkflowAgentRunner" /> class.
     /// </summary>
-    /// <param name="repositoryRootPath">The repository root path used as the Copilot CLI working directory.</param>
-    public CopilotWorkflowAgentRunner(string repositoryRootPath)
+    /// <param name="workspaceRootPath">The workspace root path used as the Copilot CLI working directory.</param>
+    public CopilotWorkflowAgentRunner(string workspaceRootPath)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(repositoryRootPath);
-        this.repositoryRootPath = Path.GetFullPath(repositoryRootPath);
+        ArgumentException.ThrowIfNullOrWhiteSpace(workspaceRootPath);
+        this.workspaceRootPath = Path.GetFullPath(workspaceRootPath);
     }
 
     /// <inheritdoc />
@@ -39,7 +39,7 @@ public sealed class CopilotWorkflowAgentRunner : IWorkflowAgentRunner
 
         await using var client = new CopilotClient(new CopilotClientOptions
         {
-            Cwd = this.repositoryRootPath,
+            Cwd = this.workspaceRootPath,
         });
 
         await using var session = await client.CreateSessionAsync(

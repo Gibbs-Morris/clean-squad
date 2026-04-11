@@ -5,15 +5,15 @@ using CleanSquad.Core.Workflows;
 namespace CleanSquad.Core.UnitTests.Workflows;
 
 /// <summary>
-///     Unit tests for <see cref="RepositoryRootLocator" />.
+///     Unit tests for <see cref="WorkspaceRootLocator" />.
 /// </summary>
-public sealed class RepositoryRootLocatorTests
+public sealed class WorkspaceRootLocatorTests
 {
     /// <summary>
-    ///     Verifies the locator prefers a generic workspace marker rather than a solution-specific file name.
+    ///     Verifies the locator prefers a source-control marker instead of language-specific build files.
     /// </summary>
     [Fact]
-    public void FindRepositoryRootUsesGenericWorkspaceMarkers()
+    public void FindWorkspaceRootUsesSourceControlMarkers()
     {
         string tempDirectoryPath = CreateTempDirectory();
 
@@ -22,9 +22,9 @@ public sealed class RepositoryRootLocatorTests
             string workspaceRootPath = Path.Combine(tempDirectoryPath, "workspace");
             string nestedPath = Path.Combine(workspaceRootPath, "src", "tool");
             Directory.CreateDirectory(nestedPath);
-            File.WriteAllText(Path.Combine(workspaceRootPath, "Directory.Build.props"), "<Project />");
+            Directory.CreateDirectory(Path.Combine(workspaceRootPath, ".git"));
 
-            string rootPath = RepositoryRootLocator.FindRepositoryRoot(nestedPath);
+            string rootPath = WorkspaceRootLocator.FindWorkspaceRoot(nestedPath);
 
             Assert.Equal(workspaceRootPath, rootPath);
         }
@@ -38,7 +38,7 @@ public sealed class RepositoryRootLocatorTests
     ///     Verifies the locator falls back to the starting directory when no workspace markers exist.
     /// </summary>
     [Fact]
-    public void FindRepositoryRootFallsBackToStartingDirectoryWhenNoMarkersExist()
+    public void FindWorkspaceRootFallsBackToStartingDirectoryWhenNoMarkersExist()
     {
         string tempDirectoryPath = CreateTempDirectory();
 
@@ -47,7 +47,7 @@ public sealed class RepositoryRootLocatorTests
             string nestedPath = Path.Combine(tempDirectoryPath, "standalone", "tool");
             Directory.CreateDirectory(nestedPath);
 
-            string rootPath = RepositoryRootLocator.FindRepositoryRoot(nestedPath);
+            string rootPath = WorkspaceRootLocator.FindWorkspaceRoot(nestedPath);
 
             Assert.Equal(nestedPath, rootPath);
         }

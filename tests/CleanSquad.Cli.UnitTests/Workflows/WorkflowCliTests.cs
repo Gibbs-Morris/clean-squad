@@ -37,7 +37,7 @@ public sealed class WorkflowCliTests
             string output = await CliApplication.BuildOutputAsync(["workflow", requestPath], orchestrator, tempDirectoryPath);
 
             Assert.Contains("Workflow finished with reviewer approval.", output, StringComparison.Ordinal);
-            Assert.Equal(tempDirectoryPath, orchestrator.RepositoryRootPath);
+            Assert.Equal(tempDirectoryPath, orchestrator.WorkspaceRootPath);
             Assert.Equal(Path.GetFullPath(requestPath), orchestrator.RequestDocumentPath);
         }
         finally
@@ -107,17 +107,17 @@ public sealed class WorkflowCliTests
             this.result = result;
         }
 
-        public string? RepositoryRootPath { get; private set; }
+        public string? WorkspaceRootPath { get; private set; }
 
         public string? RequestDocumentPath { get; private set; }
 
         public Task<WorkflowRunResult> ExecuteAsync(
-            string repositoryRootPath,
+            string workspaceRootPath,
             string requestDocumentPath,
             CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            this.RepositoryRootPath = repositoryRootPath;
+            this.WorkspaceRootPath = workspaceRootPath;
             this.RequestDocumentPath = requestDocumentPath;
             return Task.FromResult(this.result);
         }

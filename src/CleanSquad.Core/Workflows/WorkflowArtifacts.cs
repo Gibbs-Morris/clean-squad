@@ -8,7 +8,7 @@ namespace CleanSquad.Core.Workflows;
 /// <summary>
 ///     Describes the markdown artifacts produced for a workflow run.
 /// </summary>
-/// <param name="RepositoryRootPath">The repository root used for the run.</param>
+/// <param name="WorkspaceRootPath">The workspace root used for the run.</param>
 /// <param name="RunId">The deterministic identifier for the run folder.</param>
 /// <param name="RunDirectoryPath">The folder where all markdown artifacts are written.</param>
 /// <param name="SourceRequestPath">The original request markdown path supplied by the user.</param>
@@ -20,7 +20,7 @@ namespace CleanSquad.Core.Workflows;
 /// <param name="FinalMarkdownPath">The final summary markdown path.</param>
 /// <param name="StateMarkdownPath">The workflow state markdown path.</param>
 public sealed record WorkflowArtifacts(
-    string RepositoryRootPath,
+    string WorkspaceRootPath,
     string RunId,
     string RunDirectoryPath,
     string SourceRequestPath,
@@ -35,25 +35,25 @@ public sealed record WorkflowArtifacts(
     /// <summary>
     ///     Creates a new set of workflow artifact paths.
     /// </summary>
-    /// <param name="repositoryRootPath">The repository root path.</param>
+    /// <param name="workspaceRootPath">The workspace root path.</param>
     /// <param name="sourceRequestPath">The source request markdown path.</param>
     /// <param name="timeProvider">The time provider used to create the run identifier.</param>
     /// <returns>The artifact path set for the workflow run.</returns>
-    public static WorkflowArtifacts Create(string repositoryRootPath, string sourceRequestPath, TimeProvider timeProvider)
+    public static WorkflowArtifacts Create(string workspaceRootPath, string sourceRequestPath, TimeProvider timeProvider)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(repositoryRootPath);
+        ArgumentException.ThrowIfNullOrWhiteSpace(workspaceRootPath);
         ArgumentException.ThrowIfNullOrWhiteSpace(sourceRequestPath);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
-        string normalizedRepositoryRoot = Path.GetFullPath(repositoryRootPath);
+        string normalizedWorkspaceRoot = Path.GetFullPath(workspaceRootPath);
         string normalizedSourceRequestPath = Path.GetFullPath(sourceRequestPath);
         string slug = Slugify(Path.GetFileNameWithoutExtension(normalizedSourceRequestPath));
         string timestamp = timeProvider.GetUtcNow().ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
         string runId = $"{timestamp}-{slug}";
-        string runDirectoryPath = Path.Combine(normalizedRepositoryRoot, "workflow-runs", runId);
+        string runDirectoryPath = Path.Combine(normalizedWorkspaceRoot, "workflow-runs", runId);
 
         return new WorkflowArtifacts(
-            normalizedRepositoryRoot,
+            normalizedWorkspaceRoot,
             runId,
             runDirectoryPath,
             normalizedSourceRequestPath,

@@ -28,13 +28,13 @@ public sealed class WorkflowOrchestrator : IWorkflowOrchestrator
 
     /// <inheritdoc />
     public async Task<WorkflowRunResult> ExecuteAsync(
-        string repositoryRootPath,
+        string workspaceRootPath,
         string requestDocumentPath,
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        WorkflowArtifacts artifacts = this.markdownArtifactService.CreateRunArtifacts(repositoryRootPath, requestDocumentPath);
+        WorkflowArtifacts artifacts = this.markdownArtifactService.CreateRunArtifacts(workspaceRootPath, requestDocumentPath);
 
         string planMarkdown = await this.workflowAgentRunner.RunAsync(
             WorkflowStage.Planner,

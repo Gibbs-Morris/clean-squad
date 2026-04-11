@@ -63,11 +63,11 @@ internal static class CliApplication
             return "The workflow command requires a markdown (.md) request document path.";
         }
 
-        string repositoryRootPath = RepositoryRootLocator.FindRepositoryRoot(workingDirectory);
-        IWorkflowOrchestrator orchestrator = workflowOrchestrator ?? CreateWorkflowOrchestrator(repositoryRootPath);
+        string workspaceRootPath = WorkspaceRootLocator.FindWorkspaceRoot(workingDirectory);
+        IWorkflowOrchestrator orchestrator = workflowOrchestrator ?? CreateWorkflowOrchestrator(workspaceRootPath);
         try
         {
-            WorkflowRunResult result = await orchestrator.ExecuteAsync(repositoryRootPath, requestDocumentPath, cancellationToken);
+            WorkflowRunResult result = await orchestrator.ExecuteAsync(workspaceRootPath, requestDocumentPath, cancellationToken);
 
             return $"Workflow {result.StatusLabel}. Run folder: {result.RunDirectoryPath}. Final markdown: {result.FinalArtifactPath}";
         }
@@ -81,11 +81,11 @@ internal static class CliApplication
         }
     }
 
-    private static WorkflowOrchestrator CreateWorkflowOrchestrator(string repositoryRootPath)
+    private static WorkflowOrchestrator CreateWorkflowOrchestrator(string workspaceRootPath)
     {
         return new WorkflowOrchestrator(
             new MarkdownArtifactService(TimeProvider.System),
-            new CopilotWorkflowAgentRunner(repositoryRootPath));
+            new CopilotWorkflowAgentRunner(workspaceRootPath));
     }
 
     private static bool IsWorkflowCommand(string[] args)

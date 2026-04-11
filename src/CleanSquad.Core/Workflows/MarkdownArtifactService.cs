@@ -24,12 +24,12 @@ public sealed class MarkdownArtifactService
     /// <summary>
     ///     Creates a new run folder and copies the source request markdown into it.
     /// </summary>
-    /// <param name="repositoryRootPath">The repository root path.</param>
+    /// <param name="workspaceRootPath">The workspace root path.</param>
     /// <param name="sourceRequestPath">The original request markdown path.</param>
     /// <returns>The created workflow artifact set.</returns>
-    public WorkflowArtifacts CreateRunArtifacts(string repositoryRootPath, string sourceRequestPath)
+    public WorkflowArtifacts CreateRunArtifacts(string workspaceRootPath, string sourceRequestPath)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(repositoryRootPath);
+        ArgumentException.ThrowIfNullOrWhiteSpace(workspaceRootPath);
         ArgumentException.ThrowIfNullOrWhiteSpace(sourceRequestPath);
 
         if (!File.Exists(sourceRequestPath))
@@ -37,7 +37,7 @@ public sealed class MarkdownArtifactService
             throw new FileNotFoundException("The request markdown file could not be found.", sourceRequestPath);
         }
 
-        WorkflowArtifacts artifacts = WorkflowArtifacts.Create(repositoryRootPath, sourceRequestPath, this.timeProvider);
+        WorkflowArtifacts artifacts = WorkflowArtifacts.Create(workspaceRootPath, sourceRequestPath, this.timeProvider);
         Directory.CreateDirectory(artifacts.RunDirectoryPath);
 
         string requestMarkdown = ReadMarkdown(sourceRequestPath);
