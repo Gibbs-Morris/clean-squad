@@ -1,49 +1,63 @@
 # CleanSquad
 
-CleanSquad is a minimal .NET starter repository that now contains two things side by side:
+[![Unit Tests](https://github.com/Gibbs-Morris/clean-squad/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/Gibbs-Morris/clean-squad/actions/workflows/unit-tests.yml)
+[![Build (perfect)](https://github.com/Gibbs-Morris/clean-squad/actions/workflows/full-build.yml/badge.svg)](https://github.com/Gibbs-Morris/clean-squad/actions/workflows/full-build.yml)
+[![ReSharper Cleanup Check](https://github.com/Gibbs-Morris/clean-squad/actions/workflows/cleanup.yml/badge.svg)](https://github.com/Gibbs-Morris/clean-squad/actions/workflows/cleanup.yml)
 
-- a simple `CleanSquad` solution with core business logic, a command-line app, and unit tests
-- the existing `key-principles/` knowledge base for reasoning, documentation, and agent guidance
-
-The codebase is intentionally small to start with, but the repository structure follows the same kind of centralized .NET setup used by larger production-ready solutions:
-
-- `global.json` pins the SDK
-- `Directory.Build.props` centralizes shared MSBuild and analyzer settings
-- `Directory.Packages.props` centralizes NuGet package versions
-- `CleanSquad.slnx` is the canonical solution file
+CleanSquad is a .NET workflow CLI that runs structured, graph-based agent workflows. You define a workflow as a directed graph of named nodes — each node carrying a role, a prompt, and declared inputs and outputs — and the CLI orchestrates execution: resolving the graph, invoking each node in order, persisting state between runs, and producing a final output. The repository also ships a knowledge base of engineering principles and a rich documentation tree organized by the Diátaxis framework.
 
 ## Repository layout
 
-- `src/CleanSquad.Core` — core business logic
-- `src/CleanSquad.Cli` — command-line entry point
-- `tests/CleanSquad.Core.UnitTests` — unit tests for the core library
-- `tests/CleanSquad.Cli.UnitTests` — unit tests for the CLI layer
-- `key-principles/` — self-contained documentation topics and explanations
+| Path | Purpose |
+|---|---|
+| `src/CleanSquad.Core` | Reusable business and domain logic shared across the solution |
+| `src/CleanSquad.Cli` | Command-line entry point and composition root |
+| `src/CleanSquad.Workflow` | Workflow definitions, graph-based orchestration, prompting, and run persistence |
+| `tests/CleanSquad.Core.UnitTests` | Unit tests for the core library |
+| `tests/CleanSquad.Cli.UnitTests` | Unit tests for the CLI layer |
+| `tests/CleanSquad.Workflow.UnitTests` | Unit tests for the workflow engine |
+| `key-principles/` | Self-contained documentation topics covering engineering reasoning and agent guidance |
+| `docs/` | Full CLI documentation organized by the Diátaxis framework |
+
+The build configuration is centralized:
+
+- `global.json` — pins the .NET SDK version (10.0.103, with patch roll-forward)
+- `Directory.Build.props` — shared MSBuild, analyzer, and compiler settings
+- `Directory.Packages.props` — centralized NuGet package versions
+- `CleanSquad.slnx` — canonical solution file
 
 ## Prerequisites
 
-- .NET SDK 10.0.103 or later with patch roll-forward enabled by `global.json`
+- .NET SDK 10.0.103 or later (roll-forward behaviour controlled by `global.json`)
 
 ## Getting started
 
-Restore packages:
+```sh
+# Restore packages
+dotnet restore CleanSquad.slnx
 
-`dotnet restore CleanSquad.slnx`
+# Build the solution
+dotnet build CleanSquad.slnx
 
-Build the solution:
+# Run all tests
+dotnet test CleanSquad.slnx
 
-`dotnet build CleanSquad.slnx`
+# Run the CLI
+dotnet run --project src/CleanSquad.Cli/CleanSquad.Cli.csproj -- Delta
+```
 
-Run the tests:
+## Documentation
 
-`dotnet test CleanSquad.slnx`
+Full CLI documentation lives in [`docs/README.md`](docs/README.md) and is organized by the [Diátaxis](https://diataxis.fr/) framework:
 
-Run the CLI:
+- **Tutorial** — step-by-step guide for running your first workflow
+- **How-to guides** — goal-oriented recipes (run, resume, validate, diagram, configure branding)
+- **Reference** — exact command syntax, options, exit codes, and configuration schema
+- **Explanation** — the workflow model, graph execution, CLI design goals, and branding behaviour
 
-`dotnet run --project src/CleanSquad.Cli/CleanSquad.Cli.csproj -- Delta`
+## Contributing
 
-## Notes
-
-- The starter is intentionally minimal and designed to build and test cleanly from day one.
-- GitHub Actions workflows now cover clean build, unit tests, and ReSharper cleanup checks.
-- The `key-principles/` documentation area continues to follow its own repo-specific documentation rules.
+- All production code lives under `src/CleanSquad.*`; tests live under `tests/CleanSquad.*.UnitTests`.
+- Keep package versions in `Directory.Packages.props`; do not add `Version` attributes to individual `PackageReference` items.
+- The repository enforces a zero-warning build. CI runs a clean build, unit tests, and a ReSharper cleanup check on every push.
+- Use `CleanSquad.slnx` as the solution entry point for all `dotnet` commands.

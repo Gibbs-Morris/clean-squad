@@ -1,0 +1,365 @@
+{
+  "version": "2.1",
+  "name": "Clean Agile Default Workflow",
+  "defaultEntryPoint": "default",
+  "entryPoints": [
+    {
+      "id": "default",
+      "nodeId": "increment-framing"
+    },
+    {
+      "id": "planning",
+      "nodeId": "increment-framing"
+    },
+    {
+      "id": "three-amigos",
+      "nodeId": "three-amigos-fork"
+    },
+    {
+      "id": "research",
+      "nodeId": "three-amigos-fork"
+    },
+    {
+      "id": "build",
+      "nodeId": "builder"
+    },
+    {
+      "id": "review",
+      "nodeId": "reviewer"
+    }
+  ],
+  "sharedAssets": [
+    {
+      "kind": "theory",
+      "path": "instructions/general/clean-agile.instructions.md"
+    },
+    {
+      "kind": "theory",
+      "path": "instructions/general/first-principles-thinking.instructions.md"
+    },
+    {
+      "kind": "theory",
+      "path": "instructions/general/chain-of-verification.instructions.md"
+    },
+    {
+      "kind": "repository-instruction",
+      "path": "instructions/repository/build-and-test.instructions.md"
+    },
+    {
+      "kind": "repository-instruction",
+      "path": "instructions/repository/repository-structure.instructions.md"
+    },
+    {
+      "kind": "workflow-rule",
+      "path": "rules/workflow/clean-agile.rules.md"
+    },
+    {
+      "kind": "workflow-rule",
+      "path": "rules/workflow/shared.rules.md"
+    },
+    {
+      "kind": "workflow-rule",
+      "path": "rules/workflow/repository-quality.rules.md"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "increment-framing",
+      "kind": "Stage",
+      "displayName": "Increment Framing",
+      "role": "Planning",
+      "agent": "planner",
+      "inputs": [
+        "request"
+      ],
+      "outputs": [
+        "incrementFrame",
+        "acceptanceSignals",
+        "scopeGuardrails"
+      ],
+      "customMessage": "Frame the request as the smallest valuable increment that can be built and verified safely before implementation begins.",
+      "assets": [
+        {
+          "kind": "agent-persona",
+          "path": "agents/planner.agent.md"
+        },
+        {
+          "kind": "agent-rule",
+          "path": "rules/agents/planner.rules.md"
+        }
+      ],
+      "next": "three-amigos-fork"
+    },
+    {
+      "id": "three-amigos-fork",
+      "kind": "Fork",
+      "displayName": "Three Amigos Fork",
+      "joinNodeId": "three-amigos-join",
+      "branches": [
+        {
+          "id": "business",
+          "nextNodeId": "business-amigo"
+        },
+        {
+          "id": "development",
+          "nextNodeId": "development-amigo"
+        },
+        {
+          "id": "testing",
+          "nextNodeId": "testing-amigo"
+        }
+      ]
+    },
+    {
+      "id": "business-amigo",
+      "kind": "Stage",
+      "displayName": "Business Amigo",
+      "role": "Business",
+      "agent": "business-amigo",
+      "inputs": [
+        "request",
+        "node:increment-framing"
+      ],
+      "outputs": [
+        "businessOutcome",
+        "acceptanceExamples"
+      ],
+      "customMessage": "Represent the business perspective by clarifying value, user outcomes, examples, and what done should mean for this increment.",
+      "assets": [
+        {
+          "kind": "agent-persona",
+          "path": "agents/business-amigo.agent.md"
+        },
+        {
+          "kind": "agent-rule",
+          "path": "rules/agents/business-amigo.rules.md"
+        }
+      ],
+      "next": "three-amigos-join"
+    },
+    {
+      "id": "development-amigo",
+      "kind": "Stage",
+      "displayName": "Development Amigo",
+      "role": "Development",
+      "agent": "development-amigo",
+      "inputs": [
+        "request",
+        "node:increment-framing",
+        "node:business-amigo"
+      ],
+      "outputs": [
+        "technicalApproach",
+        "technicalRisks"
+      ],
+      "customMessage": "Represent the development perspective by finding the simplest safe implementation approach that preserves changeability and technical quality.",
+      "assets": [
+        {
+          "kind": "agent-persona",
+          "path": "agents/development-amigo.agent.md"
+        },
+        {
+          "kind": "agent-rule",
+          "path": "rules/agents/development-amigo.rules.md"
+        }
+      ],
+      "next": "three-amigos-join"
+    },
+    {
+      "id": "testing-amigo",
+      "kind": "Stage",
+      "displayName": "Testing Amigo",
+      "role": "Testing",
+      "agent": "testing-amigo",
+      "inputs": [
+        "request",
+        "node:increment-framing",
+        "node:business-amigo"
+      ],
+      "outputs": [
+        "testScenarios",
+        "validationPlan"
+      ],
+      "customMessage": "Represent the testing perspective by clarifying scenarios, edge cases, regression risks, and the fastest credible validation plan.",
+      "assets": [
+        {
+          "kind": "agent-persona",
+          "path": "agents/testing-amigo.agent.md"
+        },
+        {
+          "kind": "agent-rule",
+          "path": "rules/agents/testing-amigo.rules.md"
+        }
+      ],
+      "next": "three-amigos-join"
+    },
+    {
+      "id": "three-amigos-join",
+      "kind": "Join",
+      "displayName": "Three Amigos Join",
+      "forkId": "three-amigos-fork",
+      "next": "builder"
+    },
+    {
+      "id": "builder",
+      "kind": "Stage",
+      "displayName": "Implementation",
+      "role": "Implementation",
+      "agent": "builder",
+      "inputs": [
+        "request",
+        "node:increment-framing",
+        "node:business-amigo",
+        "node:development-amigo",
+        "node:testing-amigo"
+      ],
+      "outputs": [
+        "buildSummary",
+        "validationEvidence"
+      ],
+      "customMessage": "Implement the smallest coherent change that satisfies the framed increment while preserving technical excellence through tests, simple design, and refactoring-minded choices.",
+      "assets": [
+        {
+          "kind": "agent-persona",
+          "path": "agents/builder.agent.md"
+        },
+        {
+          "kind": "agent-rule",
+          "path": "rules/agents/builder.rules.md"
+        }
+      ],
+      "next": "reviewer"
+    },
+    {
+      "id": "reviewer",
+      "kind": "Stage",
+      "displayName": "Technical Review",
+      "role": "Review",
+      "agent": "reviewer",
+      "inputs": [
+        "request",
+        "node:increment-framing",
+        "node:business-amigo",
+        "node:development-amigo",
+        "node:testing-amigo",
+        "node:builder",
+        "node:rebuilder"
+      ],
+      "outputs": [
+        "reviewVerdict",
+        "reviewFindings"
+      ],
+      "customMessage": "Review the implementation for correctness, validation quality, simplicity, and maintainability. Approve only when the increment is demonstrably ready.",
+      "assets": [
+        {
+          "kind": "agent-persona",
+          "path": "agents/reviewer.agent.md"
+        },
+        {
+          "kind": "agent-rule",
+          "path": "rules/agents/reviewer.rules.md"
+        }
+      ],
+      "next": "review-decision"
+    },
+    {
+      "id": "review-decision",
+      "kind": "Decision",
+      "displayName": "Review Decision",
+      "role": "Decision",
+      "agent": "decision",
+      "decisionMode": "Rules",
+      "ruleSet": "clean-agile-review",
+      "decisionSourceNodeId": "reviewer",
+      "inputs": [
+        "request",
+        "node:increment-framing",
+        "node:business-amigo",
+        "node:development-amigo",
+        "node:testing-amigo",
+        "node:builder",
+        "node:reviewer",
+        "node:rebuilder"
+      ],
+      "assets": [
+        {
+          "kind": "agent-persona",
+          "path": "agents/decision.agent.md"
+        },
+        {
+          "kind": "agent-rule",
+          "path": "rules/agents/decision.rules.md"
+        }
+      ],
+      "choices": [
+        {
+          "id": "approve",
+          "displayName": "Approve",
+          "nextNodeId": "approved"
+        },
+        {
+          "id": "rebuild",
+          "displayName": "Rebuild",
+          "nextNodeId": "rebuilder"
+        },
+        {
+          "id": "stop",
+          "displayName": "Stop",
+          "nextNodeId": "stopped"
+        }
+      ]
+    },
+    {
+      "id": "rebuilder",
+      "kind": "Stage",
+      "displayName": "Focused Rework",
+      "role": "Rework",
+      "agent": "rebuilder",
+      "inputs": [
+        "request",
+        "node:increment-framing",
+        "node:business-amigo",
+        "node:development-amigo",
+        "node:testing-amigo",
+        "node:builder",
+        "node:reviewer",
+        "node:rebuilder"
+      ],
+      "outputs": [
+        "reworkSummary",
+        "updatedValidation"
+      ],
+      "customMessage": "Apply the smallest effective correction set needed to resolve review findings while preserving valid work and maintaining technical quality.",
+      "assets": [
+        {
+          "kind": "agent-persona",
+          "path": "agents/rebuilder.agent.md"
+        },
+        {
+          "kind": "agent-rule",
+          "path": "rules/agents/rebuilder.rules.md"
+        }
+      ],
+      "next": "reviewer"
+    },
+    {
+      "id": "approved",
+      "kind": "Exit",
+      "displayName": "Approved Exit",
+      "exitStatus": "Approved"
+    },
+    {
+      "id": "stopped",
+      "kind": "Exit",
+      "displayName": "Stopped Exit",
+      "exitStatus": "Stopped"
+    }
+  ],
+  "policy": {
+    "decisionMode": "Rules",
+    "maxReviewCycles": 2,
+    "maxRebuilds": 1,
+    "maxParallelism": 3,
+    "maxNodeVisits": 12
+  }
+}

@@ -2,9 +2,11 @@
   <Folder Name="/src/">
     <Project Path="src/CleanSquad.Cli/CleanSquad.Cli.csproj" />
     <Project Path="src/CleanSquad.Core/CleanSquad.Core.csproj" />
+    <Project Path="src/CleanSquad.Workflow/CleanSquad.Workflow.csproj" />
   </Folder>
   <Folder Name="/Tests/">
     <Project Path="tests/CleanSquad.Cli.UnitTests/CleanSquad.Cli.UnitTests.csproj" />
     <Project Path="tests/CleanSquad.Core.UnitTests/CleanSquad.Core.UnitTests.csproj" />
+    <Project Path="tests/CleanSquad.Workflow.UnitTests/CleanSquad.Workflow.UnitTests.csproj" />
   </Folder>
 </Solution>

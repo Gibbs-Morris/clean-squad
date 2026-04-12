@@ -17,6 +17,7 @@
 ## Repository operating rules
 
 - Read `.github/copilot-instructions.md` and every file under `.github/instructions/` before making changes.
+- Treat `.github/instructions/naming-and-vertical-slice.instructions.md`, `.github/instructions/project-organization.instructions.md`, and `.github/instructions/domain-modeling-basics.instructions.md` as the specialized local rules for naming, placement, project boundaries, and vertical-slice design in .NET work.
 - Keep the repository split cleanly:
 	- `src/` contains production .NET code.
 	- `tests/` contains automated tests.

@@ -36,4 +36,30 @@ public sealed class CleanupChecklistServiceTests
 
         Assert.Equal("Night Shift: 3 starter tasks ready.", summary);
     }
+
+    /// <summary>
+    ///     Verifies configurable checklist text can supply branded defaults without changing code.
+    /// </summary>
+    [Fact]
+    public void CreateStarterChecklistUsesConfiguredBranding()
+    {
+        CleanupChecklistOptions options = new()
+        {
+            DefaultSquadName = "Acme SDLC",
+            MissionTaskTemplate = "Codify the mission for {SquadName}",
+            BuildTaskName = "Protect the golden pipeline",
+            ReleaseTaskName = "Ship the package with confidence",
+            SummaryTemplate = "{SquadName}: {TaskCount} workflow policies ready.",
+        };
+
+        IReadOnlyList<CleanTask> checklist = CleanupChecklistService.CreateStarterChecklist(null, options);
+        string summary = CleanupChecklistService.CreateSummary(null, options);
+
+        Assert.Collection(
+            checklist,
+            first => Assert.Equal("Codify the mission for Acme SDLC", first.Name),
+            second => Assert.Equal("Protect the golden pipeline", second.Name),
+            third => Assert.Equal("Ship the package with confidence", third.Name));
+        Assert.Equal("Acme SDLC: 3 workflow policies ready.", summary);
+    }
 }

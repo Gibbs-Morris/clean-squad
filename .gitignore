@@ -12,6 +12,7 @@
 *.env
 CleanSquad.sln
 workflow-runs/
+.workflow-testing/
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
