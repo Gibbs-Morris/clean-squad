@@ -135,6 +135,8 @@ public sealed partial class WorkflowOrchestrator : IWorkflowOrchestrator
             this.workflowArtifactService.WriteState(runContext.Artifacts, runContext.State);
             runActivity?.SetStatus(ActivityStatusCode.Error, exception.Message);
             Log(runContext.Artifacts, LogLevel.Error, 1003, "workflow.run.failed", null, exception.Message, exception);
+
+            await TryGenerateFailureDeliveryReportAsync(runContext, exception, cancellationToken);
             throw;
         }
     }
@@ -757,6 +759,115 @@ Reason: {decision.Reason}
 """;
     }
 
+    /// <summary>
+    ///     Attempts to generate a failure delivery report using a two-layer fallback strategy.
+    ///     Layer 1: Try the configured <see cref="WorkflowDefinition.OnErrorNodeId"/> agent node (best-effort, rich narrative).
+    ///     Layer 2: Generate a mechanical report from <see cref="WorkflowRunState"/> (guaranteed, no SDK dependency).
+    ///     The report is written to the final markdown path so it appears alongside the run artifacts.
+    ///     This method never throws — all secondary failures are logged and swallowed.
+    /// </summary>
+    private async Task TryGenerateFailureDeliveryReportAsync(
+        WorkflowRunContext runContext,
+        Exception originalException,
+        CancellationToken cancellationToken)
+    {
+        // Layer 1: Attempt the configured onError agent node for a rich narrative report.
+        if (!string.IsNullOrWhiteSpace(runContext.Definition.OnErrorNodeId))
+        {
+            try
+            {
+                WorkflowNodeDefinition onErrorNode = GetNode(runContext.Definition, runContext.Definition.OnErrorNodeId);
+                int stepNumber = runContext.State.NextStepNumber++;
+                string outputPath = runContext.Artifacts.GetStepMarkdownPath(stepNumber, onErrorNode.Id);
+                string agentName = ResolveAgentName(onErrorNode);
+                List<string> attachmentFilePaths = ResolveAttachmentFilePaths(runContext, onErrorNode);
+
+                string errorContext = $"""
+                    ## Workflow Failure Context
+
+                    The workflow failed with an unhandled exception. This is the on-error delivery report stage.
+
+                    **Exception Type:** {originalException.GetType().FullName ?? originalException.GetType().Name}
+                    **Message:** {originalException.Message}
+                    **Failed Status:** {runContext.State.Status}
+                    **Steps Completed:** {runContext.State.Steps.Count(s => s.Status == WorkflowStepStatus.Completed)}
+                    **Steps Failed:** {runContext.State.Steps.Count(s => s.Status == WorkflowStepStatus.Failed)}
+                    """;
+
+                string prompt = await WorkflowPromptComposer.ComposeAsync(
+                    runContext.Definition, onErrorNode, attachmentFilePaths, cancellationToken);
+                prompt = errorContext + Environment.NewLine + Environment.NewLine + prompt;
+
+                this.LogAgentInvoking(
+                    agentName,
+                    onErrorNode.Id,
+                    stepNumber,
+                    attachmentFilePaths.Count,
+                    FormatAttachmentNames(attachmentFilePaths),
+                    onErrorNode.ResponseTimeout ?? "(runner default)");
+
+                string markdown = await this.workflowAgentRunner.RunAsync(
+                    agentName,
+                    prompt,
+                    attachmentFilePaths,
+                    onErrorNode.Models,
+                    WorkflowReasoningEffort.Normalize(onErrorNode.ReasoningEffort),
+                    WorkflowResponseTimeout.TryParse(onErrorNode.ResponseTimeout, out TimeSpan timeout) ? timeout : null,
+                    cancellationToken);
+
+                this.workflowArtifactService.WriteMarkdown(outputPath, markdown);
+                this.workflowArtifactService.WriteMarkdown(runContext.Artifacts.FinalMarkdownPath, markdown);
+                Log(
+                    runContext.Artifacts,
+                    LogLevel.Information,
+                    1010,
+                    "workflow.onerror.agent.completed",
+                    onErrorNode.Id,
+                    $"On-error agent '{agentName}' produced a delivery report ({markdown.Length} chars).");
+                return;
+            }
+            catch (Exception onErrorException) when (onErrorException is not OperationCanceledException)
+            {
+                Log(
+                    runContext.Artifacts,
+                    LogLevel.Warning,
+                    1011,
+                    "workflow.onerror.agent.failed",
+                    runContext.Definition.OnErrorNodeId,
+                    $"On-error agent failed, falling back to mechanical report: {onErrorException.Message}",
+                    onErrorException);
+            }
+        }
+
+        // Layer 2: Mechanical fallback — pure C# report from WorkflowRunState data.
+        // This is the absolute last-resort fallback and must never propagate exceptions.
+#pragma warning disable CA1031 // Intentional catch-all: last-resort fallback must not throw
+        try
+        {
+            string mechanicalReport = BuildFailureDeliveryReport(runContext, originalException);
+            this.workflowArtifactService.WriteMarkdown(runContext.Artifacts.FinalMarkdownPath, mechanicalReport);
+            Log(
+                runContext.Artifacts,
+                LogLevel.Information,
+                1012,
+                "workflow.onerror.mechanical.completed",
+                null,
+                $"Mechanical failure delivery report written ({mechanicalReport.Length} chars).");
+        }
+        catch (Exception fallbackException)
+        {
+            Log(
+                runContext.Artifacts,
+                LogLevel.Error,
+                1013,
+                "workflow.onerror.mechanical.failed",
+                null,
+                $"Mechanical failure delivery report could not be written: {fallbackException.Message}",
+                fallbackException);
+        }
+#pragma warning restore CA1031
+    }
+
     private static string BuildFinalMarkdown(WorkflowDefinition definition, WorkflowArtifacts artifacts, WorkflowRunState state)
     {
         WorkflowStepState? lastCompletedOutput = state.Steps
@@ -798,6 +909,99 @@ RunId: {artifacts.RunId}
 
 ## Final Artifact Content
 {finalContent.Trim()}
+""";
+    }
+
+    /// <summary>
+    ///     Generates a structured delivery report from the workflow run state when the normal
+    ///     agent-driven delivery report cannot be produced. This is the guaranteed fallback
+    ///     that works even when the Copilot SDK is unavailable.
+    /// </summary>
+    private static string BuildFailureDeliveryReport(WorkflowRunContext runContext, Exception exception)
+    {
+        WorkflowRunState state = runContext.State;
+
+        int completedSteps = state.Steps.Count(step => step.Status == WorkflowStepStatus.Completed);
+        int failedSteps = state.Steps.Count(step => step.Status == WorkflowStepStatus.Failed);
+        int totalDecisions = state.Decisions.Count;
+        int rebuildCount = CountCompletedSteps(state, "Rebuilder", "rebuilder");
+        int reviewCount = CountCompletedSteps(state, "Reviewer", "reviewer");
+
+        WorkflowStepState? failedStep = state.Steps
+            .Where(step => step.Status == WorkflowStepStatus.Failed)
+            .OrderByDescending(step => step.StepNumber)
+            .FirstOrDefault();
+
+        string failurePhase = failedStep is not null
+            ? $"{failedStep.NodeId} ({failedStep.RoleName})"
+            : "unknown";
+
+        string completedStepList = state.Steps.Count == 0
+            ? "- No steps were executed."
+            : string.Join(Environment.NewLine, state.Steps.OrderBy(step => step.StepNumber).Select(step =>
+                $"- {step.StepNumber:0000}: {step.NodeId} [{step.Status}] ({step.RoleName}/{step.AgentName})"));
+
+        string decisionList = state.Decisions.Count == 0
+            ? "- No decisions were recorded."
+            : string.Join(Environment.NewLine, state.Decisions.Select((decision, index) =>
+                $"- {index + 1:00}: {decision.ChoiceId ?? decision.Action.ToString()} → {decision.NextNodeId ?? "(none)"} ({decision.Source})"));
+
+        string failedStepsList = failedSteps == 0
+            ? "- None."
+            : string.Join(Environment.NewLine, state.Steps
+                .Where(step => step.Status == WorkflowStepStatus.Failed)
+                .OrderBy(step => step.StepNumber)
+                .Select(step => $"- Step {step.StepNumber:0000} ({step.NodeId}): {step.Message ?? "No message"}"));
+
+        return $"""
+# Delivery Report (Mechanical Fallback)
+
+## Outcome
+
+**Status: Failed** — The workflow encountered an unhandled error and could not complete normally. This report was generated mechanically from the persisted run state because the agent-driven delivery report could not be produced.
+
+## Delivery Summary
+
+| Metric | Value |
+|--------|-------|
+| Workflow | {runContext.Definition.Name} |
+| Run ID | {runContext.Artifacts.RunId} |
+| Status | {state.Status} |
+| Entry Node | {state.EntryNodeId} |
+| Steps Completed | {completedSteps} |
+| Steps Failed | {failedSteps} |
+| Decisions Made | {totalDecisions} |
+| Review Cycles | {reviewCount} |
+| Rework / Rebuild Passes | {rebuildCount} |
+| Failure Phase | {failurePhase} |
+
+## What Was Attempted
+
+The workflow started at node '{state.EntryNodeId}' and executed {completedSteps + failedSteps} step(s) before failing.
+
+## Failure Details
+
+**Exception Type:** {exception.GetType().FullName ?? exception.GetType().Name}
+**Message:** {exception.Message}
+{(exception.InnerException is not null ? $"**Inner Exception:** {exception.InnerException.GetType().Name}: {exception.InnerException.Message}" : string.Empty)}
+
+## Execution Timeline
+
+{completedStepList}
+
+## Failed Steps
+
+{failedStepsList}
+
+## Routing Decisions
+
+{decisionList}
+
+## Residual Risks
+
+- The workflow did not reach a terminal state. Any code changes made during partial execution may need manual review.
+- The delivery report agent could not be invoked, which means this report lacks narrative synthesis. Review the step artifacts in the run directory for detailed context.
+- If the failure was caused by a Copilot SDK issue, the workflow can be resumed once the issue is resolved using `clean-squad workflow resume`.
 """;
     }
 

@@ -2,6 +2,7 @@
   "version": "2.3",
   "name": "Clean Agile Default Workflow",
   "defaultEntryPoint": "default",
+  "onErrorNodeId": "delivery-report-stopped",
   "entryPoints": [
     { "id": "default", "nodeId": "work-item-triage" },
     { "id": "planning", "nodeId": "work-item-triage" },
@@ -138,8 +139,8 @@
       ],
       "choices": [
         { "id": "start-story", "displayName": "Start Story", "nextNodeId": "increment-framing" },
-        { "id": "epic-complete", "displayName": "Epic Complete", "nextNodeId": "approved" },
-        { "id": "stop", "displayName": "Stop", "nextNodeId": "stopped" }
+        { "id": "epic-complete", "displayName": "Epic Complete", "nextNodeId": "delivery-report" },
+        { "id": "stop", "displayName": "Stop", "nextNodeId": "delivery-report-stopped" }
       ]
     },
     {
@@ -422,7 +423,7 @@
       "choices": [
         { "id": "approve", "displayName": "Approve", "nextNodeId": "three-amigos-fork" },
         { "id": "rework", "displayName": "Rework", "nextNodeId": "enterprise-architecture" },
-        { "id": "stop", "displayName": "Stop", "nextNodeId": "stopped" }
+        { "id": "stop", "displayName": "Stop", "nextNodeId": "delivery-report-stopped" }
       ]
     },
     {
@@ -631,7 +632,7 @@
       "choices": [
         { "id": "approve", "displayName": "Approve", "nextNodeId": "builder" },
         { "id": "rework", "displayName": "Rework", "nextNodeId": "three-amigos-fork" },
-        { "id": "stop", "displayName": "Stop", "nextNodeId": "stopped" }
+        { "id": "stop", "displayName": "Stop", "nextNodeId": "delivery-report-stopped" }
       ]
     },
     {
@@ -810,7 +811,7 @@
       "choices": [
         { "id": "approve", "displayName": "Approve", "nextNodeId": "github-sync" },
         { "id": "rebuild", "displayName": "Rebuild", "nextNodeId": "rebuilder" },
-        { "id": "stop", "displayName": "Stop", "nextNodeId": "stopped" }
+        { "id": "stop", "displayName": "Stop", "nextNodeId": "delivery-report-stopped" }
       ]
     },
     {
@@ -864,7 +865,7 @@
         { "id": "rework", "displayName": "Needs Rework", "nextNodeId": "rebuilder" },
         { "id": "wait-for-comments", "displayName": "Wait For Comments", "nextNodeId": "wait-for-cloud-review-lag" },
         { "id": "wait-for-ci", "displayName": "Wait For CI", "nextNodeId": "wait-for-ci-checks" },
-        { "id": "stop", "displayName": "Stop", "nextNodeId": "stopped" }
+        { "id": "stop", "displayName": "Stop", "nextNodeId": "delivery-report-stopped" }
       ]
     },
     {
@@ -911,7 +912,7 @@
         { "id": "rework", "displayName": "Needs Rework", "nextNodeId": "rebuilder" },
         { "id": "wait-for-comments", "displayName": "Wait For Comments", "nextNodeId": "wait-for-cloud-review-lag" },
         { "id": "wait-for-ci", "displayName": "Wait For CI", "nextNodeId": "wait-for-ci-checks" },
-        { "id": "stop", "displayName": "Stop", "nextNodeId": "stopped" }
+        { "id": "stop", "displayName": "Stop", "nextNodeId": "delivery-report-stopped" }
       ]
     },
     {
@@ -922,7 +923,39 @@
       "waitReason": "Pause before polling GitHub again because required status checks are still pending.",
       "next": "github-poll"
     },
+    {
+      "id": "delivery-report",
+      "kind": "Stage",
+      "displayName": "Delivery Report",
+      "role": "Reporting",
+      "agent": "delivery-reporter",
+      "responseTimeout": "00:10:00",
+      "inputs": ["request", "node:work-item-triage", "node:epic-planning", "node:story-stack-planning", "node:story-selection", "node:increment-framing", "node:enterprise-architecture", "node:solution-design", "node:business-amigo", "node:development-amigo", "node:testing-amigo", "node:builder", "node:rebuilder", "node:code-master-reviewer", "node:github-sync", "node:github-poll"],
+      "outputs": ["deliveryReport"],
+      "customMessage": "Produce an executive delivery report summarising the full implementation cycle — outcome, journey, what worked, issues encountered, residual risks, and recommendations — using only evidence from the workflow run.",
+      "assets": [
+        { "kind": "agent-persona", "path": "agents/delivery-reporter.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/delivery-reporter.rules.md" }
+      ],
+      "next": "approved"
+    },
     { "id": "approved", "kind": "Exit", "displayName": "Approved Exit", "exitStatus": "Approved" },
+    {
+      "id": "delivery-report-stopped",
+      "kind": "Stage",
+      "displayName": "Delivery Report (Stopped)",
+      "role": "Reporting",
+      "agent": "delivery-reporter",
+      "responseTimeout": "00:10:00",
+      "inputs": ["request", "node:work-item-triage", "node:epic-planning", "node:story-stack-planning", "node:story-selection", "node:increment-framing", "node:enterprise-architecture", "node:solution-design", "node:business-amigo", "node:development-amigo", "node:testing-amigo", "node:builder", "node:rebuilder", "node:architecture-master-reviewer", "node:three-amigos-master-reviewer", "node:code-master-reviewer", "node:github-sync", "node:github-poll"],
+      "outputs": ["deliveryReport"],
+      "customMessage": "The workflow was stopped before successful completion. Produce an executive delivery report summarising what was attempted, how far the delivery progressed, what caused the stop, what evidence exists from the stages that did run, and any residual risks or recommendations. Be honest about the incomplete state.",
+      "assets": [
+        { "kind": "agent-persona", "path": "agents/delivery-reporter.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/delivery-reporter.rules.md" }
+      ],
+      "next": "stopped"
+    },
     { "id": "stopped", "kind": "Exit", "displayName": "Stopped Exit", "exitStatus": "Stopped" }
   ],
   "policy": {

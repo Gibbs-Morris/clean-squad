@@ -68,6 +68,15 @@ public sealed class WorkflowDefinition
     public WorkflowStageDefinition? Rebuilder { get; set; }
 
     /// <summary>
+    ///     Gets or sets the optional node identifier to execute when the workflow fails with
+    ///     an unhandled exception. When set, the orchestrator makes a best-effort attempt to
+    ///     execute this node before propagating the original failure. If the on-error node
+    ///     also fails, the orchestrator falls back to a mechanical delivery report generated
+    ///     from the persisted run state.
+    /// </summary>
+    public string? OnErrorNodeId { get; set; }
+
+    /// <summary>
     ///     Gets or sets the execution policy.
     /// </summary>
     public WorkflowPolicyDefinition Policy { get; set; } = new();
