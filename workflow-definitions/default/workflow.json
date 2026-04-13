@@ -1,98 +1,429 @@
 {
-  "version": "2.1",
+  "version": "2.3",
   "name": "Clean Agile Default Workflow",
   "defaultEntryPoint": "default",
   "entryPoints": [
-    {
-      "id": "default",
-      "nodeId": "increment-framing"
-    },
-    {
-      "id": "planning",
-      "nodeId": "increment-framing"
-    },
-    {
-      "id": "three-amigos",
-      "nodeId": "three-amigos-fork"
-    },
-    {
-      "id": "research",
-      "nodeId": "three-amigos-fork"
-    },
-    {
-      "id": "build",
-      "nodeId": "builder"
-    },
-    {
-      "id": "review",
-      "nodeId": "review-fork"
-    }
+    { "id": "default", "nodeId": "work-item-triage" },
+    { "id": "planning", "nodeId": "work-item-triage" },
+    { "id": "epic", "nodeId": "epic-planning" },
+    { "id": "story-planning", "nodeId": "story-selection" },
+    { "id": "architecture", "nodeId": "enterprise-architecture" },
+    { "id": "three-amigos", "nodeId": "three-amigos-fork" },
+    { "id": "architecture-review", "nodeId": "architecture-review-fork" },
+    { "id": "three-amigos-review", "nodeId": "three-amigos-review-fork" },
+    { "id": "build", "nodeId": "builder" },
+    { "id": "review", "nodeId": "code-review-fork" },
+    { "id": "code-review", "nodeId": "code-review-fork" }
   ],
   "sharedAssets": [
-    {
-      "kind": "theory",
-      "path": "instructions/general/clean-agile.instructions.md"
-    },
-    {
-      "kind": "theory",
-      "path": "instructions/general/first-principles-thinking.instructions.md"
-    },
-    {
-      "kind": "theory",
-      "path": "instructions/general/chain-of-verification.instructions.md"
-    },
-    {
-      "kind": "repository-instruction",
-      "path": "instructions/repository/build-and-test.instructions.md"
-    },
-    {
-      "kind": "repository-instruction",
-      "path": "instructions/repository/repository-structure.instructions.md"
-    },
-    {
-      "kind": "workflow-rule",
-      "path": "rules/workflow/clean-agile.rules.md"
-    },
-    {
-      "kind": "workflow-rule",
-      "path": "rules/workflow/shared.rules.md"
-    },
-    {
-      "kind": "workflow-rule",
-      "path": "rules/workflow/repository-quality.rules.md"
-    }
+    { "kind": "theory", "path": "instructions/general/clean-agile.instructions.md" },
+    { "kind": "theory", "path": "instructions/general/first-principles-thinking.instructions.md" },
+    { "kind": "theory", "path": "instructions/general/chain-of-verification.instructions.md" },
+    { "kind": "repository-instruction", "path": "instructions/repository/build-and-test.instructions.md" },
+    { "kind": "repository-instruction", "path": "instructions/repository/repository-structure.instructions.md" },
+    { "kind": "workflow-rule", "path": "rules/workflow/clean-agile.rules.md" },
+    { "kind": "workflow-rule", "path": "rules/workflow/shared.rules.md" },
+    { "kind": "workflow-rule", "path": "rules/workflow/repository-quality.rules.md" }
   ],
   "nodes": [
+    {
+      "id": "work-item-triage",
+      "kind": "Stage",
+      "displayName": "Work Item Triage",
+      "role": "Planning",
+      "agent": "epic-planner",
+      "inputs": ["request"],
+      "outputs": ["workItemStrategy", "epicSignal", "storySizingGuidance"],
+      "customMessage": "Classify the request as a single story or an epic. Call out whether story slicing and stacked pull requests are required before implementation starts.",
+      "assets": [
+        { "kind": "agent-persona", "path": "agents/epic-planner.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/epic-planner.rules.md" }
+      ],
+      "next": "work-item-shape-decision"
+    },
+    {
+      "id": "work-item-shape-decision",
+      "kind": "Decision",
+      "displayName": "Work Item Shape Decision",
+      "role": "Decision",
+      "agent": "decision",
+      "decisionMode": "Agent",
+      "inputs": ["request", "node:work-item-triage"],
+      "outputs": ["workItemRoutingChoice"],
+      "customMessage": "Choose epic when the request must be decomposed into ordered stories before delivery; choose single-story when one reviewable story is enough.",
+      "assets": [
+        { "kind": "agent-persona", "path": "agents/decision.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/decision.rules.md" }
+      ],
+      "choices": [
+        { "id": "single-story", "displayName": "Single Story", "nextNodeId": "single-story-envelope" },
+        { "id": "epic", "displayName": "Epic", "nextNodeId": "epic-planning" }
+      ]
+    },
+    {
+      "id": "single-story-envelope",
+      "kind": "Stage",
+      "displayName": "Single Story Envelope",
+      "role": "Planning",
+      "agent": "story-planner",
+      "inputs": ["request", "node:work-item-triage"],
+      "outputs": ["storyBacklog", "stackPlan"],
+      "customMessage": "Create a one-story backlog and a stacked pull request plan for a request that fits a single small pull request.",
+      "assets": [
+        { "kind": "agent-persona", "path": "agents/story-planner.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/story-planner.rules.md" }
+      ],
+      "next": "story-selection"
+    },
+    {
+      "id": "epic-planning",
+      "kind": "Stage",
+      "displayName": "Epic Planning",
+      "role": "Planning",
+      "agent": "epic-planner",
+      "responseTimeout": "00:10:00",
+      "inputs": ["request", "node:work-item-triage"],
+      "outputs": ["epicDefinition", "epicOutcomes", "epicGuardrails"],
+      "customMessage": "Define the epic outcome, boundaries, and delivery guardrails before detailed story planning begins.",
+      "assets": [
+        { "kind": "agent-persona", "path": "agents/epic-planner.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/epic-planner.rules.md" }
+      ],
+      "next": "story-stack-planning"
+    },
+    {
+      "id": "story-stack-planning",
+      "kind": "Stage",
+      "displayName": "Story Stack Planning",
+      "role": "Planning",
+      "agent": "story-planner",
+      "responseTimeout": "00:10:00",
+      "inputs": ["request", "node:work-item-triage", "node:epic-planning"],
+      "outputs": ["storyBacklog", "storyDependencies", "stackPlan"],
+      "customMessage": "Decompose the epic into ordered stories sized for reviewable pull requests, normally around 600 changed lines total diff, with explicit stacked pull request guidance.",
+      "assets": [
+        { "kind": "agent-persona", "path": "agents/story-planner.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/story-planner.rules.md" }
+      ],
+      "next": "story-selection"
+    },
+    {
+      "id": "story-selection",
+      "kind": "Stage",
+      "displayName": "Story Selection",
+      "role": "Planning",
+      "agent": "story-planner",
+      "inputs": ["request", "node:single-story-envelope", "node:epic-planning", "node:story-stack-planning", "node:github-sync", "node:github-poll"],
+      "outputs": ["currentStory", "storyStackPosition", "storyBranchPlan"],
+      "customMessage": "Select the next executable story. Start story 1 immediately for new epics, preserve dependency order, and emit the current story plus the suggested head/base branch plan for its stacked pull request.",
+      "assets": [
+        { "kind": "agent-persona", "path": "agents/story-planner.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/story-planner.rules.md" }
+      ],
+      "next": "story-selection-decision"
+    },
+    {
+      "id": "story-selection-decision",
+      "kind": "Decision",
+      "displayName": "Story Selection Decision",
+      "role": "Decision",
+      "agent": "decision",
+      "decisionMode": "Agent",
+      "inputs": ["request", "node:story-selection"],
+      "outputs": ["storyRoutingChoice"],
+      "customMessage": "Choose start-story when there is a current story ready for execution, epic-complete when all stories are complete, or stop when human intervention is required.",
+      "assets": [
+        { "kind": "agent-persona", "path": "agents/decision.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/decision.rules.md" }
+      ],
+      "choices": [
+        { "id": "start-story", "displayName": "Start Story", "nextNodeId": "increment-framing" },
+        { "id": "epic-complete", "displayName": "Epic Complete", "nextNodeId": "approved" },
+        { "id": "stop", "displayName": "Stop", "nextNodeId": "stopped" }
+      ]
+    },
     {
       "id": "increment-framing",
       "kind": "Stage",
       "displayName": "Increment Framing",
       "role": "Planning",
       "agent": "planner",
-      "models": [
-        "gpt-5.4"
-      ],
-      "reasoningEffort": "highest-supported",
-      "inputs": [
-        "request"
-      ],
-      "outputs": [
-        "incrementFrame",
-        "acceptanceSignals",
-        "scopeGuardrails"
-      ],
-      "customMessage": "Frame the request as the smallest valuable increment that can be built and verified safely before implementation begins.",
+      "inputs": ["request", "node:story-selection"],
+      "outputs": ["incrementFrame", "acceptanceSignals", "scopeGuardrails", "storyExecutionFrame"],
       "assets": [
-        {
-          "kind": "agent-persona",
-          "path": "agents/planner.agent.md"
-        },
-        {
-          "kind": "agent-rule",
-          "path": "rules/agents/planner.rules.md"
-        }
+        { "kind": "agent-persona", "path": "agents/planner.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/planner.rules.md" }
       ],
-      "next": "three-amigos-fork"
+      "next": "architecture-scope-decision"
+    },
+    {
+      "id": "architecture-scope-decision",
+      "kind": "Decision",
+      "displayName": "Architecture Scope Decision",
+      "role": "Decision",
+      "agent": "decision",
+      "decisionMode": "Agent",
+      "inputs": ["request", "node:story-selection", "node:increment-framing"],
+      "outputs": ["architectureRoutingChoice"],
+      "customMessage": "Choose architecture-needed for material system or code-shape change; choose skip-architecture for narrow docs, markdown, wording, or trivial work.",
+      "assets": [
+        { "kind": "agent-persona", "path": "agents/decision.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/decision.rules.md" }
+      ],
+      "choices": [
+        { "id": "architecture-needed", "displayName": "Architecture Needed", "nextNodeId": "enterprise-architecture" },
+        { "id": "skip-architecture", "displayName": "Skip Architecture", "nextNodeId": "three-amigos-fork" }
+      ]
+    },
+    {
+      "id": "enterprise-architecture",
+      "kind": "Stage",
+      "displayName": "Enterprise Architecture",
+      "role": "Architecture",
+      "agent": "enterprise-architect",
+      "responseTimeout": "00:10:00",
+      "inputs": ["request", "node:story-selection", "node:increment-framing"],
+      "outputs": ["enterpriseArchitectureScope", "enterpriseConstraints", "enterpriseDependencyMap"],
+      "customMessage": "Define enterprise scope, boundaries, dependencies, and guardrails proportionately for the current story and epic context.",
+      "assets": [
+        { "kind": "agent-persona", "path": "agents/enterprise-architect.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/enterprise-architect.rules.md" }
+      ],
+      "next": "solution-design"
+    },
+    {
+      "id": "solution-design",
+      "kind": "Stage",
+      "displayName": "Solution Design",
+      "role": "Architecture",
+      "agent": "solution-architect",
+      "responseTimeout": "00:10:00",
+      "inputs": ["request", "node:story-selection", "node:increment-framing", "node:enterprise-architecture"],
+      "outputs": ["solutionDesign", "architectureDecisionRecord"],
+      "customMessage": "Create the implementable solution design for the selected story.",
+      "assets": [
+        { "kind": "agent-persona", "path": "agents/solution-architect.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/solution-architect.rules.md" }
+      ],
+      "next": "c4-system-context"
+    },
+    {
+      "id": "c4-system-context",
+      "kind": "Stage",
+      "displayName": "C4 System Context",
+      "role": "Architecture",
+      "agent": "solution-architect",
+      "responseTimeout": "00:10:00",
+      "inputs": ["request", "node:story-selection", "node:solution-design"],
+      "outputs": ["c4SystemContext"],
+      "customMessage": "Produce the C4 system context output for the selected story.",
+      "assets": [
+        { "kind": "agent-persona", "path": "agents/solution-architect.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/solution-architect.rules.md" }
+      ],
+      "next": "c4-container"
+    },
+    {
+      "id": "c4-container",
+      "kind": "Stage",
+      "displayName": "C4 Container",
+      "role": "Architecture",
+      "agent": "solution-architect",
+      "responseTimeout": "00:10:00",
+      "inputs": ["request", "node:story-selection", "node:solution-design", "node:c4-system-context"],
+      "outputs": ["c4Container"],
+      "customMessage": "Produce the C4 container output for the selected story.",
+      "assets": [
+        { "kind": "agent-persona", "path": "agents/solution-architect.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/solution-architect.rules.md" }
+      ],
+      "next": "c4-component"
+    },
+    {
+      "id": "c4-component",
+      "kind": "Stage",
+      "displayName": "C4 Component",
+      "role": "Architecture",
+      "agent": "solution-architect",
+      "responseTimeout": "00:10:00",
+      "inputs": ["request", "node:story-selection", "node:solution-design", "node:c4-container"],
+      "outputs": ["c4Component"],
+      "customMessage": "Produce the C4 component output or explain why it adds little value for the selected story.",
+      "assets": [
+        { "kind": "agent-persona", "path": "agents/solution-architect.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/solution-architect.rules.md" }
+      ],
+      "next": "c4-code"
+    },
+    {
+      "id": "c4-code",
+      "kind": "Stage",
+      "displayName": "C4 Code",
+      "role": "Architecture",
+      "agent": "solution-architect",
+      "responseTimeout": "00:10:00",
+      "inputs": ["request", "node:story-selection", "node:solution-design", "node:c4-component"],
+      "outputs": ["c4Code"],
+      "customMessage": "Produce the C4 code output or explain why it is not useful for the selected story.",
+      "assets": [
+        { "kind": "agent-persona", "path": "agents/solution-architect.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/solution-architect.rules.md" }
+      ],
+      "next": "architecture-review-fork"
+    },
+    {
+      "id": "architecture-review-fork",
+      "kind": "Fork",
+      "displayName": "Architecture Review Fork",
+      "joinNodeId": "architecture-review-join",
+      "branches": [
+        { "id": "solution-architecture", "nextNodeId": "architecture-solution-architect-reviewer" },
+        { "id": "principal-engineering", "nextNodeId": "architecture-principal-engineer-reviewer" },
+        { "id": "devops", "nextNodeId": "architecture-devops-engineer-reviewer" },
+        { "id": "platform", "nextNodeId": "architecture-platform-engineer-reviewer" },
+        { "id": "developer-evangelism", "nextNodeId": "architecture-developer-evangelist-reviewer" },
+        { "id": "ux", "nextNodeId": "architecture-ux-designer-reviewer" }
+      ]
+    },
+    {
+      "id": "architecture-solution-architect-reviewer",
+      "kind": "Stage",
+      "displayName": "Architecture Solution Architecture Review",
+      "role": "Review",
+      "agent": "solution-architect-reviewer",
+      "inputs": ["request", "node:story-selection", "node:solution-design", "node:c4-system-context", "node:c4-container", "node:c4-component", "node:c4-code"],
+      "outputs": ["architectureSolutionArchitectureReview"],
+      "customMessage": "Review architecture artifacts only for the selected story.",
+      "assets": [
+        { "kind": "agent-persona", "path": "agents/solution-architect-reviewer.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/specialist-reviewer.rules.md" }
+      ],
+      "next": "architecture-review-join"
+    },
+    {
+      "id": "architecture-principal-engineer-reviewer",
+      "kind": "Stage",
+      "displayName": "Architecture Principal Engineer Review",
+      "role": "Review",
+      "agent": "principal-engineer-reviewer",
+      "inputs": ["request", "node:story-selection", "node:solution-design", "node:c4-system-context", "node:c4-container", "node:c4-component", "node:c4-code"],
+      "outputs": ["architecturePrincipalEngineerReview"],
+      "customMessage": "Review architecture artifacts only for the selected story.",
+      "assets": [
+        { "kind": "agent-persona", "path": "agents/principal-engineer-reviewer.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/specialist-reviewer.rules.md" }
+      ],
+      "next": "architecture-review-join"
+    },
+    {
+      "id": "architecture-devops-engineer-reviewer",
+      "kind": "Stage",
+      "displayName": "Architecture DevOps Review",
+      "role": "Review",
+      "agent": "devops-engineer-reviewer",
+      "inputs": ["request", "node:story-selection", "node:solution-design", "node:c4-system-context", "node:c4-container", "node:c4-component", "node:c4-code"],
+      "outputs": ["architectureDevOpsReview"],
+      "customMessage": "Review architecture artifacts only for the selected story.",
+      "assets": [
+        { "kind": "agent-persona", "path": "agents/devops-engineer-reviewer.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/specialist-reviewer.rules.md" }
+      ],
+      "next": "architecture-review-join"
+    },
+    {
+      "id": "architecture-platform-engineer-reviewer",
+      "kind": "Stage",
+      "displayName": "Architecture Platform Review",
+      "role": "Review",
+      "agent": "platform-engineer-reviewer",
+      "inputs": ["request", "node:story-selection", "node:solution-design", "node:c4-system-context", "node:c4-container", "node:c4-component", "node:c4-code"],
+      "outputs": ["architecturePlatformReview"],
+      "customMessage": "Review architecture artifacts only for the selected story.",
+      "assets": [
+        { "kind": "agent-persona", "path": "agents/platform-engineer-reviewer.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/specialist-reviewer.rules.md" }
+      ],
+      "next": "architecture-review-join"
+    },
+    {
+      "id": "architecture-developer-evangelist-reviewer",
+      "kind": "Stage",
+      "displayName": "Architecture Developer Evangelist Review",
+      "role": "Review",
+      "agent": "developer-evangelist-reviewer",
+      "inputs": ["request", "node:story-selection", "node:solution-design", "node:c4-system-context", "node:c4-container", "node:c4-component", "node:c4-code"],
+      "outputs": ["architectureDeveloperEvangelistReview"],
+      "customMessage": "Review architecture artifacts only for the selected story.",
+      "assets": [
+        { "kind": "agent-persona", "path": "agents/developer-evangelist-reviewer.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/specialist-reviewer.rules.md" }
+      ],
+      "next": "architecture-review-join"
+    },
+    {
+      "id": "architecture-ux-designer-reviewer",
+      "kind": "Stage",
+      "displayName": "Architecture UX Review",
+      "role": "Review",
+      "agent": "ux-designer-reviewer",
+      "inputs": ["request", "node:story-selection", "node:solution-design", "node:c4-system-context", "node:c4-container", "node:c4-component", "node:c4-code"],
+      "outputs": ["architectureUxReview"],
+      "customMessage": "Review architecture artifacts only for the selected story.",
+      "assets": [
+        { "kind": "agent-persona", "path": "agents/ux-designer-reviewer.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/specialist-reviewer.rules.md" }
+      ],
+      "next": "architecture-review-join"
+    },
+    { "id": "architecture-review-join", "kind": "Join", "displayName": "Architecture Review Join", "forkId": "architecture-review-fork", "next": "architecture-master-reviewer" },
+    {
+      "id": "architecture-master-reviewer",
+      "kind": "Stage",
+      "displayName": "Architecture Master Review",
+      "role": "Review",
+      "agent": "master-reviewer",
+      "inputs": [
+        "request",
+        "node:story-selection",
+        "node:solution-design",
+        "node:c4-system-context",
+        "node:c4-container",
+        "node:c4-component",
+        "node:c4-code",
+        "node:architecture-solution-architect-reviewer",
+        "node:architecture-principal-engineer-reviewer",
+        "node:architecture-devops-engineer-reviewer",
+        "node:architecture-platform-engineer-reviewer",
+        "node:architecture-developer-evangelist-reviewer",
+        "node:architecture-ux-designer-reviewer"
+      ],
+      "outputs": ["architectureReviewVerdict", "architectureReviewFindings"],
+      "customMessage": "Synthesize architecture review feedback for the selected story.",
+      "assets": [
+        { "kind": "agent-persona", "path": "agents/master-reviewer.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/master-reviewer.rules.md" }
+      ],
+      "next": "architecture-review-decision"
+    },
+    {
+      "id": "architecture-review-decision",
+      "kind": "Decision",
+      "displayName": "Architecture Review Decision",
+      "role": "Decision",
+      "agent": "decision",
+      "decisionMode": "Rules",
+      "ruleSet": "clean-agile-review",
+      "decisionSourceNodeId": "architecture-master-reviewer",
+      "inputs": ["request", "node:architecture-master-reviewer"],
+      "assets": [
+        { "kind": "agent-persona", "path": "agents/decision.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/decision.rules.md" }
+      ],
+      "choices": [
+        { "id": "approve", "displayName": "Approve", "nextNodeId": "three-amigos-fork" },
+        { "id": "rework", "displayName": "Rework", "nextNodeId": "enterprise-architecture" },
+        { "id": "stop", "displayName": "Stop", "nextNodeId": "stopped" }
+      ]
     },
     {
       "id": "three-amigos-fork",
@@ -100,18 +431,9 @@
       "displayName": "Three Amigos Fork",
       "joinNodeId": "three-amigos-join",
       "branches": [
-        {
-          "id": "business",
-          "nextNodeId": "business-amigo"
-        },
-        {
-          "id": "development",
-          "nextNodeId": "development-amigo"
-        },
-        {
-          "id": "testing",
-          "nextNodeId": "testing-amigo"
-        }
+        { "id": "business", "nextNodeId": "business-amigo" },
+        { "id": "development", "nextNodeId": "development-amigo" },
+        { "id": "testing", "nextNodeId": "testing-amigo" }
       ]
     },
     {
@@ -120,28 +442,12 @@
       "displayName": "Business Amigo",
       "role": "Business",
       "agent": "business-amigo",
-      "models": [
-        "gpt-5.4"
-      ],
-      "reasoningEffort": "highest-supported",
-      "inputs": [
-        "request",
-        "node:increment-framing"
-      ],
-      "outputs": [
-        "businessOutcome",
-        "acceptanceExamples"
-      ],
-      "customMessage": "Represent the business perspective by clarifying value, user outcomes, examples, and what done should mean for this increment.",
+      "inputs": ["request", "node:story-selection", "node:increment-framing", "node:solution-design"],
+      "outputs": ["businessOutcome", "acceptanceExamples"],
+      "customMessage": "Clarify business outcomes and done-meaning for the selected story.",
       "assets": [
-        {
-          "kind": "agent-persona",
-          "path": "agents/business-amigo.agent.md"
-        },
-        {
-          "kind": "agent-rule",
-          "path": "rules/agents/business-amigo.rules.md"
-        }
+        { "kind": "agent-persona", "path": "agents/business-amigo.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/business-amigo.rules.md" }
       ],
       "next": "three-amigos-join"
     },
@@ -151,29 +457,12 @@
       "displayName": "Development Amigo",
       "role": "Development",
       "agent": "development-amigo",
-      "models": [
-        "gpt-5.4"
-      ],
-      "reasoningEffort": "highest-supported",
-      "inputs": [
-        "request",
-        "node:increment-framing",
-        "node:business-amigo"
-      ],
-      "outputs": [
-        "technicalApproach",
-        "technicalRisks"
-      ],
-      "customMessage": "Represent the development perspective by finding the simplest safe implementation approach that preserves changeability and technical quality.",
+      "inputs": ["request", "node:story-selection", "node:increment-framing", "node:solution-design", "node:c4-container", "node:c4-component", "node:c4-code"],
+      "outputs": ["technicalApproach", "technicalRisks"],
+      "customMessage": "Clarify the simplest safe implementation path for the selected story.",
       "assets": [
-        {
-          "kind": "agent-persona",
-          "path": "agents/development-amigo.agent.md"
-        },
-        {
-          "kind": "agent-rule",
-          "path": "rules/agents/development-amigo.rules.md"
-        }
+        { "kind": "agent-persona", "path": "agents/development-amigo.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/development-amigo.rules.md" }
       ],
       "next": "three-amigos-join"
     },
@@ -183,38 +472,167 @@
       "displayName": "Testing Amigo",
       "role": "Testing",
       "agent": "testing-amigo",
-      "models": [
-        "gpt-5.4"
-      ],
-      "reasoningEffort": "highest-supported",
-      "inputs": [
-        "request",
-        "node:increment-framing",
-        "node:business-amigo"
-      ],
-      "outputs": [
-        "testScenarios",
-        "validationPlan"
-      ],
-      "customMessage": "Represent the testing perspective by clarifying scenarios, edge cases, regression risks, and the fastest credible validation plan.",
+      "inputs": ["request", "node:story-selection", "node:increment-framing", "node:solution-design", "node:c4-system-context", "node:c4-container"],
+      "outputs": ["testScenarios", "validationPlan"],
+      "customMessage": "Clarify scenarios, risks, and validation for the selected story.",
       "assets": [
-        {
-          "kind": "agent-persona",
-          "path": "agents/testing-amigo.agent.md"
-        },
-        {
-          "kind": "agent-rule",
-          "path": "rules/agents/testing-amigo.rules.md"
-        }
+        { "kind": "agent-persona", "path": "agents/testing-amigo.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/testing-amigo.rules.md" }
       ],
       "next": "three-amigos-join"
     },
+    { "id": "three-amigos-join", "kind": "Join", "displayName": "Three Amigos Join", "forkId": "three-amigos-fork", "next": "three-amigos-review-fork" },
     {
-      "id": "three-amigos-join",
-      "kind": "Join",
-      "displayName": "Three Amigos Join",
-      "forkId": "three-amigos-fork",
-      "next": "builder"
+      "id": "three-amigos-review-fork",
+      "kind": "Fork",
+      "displayName": "Three Amigos Review Fork",
+      "joinNodeId": "three-amigos-review-join",
+      "branches": [
+        { "id": "solution-architecture", "nextNodeId": "three-amigos-solution-architect-reviewer" },
+        { "id": "principal-engineering", "nextNodeId": "three-amigos-principal-engineer-reviewer" },
+        { "id": "devops", "nextNodeId": "three-amigos-devops-engineer-reviewer" },
+        { "id": "platform", "nextNodeId": "three-amigos-platform-engineer-reviewer" },
+        { "id": "developer-evangelism", "nextNodeId": "three-amigos-developer-evangelist-reviewer" },
+        { "id": "ux", "nextNodeId": "three-amigos-ux-designer-reviewer" }
+      ]
+    },
+    {
+      "id": "three-amigos-solution-architect-reviewer",
+      "kind": "Stage",
+      "displayName": "Three Amigos Solution Architecture Review",
+      "role": "Review",
+      "agent": "solution-architect-reviewer",
+      "inputs": ["request", "node:story-selection", "node:solution-design", "node:business-amigo", "node:development-amigo", "node:testing-amigo"],
+      "outputs": ["threeAmigosSolutionArchitectureReview"],
+      "customMessage": "Review Three Amigos artifacts only for the selected story.",
+      "assets": [
+        { "kind": "agent-persona", "path": "agents/solution-architect-reviewer.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/specialist-reviewer.rules.md" }
+      ],
+      "next": "three-amigos-review-join"
+    },
+    {
+      "id": "three-amigos-principal-engineer-reviewer",
+      "kind": "Stage",
+      "displayName": "Three Amigos Principal Engineer Review",
+      "role": "Review",
+      "agent": "principal-engineer-reviewer",
+      "inputs": ["request", "node:story-selection", "node:solution-design", "node:business-amigo", "node:development-amigo", "node:testing-amigo"],
+      "outputs": ["threeAmigosPrincipalEngineerReview"],
+      "customMessage": "Review Three Amigos artifacts only for the selected story.",
+      "assets": [
+        { "kind": "agent-persona", "path": "agents/principal-engineer-reviewer.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/specialist-reviewer.rules.md" }
+      ],
+      "next": "three-amigos-review-join"
+    },
+    {
+      "id": "three-amigos-devops-engineer-reviewer",
+      "kind": "Stage",
+      "displayName": "Three Amigos DevOps Review",
+      "role": "Review",
+      "agent": "devops-engineer-reviewer",
+      "inputs": ["request", "node:story-selection", "node:solution-design", "node:business-amigo", "node:development-amigo", "node:testing-amigo"],
+      "outputs": ["threeAmigosDevOpsReview"],
+      "customMessage": "Review Three Amigos artifacts only for the selected story.",
+      "assets": [
+        { "kind": "agent-persona", "path": "agents/devops-engineer-reviewer.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/specialist-reviewer.rules.md" }
+      ],
+      "next": "three-amigos-review-join"
+    },
+    {
+      "id": "three-amigos-platform-engineer-reviewer",
+      "kind": "Stage",
+      "displayName": "Three Amigos Platform Review",
+      "role": "Review",
+      "agent": "platform-engineer-reviewer",
+      "inputs": ["request", "node:story-selection", "node:solution-design", "node:business-amigo", "node:development-amigo", "node:testing-amigo"],
+      "outputs": ["threeAmigosPlatformReview"],
+      "customMessage": "Review Three Amigos artifacts only for the selected story.",
+      "assets": [
+        { "kind": "agent-persona", "path": "agents/platform-engineer-reviewer.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/specialist-reviewer.rules.md" }
+      ],
+      "next": "three-amigos-review-join"
+    },
+    {
+      "id": "three-amigos-developer-evangelist-reviewer",
+      "kind": "Stage",
+      "displayName": "Three Amigos Developer Evangelist Review",
+      "role": "Review",
+      "agent": "developer-evangelist-reviewer",
+      "inputs": ["request", "node:story-selection", "node:solution-design", "node:business-amigo", "node:development-amigo", "node:testing-amigo"],
+      "outputs": ["threeAmigosDeveloperEvangelistReview"],
+      "customMessage": "Review Three Amigos artifacts only for the selected story.",
+      "assets": [
+        { "kind": "agent-persona", "path": "agents/developer-evangelist-reviewer.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/specialist-reviewer.rules.md" }
+      ],
+      "next": "three-amigos-review-join"
+    },
+    {
+      "id": "three-amigos-ux-designer-reviewer",
+      "kind": "Stage",
+      "displayName": "Three Amigos UX Review",
+      "role": "Review",
+      "agent": "ux-designer-reviewer",
+      "inputs": ["request", "node:story-selection", "node:solution-design", "node:business-amigo", "node:development-amigo", "node:testing-amigo"],
+      "outputs": ["threeAmigosUxReview"],
+      "customMessage": "Review Three Amigos artifacts only for the selected story.",
+      "assets": [
+        { "kind": "agent-persona", "path": "agents/ux-designer-reviewer.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/specialist-reviewer.rules.md" }
+      ],
+      "next": "three-amigos-review-join"
+    },
+    { "id": "three-amigos-review-join", "kind": "Join", "displayName": "Three Amigos Review Join", "forkId": "three-amigos-review-fork", "next": "three-amigos-master-reviewer" },
+    {
+      "id": "three-amigos-master-reviewer",
+      "kind": "Stage",
+      "displayName": "Three Amigos Master Review",
+      "role": "Review",
+      "agent": "master-reviewer",
+      "inputs": [
+        "request",
+        "node:story-selection",
+        "node:business-amigo",
+        "node:development-amigo",
+        "node:testing-amigo",
+        "node:three-amigos-solution-architect-reviewer",
+        "node:three-amigos-principal-engineer-reviewer",
+        "node:three-amigos-devops-engineer-reviewer",
+        "node:three-amigos-platform-engineer-reviewer",
+        "node:three-amigos-developer-evangelist-reviewer",
+        "node:three-amigos-ux-designer-reviewer"
+      ],
+      "outputs": ["threeAmigosReviewVerdict", "threeAmigosReviewFindings"],
+      "customMessage": "Synthesize Three Amigos review feedback for the selected story.",
+      "assets": [
+        { "kind": "agent-persona", "path": "agents/master-reviewer.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/master-reviewer.rules.md" }
+      ],
+      "next": "three-amigos-review-decision"
+    },
+    {
+      "id": "three-amigos-review-decision",
+      "kind": "Decision",
+      "displayName": "Three Amigos Review Decision",
+      "role": "Decision",
+      "agent": "decision",
+      "decisionMode": "Rules",
+      "ruleSet": "clean-agile-review",
+      "decisionSourceNodeId": "three-amigos-master-reviewer",
+      "inputs": ["request", "node:three-amigos-master-reviewer"],
+      "assets": [
+        { "kind": "agent-persona", "path": "agents/decision.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/decision.rules.md" }
+      ],
+      "choices": [
+        { "id": "approve", "displayName": "Approve", "nextNodeId": "builder" },
+        { "id": "rework", "displayName": "Rework", "nextNodeId": "three-amigos-fork" },
+        { "id": "stop", "displayName": "Stop", "nextNodeId": "stopped" }
+      ]
     },
     {
       "id": "builder",
@@ -222,33 +640,194 @@
       "displayName": "Implementation",
       "role": "Implementation",
       "agent": "builder",
-      "models": [
-        "gpt-5.4"
-      ],
-      "reasoningEffort": "highest-supported",
+      "responseTimeout": "00:15:00",
       "inputs": [
         "request",
+        "node:story-selection",
         "node:increment-framing",
+        "node:solution-design",
+        "node:c4-system-context",
+        "node:c4-container",
+        "node:c4-component",
+        "node:c4-code",
         "node:business-amigo",
         "node:development-amigo",
         "node:testing-amigo"
       ],
-      "outputs": [
-        "buildSummary",
-        "validationEvidence"
-      ],
-      "customMessage": "Implement the smallest coherent change that satisfies the framed increment while preserving technical excellence through tests, simple design, and refactoring-minded choices.",
+      "outputs": ["buildSummary", "validationEvidence"],
+      "customMessage": "Implement the selected story using the approved architecture and Three Amigos guidance.",
       "assets": [
-        {
-          "kind": "agent-persona",
-          "path": "agents/builder.agent.md"
-        },
-        {
-          "kind": "agent-rule",
-          "path": "rules/agents/builder.rules.md"
-        }
+        { "kind": "agent-persona", "path": "agents/builder.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/builder.rules.md" }
       ],
-      "next": "github-sync"
+      "next": "code-review-fork"
+    },
+    {
+      "id": "code-review-fork",
+      "kind": "Fork",
+      "displayName": "Code Review Fork",
+      "joinNodeId": "code-review-join",
+      "branches": [
+        { "id": "solution-architecture", "nextNodeId": "code-solution-architect-reviewer" },
+        { "id": "principal-engineering", "nextNodeId": "code-principal-engineer-reviewer" },
+        { "id": "devops", "nextNodeId": "code-devops-engineer-reviewer" },
+        { "id": "platform", "nextNodeId": "code-platform-engineer-reviewer" },
+        { "id": "developer-evangelism", "nextNodeId": "code-developer-evangelist-reviewer" },
+        { "id": "ux", "nextNodeId": "code-ux-designer-reviewer" }
+      ]
+    },
+    {
+      "id": "code-solution-architect-reviewer",
+      "kind": "Stage",
+      "displayName": "Code Solution Architecture Review",
+      "role": "Review",
+      "agent": "solution-architect-reviewer",
+      "inputs": ["request", "node:story-selection", "node:solution-design", "node:c4-code", "node:builder", "node:rebuilder"],
+      "outputs": ["codeSolutionArchitectureReview"],
+      "customMessage": "Review code outputs only for the selected story.",
+      "assets": [
+        { "kind": "agent-persona", "path": "agents/solution-architect-reviewer.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/specialist-reviewer.rules.md" }
+      ],
+      "next": "code-review-join"
+    },
+    {
+      "id": "code-principal-engineer-reviewer",
+      "kind": "Stage",
+      "displayName": "Code Principal Engineer Review",
+      "role": "Review",
+      "agent": "principal-engineer-reviewer",
+      "inputs": ["request", "node:story-selection", "node:solution-design", "node:c4-code", "node:builder", "node:rebuilder"],
+      "outputs": ["codePrincipalEngineerReview"],
+      "customMessage": "Review code outputs only for the selected story.",
+      "assets": [
+        { "kind": "agent-persona", "path": "agents/principal-engineer-reviewer.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/specialist-reviewer.rules.md" }
+      ],
+      "next": "code-review-join"
+    },
+    {
+      "id": "code-devops-engineer-reviewer",
+      "kind": "Stage",
+      "displayName": "Code DevOps Review",
+      "role": "Review",
+      "agent": "devops-engineer-reviewer",
+      "inputs": ["request", "node:story-selection", "node:solution-design", "node:c4-code", "node:builder", "node:rebuilder"],
+      "outputs": ["codeDevOpsReview"],
+      "customMessage": "Review code outputs only for the selected story.",
+      "assets": [
+        { "kind": "agent-persona", "path": "agents/devops-engineer-reviewer.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/specialist-reviewer.rules.md" }
+      ],
+      "next": "code-review-join"
+    },
+    {
+      "id": "code-platform-engineer-reviewer",
+      "kind": "Stage",
+      "displayName": "Code Platform Review",
+      "role": "Review",
+      "agent": "platform-engineer-reviewer",
+      "inputs": ["request", "node:story-selection", "node:solution-design", "node:c4-code", "node:builder", "node:rebuilder"],
+      "outputs": ["codePlatformReview"],
+      "customMessage": "Review code outputs only for the selected story.",
+      "assets": [
+        { "kind": "agent-persona", "path": "agents/platform-engineer-reviewer.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/specialist-reviewer.rules.md" }
+      ],
+      "next": "code-review-join"
+    },
+    {
+      "id": "code-developer-evangelist-reviewer",
+      "kind": "Stage",
+      "displayName": "Code Developer Evangelist Review",
+      "role": "Review",
+      "agent": "developer-evangelist-reviewer",
+      "inputs": ["request", "node:story-selection", "node:solution-design", "node:c4-code", "node:builder", "node:rebuilder"],
+      "outputs": ["codeDeveloperEvangelistReview"],
+      "customMessage": "Review code outputs only for the selected story.",
+      "assets": [
+        { "kind": "agent-persona", "path": "agents/developer-evangelist-reviewer.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/specialist-reviewer.rules.md" }
+      ],
+      "next": "code-review-join"
+    },
+    {
+      "id": "code-ux-designer-reviewer",
+      "kind": "Stage",
+      "displayName": "Code UX Review",
+      "role": "Review",
+      "agent": "ux-designer-reviewer",
+      "inputs": ["request", "node:story-selection", "node:solution-design", "node:c4-code", "node:builder", "node:rebuilder"],
+      "outputs": ["codeUxReview"],
+      "customMessage": "Review code outputs only for the selected story.",
+      "assets": [
+        { "kind": "agent-persona", "path": "agents/ux-designer-reviewer.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/specialist-reviewer.rules.md" }
+      ],
+      "next": "code-review-join"
+    },
+    { "id": "code-review-join", "kind": "Join", "displayName": "Code Review Join", "forkId": "code-review-fork", "next": "code-master-reviewer" },
+    {
+      "id": "code-master-reviewer",
+      "kind": "Stage",
+      "displayName": "Code Master Review",
+      "role": "Review",
+      "agent": "master-reviewer",
+      "inputs": [
+        "request",
+        "node:story-selection",
+        "node:builder",
+        "node:rebuilder",
+        "node:code-solution-architect-reviewer",
+        "node:code-principal-engineer-reviewer",
+        "node:code-devops-engineer-reviewer",
+        "node:code-platform-engineer-reviewer",
+        "node:code-developer-evangelist-reviewer",
+        "node:code-ux-designer-reviewer"
+      ],
+      "outputs": ["codeReviewVerdict", "codeReviewFindings"],
+      "customMessage": "Synthesize code review feedback for the selected story.",
+      "assets": [
+        { "kind": "agent-persona", "path": "agents/master-reviewer.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/master-reviewer.rules.md" }
+      ],
+      "next": "code-review-decision"
+    },
+    {
+      "id": "code-review-decision",
+      "kind": "Decision",
+      "displayName": "Code Review Decision",
+      "role": "Decision",
+      "agent": "decision",
+      "decisionMode": "Rules",
+      "ruleSet": "clean-agile-review",
+      "decisionSourceNodeId": "code-master-reviewer",
+      "inputs": ["request", "node:code-master-reviewer", "node:rebuilder"],
+      "assets": [
+        { "kind": "agent-persona", "path": "agents/decision.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/decision.rules.md" }
+      ],
+      "choices": [
+        { "id": "approve", "displayName": "Approve", "nextNodeId": "github-sync" },
+        { "id": "rebuild", "displayName": "Rebuild", "nextNodeId": "rebuilder" },
+        { "id": "stop", "displayName": "Stop", "nextNodeId": "stopped" }
+      ]
+    },
+    {
+      "id": "rebuilder",
+      "kind": "Stage",
+      "displayName": "Focused Rework",
+      "role": "Rework",
+      "agent": "rebuilder",
+      "responseTimeout": "00:15:00",
+      "inputs": ["request", "node:story-selection", "node:solution-design", "node:c4-code", "node:builder", "node:code-master-reviewer", "node:github-poll", "node:rebuilder"],
+      "outputs": ["reworkSummary", "updatedValidation"],
+      "customMessage": "Apply the smallest correction set needed for the selected story.",
+      "assets": [
+        { "kind": "agent-persona", "path": "agents/rebuilder.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/rebuilder.rules.md" }
+      ],
+      "next": "code-review-fork"
     },
     {
       "id": "github-sync",
@@ -256,34 +835,14 @@
       "displayName": "GitHub Sync",
       "role": "GitHub",
       "agent": "github-manager",
-      "inputs": [
-        "request",
-        "node:increment-framing",
-        "node:builder",
-        "node:rebuilder",
-        "node:github-poll"
-      ],
-      "outputs": [
-        "githubSyncStatus"
-      ],
-      "customMessage": "Push the current branch, create or update the pull request, and if prior GitHub feedback exists reply to eligible review threads with the fix summary or the reason the change was intentionally not made. Resolve only bot, AI, or automated threads when policy allows.",
+      "inputs": ["request", "node:epic-planning", "node:story-stack-planning", "node:story-selection", "node:builder", "node:rebuilder", "node:code-master-reviewer", "node:github-poll"],
+      "outputs": ["githubSyncStatus", "storyStackSyncStatus"],
+      "customMessage": "Push or update the selected story branch, create or update its stacked pull request, retarget child pull request bases intentionally when parents merge, and respond to eligible automated review threads.",
       "assets": [
-        {
-          "kind": "agent-persona",
-          "path": "agents/github-manager.agent.md"
-        },
-        {
-          "kind": "agent-rule",
-          "path": "rules/agents/github-manager.rules.md"
-        },
-        {
-          "kind": "instruction",
-          "path": "instructions/general/github-integration.instructions.md"
-        },
-        {
-          "kind": "repository-instruction",
-          "path": "instructions/repository/github-review-policy.instructions.md"
-        }
+        { "kind": "agent-persona", "path": "agents/github-manager.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/github-manager.rules.md" },
+        { "kind": "instruction", "path": "instructions/general/github-integration.instructions.md" },
+        { "kind": "repository-instruction", "path": "instructions/repository/github-review-policy.instructions.md" }
       ],
       "next": "wait-for-cloud-review-lag"
     },
@@ -301,35 +860,14 @@
       "displayName": "GitHub Poll",
       "role": "GitHub",
       "agent": "github-manager",
-      "inputs": [
-        "request",
-        "node:increment-framing",
-        "node:builder",
-        "node:rebuilder",
-        "node:github-sync"
-      ],
-      "outputs": [
-        "githubFeedbackSummary",
-        "githubRoutingChoice"
-      ],
-      "customMessage": "Inspect the pull request, review threads, and required status checks. Summarize the current GitHub evidence and emit the single routing choice that the workflow should follow next.",
+      "inputs": ["request", "node:epic-planning", "node:story-stack-planning", "node:story-selection", "node:builder", "node:rebuilder", "node:github-sync", "node:code-master-reviewer"],
+      "outputs": ["githubFeedbackSummary", "githubRoutingChoice", "storyStackProgress"],
+      "customMessage": "Inspect the selected story pull request, its stack position, review threads, and required checks, then emit one routing choice.",
       "assets": [
-        {
-          "kind": "agent-persona",
-          "path": "agents/github-manager.agent.md"
-        },
-        {
-          "kind": "agent-rule",
-          "path": "rules/agents/github-manager.rules.md"
-        },
-        {
-          "kind": "instruction",
-          "path": "instructions/general/github-integration.instructions.md"
-        },
-        {
-          "kind": "repository-instruction",
-          "path": "instructions/repository/github-review-policy.instructions.md"
-        }
+        { "kind": "agent-persona", "path": "agents/github-manager.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/github-manager.rules.md" },
+        { "kind": "instruction", "path": "instructions/general/github-integration.instructions.md" },
+        { "kind": "repository-instruction", "path": "instructions/repository/github-review-policy.instructions.md" }
       ],
       "next": "github-feedback-decision"
     },
@@ -342,48 +880,17 @@
       "decisionMode": "Rules",
       "ruleSet": "github-feedback",
       "decisionSourceNodeId": "github-poll",
-      "inputs": [
-        "request",
-        "node:github-sync",
-        "node:github-poll",
-        "node:rebuilder"
-      ],
+      "inputs": ["request", "node:story-selection", "node:github-sync", "node:github-poll", "node:rebuilder"],
       "assets": [
-        {
-          "kind": "agent-persona",
-          "path": "agents/decision.agent.md"
-        },
-        {
-          "kind": "agent-rule",
-          "path": "rules/agents/decision.rules.md"
-        }
+        { "kind": "agent-persona", "path": "agents/decision.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/decision.rules.md" }
       ],
       "choices": [
-        {
-          "id": "ready",
-          "displayName": "Ready For Review",
-          "nextNodeId": "review-fork"
-        },
-        {
-          "id": "rework",
-          "displayName": "Needs Rework",
-          "nextNodeId": "rebuilder"
-        },
-        {
-          "id": "wait-for-comments",
-          "displayName": "Wait For Comments",
-          "nextNodeId": "wait-for-cloud-review-lag"
-        },
-        {
-          "id": "wait-for-ci",
-          "displayName": "Wait For CI",
-          "nextNodeId": "wait-for-ci-checks"
-        },
-        {
-          "id": "stop",
-          "displayName": "Stop",
-          "nextNodeId": "stopped"
-        }
+        { "id": "ready", "displayName": "Ready", "nextNodeId": "story-selection" },
+        { "id": "rework", "displayName": "Needs Rework", "nextNodeId": "rebuilder" },
+        { "id": "wait-for-comments", "displayName": "Wait For Comments", "nextNodeId": "wait-for-cloud-review-lag" },
+        { "id": "wait-for-ci", "displayName": "Wait For CI", "nextNodeId": "wait-for-ci-checks" },
+        { "id": "stop", "displayName": "Stop", "nextNodeId": "stopped" }
       ]
     },
     {
@@ -394,404 +901,14 @@
       "waitReason": "Pause before polling GitHub again because required status checks are still pending.",
       "next": "github-poll"
     },
-    {
-      "id": "review-fork",
-      "kind": "Fork",
-      "displayName": "Cross-Functional Review Fork",
-      "joinNodeId": "review-join",
-      "branches": [
-        {
-          "id": "solution-architecture",
-          "nextNodeId": "solution-architect-reviewer"
-        },
-        {
-          "id": "principal-engineering",
-          "nextNodeId": "principal-engineer-reviewer"
-        },
-        {
-          "id": "devops",
-          "nextNodeId": "devops-engineer-reviewer"
-        },
-        {
-          "id": "platform",
-          "nextNodeId": "platform-engineer-reviewer"
-        },
-        {
-          "id": "developer-evangelism",
-          "nextNodeId": "developer-evangelist-reviewer"
-        },
-        {
-          "id": "ux",
-          "nextNodeId": "ux-designer-reviewer"
-        }
-      ]
-    },
-    {
-      "id": "solution-architect-reviewer",
-      "kind": "Stage",
-      "displayName": "Solution Architecture Review",
-      "role": "Review",
-      "agent": "solution-architect-reviewer",
-      "models": [
-        "gpt-5.4"
-      ],
-      "reasoningEffort": "highest-supported",
-      "inputs": [
-        "request",
-        "node:increment-framing",
-        "node:business-amigo",
-        "node:development-amigo",
-        "node:testing-amigo",
-        "node:builder",
-        "node:rebuilder"
-      ],
-      "outputs": [
-        "solutionArchitectureReview"
-      ],
-      "customMessage": "Review every delivered change from a solution architecture perspective. Focus on boundaries, cohesion, coupling, long-term maintainability, and whether the implementation fits the intended system shape.",
-      "assets": [
-        {
-          "kind": "agent-persona",
-          "path": "agents/solution-architect-reviewer.agent.md"
-        },
-        {
-          "kind": "agent-rule",
-          "path": "rules/agents/specialist-reviewer.rules.md"
-        }
-      ],
-      "next": "review-join"
-    },
-    {
-      "id": "principal-engineer-reviewer",
-      "kind": "Stage",
-      "displayName": "Principal Engineer Review",
-      "role": "Review",
-      "agent": "principal-engineer-reviewer",
-      "models": [
-        "gpt-5.4"
-      ],
-      "reasoningEffort": "highest-supported",
-      "inputs": [
-        "request",
-        "node:increment-framing",
-        "node:business-amigo",
-        "node:development-amigo",
-        "node:testing-amigo",
-        "node:builder",
-        "node:rebuilder"
-      ],
-      "outputs": [
-        "principalEngineerReview"
-      ],
-      "customMessage": "Review every delivered change from a principal engineer perspective. Focus on correctness, technical quality, test evidence, performance, resilience, and whether the implementation is the simplest sound solution.",
-      "assets": [
-        {
-          "kind": "agent-persona",
-          "path": "agents/principal-engineer-reviewer.agent.md"
-        },
-        {
-          "kind": "agent-rule",
-          "path": "rules/agents/specialist-reviewer.rules.md"
-        }
-      ],
-      "next": "review-join"
-    },
-    {
-      "id": "devops-engineer-reviewer",
-      "kind": "Stage",
-      "displayName": "DevOps Review",
-      "role": "Review",
-      "agent": "devops-engineer-reviewer",
-      "models": [
-        "gpt-5.4"
-      ],
-      "reasoningEffort": "highest-supported",
-      "inputs": [
-        "request",
-        "node:increment-framing",
-        "node:business-amigo",
-        "node:development-amigo",
-        "node:testing-amigo",
-        "node:builder",
-        "node:rebuilder"
-      ],
-      "outputs": [
-        "devOpsReview"
-      ],
-      "customMessage": "Review every delivered change from a DevOps perspective. Focus on build reliability, deployment safety, operational readiness, telemetry, release risks, and feedback loops in automation.",
-      "assets": [
-        {
-          "kind": "agent-persona",
-          "path": "agents/devops-engineer-reviewer.agent.md"
-        },
-        {
-          "kind": "agent-rule",
-          "path": "rules/agents/specialist-reviewer.rules.md"
-        }
-      ],
-      "next": "review-join"
-    },
-    {
-      "id": "platform-engineer-reviewer",
-      "kind": "Stage",
-      "displayName": "Platform Review",
-      "role": "Review",
-      "agent": "platform-engineer-reviewer",
-      "models": [
-        "gpt-5.4"
-      ],
-      "reasoningEffort": "highest-supported",
-      "inputs": [
-        "request",
-        "node:increment-framing",
-        "node:business-amigo",
-        "node:development-amigo",
-        "node:testing-amigo",
-        "node:builder",
-        "node:rebuilder"
-      ],
-      "outputs": [
-        "platformReview"
-      ],
-      "customMessage": "Review every delivered change from a platform engineering perspective. Focus on developer experience, runtime consistency, environment assumptions, scalability of tooling, and platform-level maintainability.",
-      "assets": [
-        {
-          "kind": "agent-persona",
-          "path": "agents/platform-engineer-reviewer.agent.md"
-        },
-        {
-          "kind": "agent-rule",
-          "path": "rules/agents/specialist-reviewer.rules.md"
-        }
-      ],
-      "next": "review-join"
-    },
-    {
-      "id": "developer-evangelist-reviewer",
-      "kind": "Stage",
-      "displayName": "Developer Evangelist Review",
-      "role": "Review",
-      "agent": "developer-evangelist-reviewer",
-      "models": [
-        "gpt-5.4"
-      ],
-      "reasoningEffort": "highest-supported",
-      "inputs": [
-        "request",
-        "node:increment-framing",
-        "node:business-amigo",
-        "node:development-amigo",
-        "node:testing-amigo",
-        "node:builder",
-        "node:rebuilder"
-      ],
-      "outputs": [
-        "developerEvangelistReview"
-      ],
-      "customMessage": "Review every delivered change from a developer evangelist perspective. Focus on clarity, learnability, adoption friction, examples, naming, and whether the change helps other developers succeed.",
-      "assets": [
-        {
-          "kind": "agent-persona",
-          "path": "agents/developer-evangelist-reviewer.agent.md"
-        },
-        {
-          "kind": "agent-rule",
-          "path": "rules/agents/specialist-reviewer.rules.md"
-        }
-      ],
-      "next": "review-join"
-    },
-    {
-      "id": "ux-designer-reviewer",
-      "kind": "Stage",
-      "displayName": "UX Review",
-      "role": "Review",
-      "agent": "ux-designer-reviewer",
-      "models": [
-        "gpt-5.4"
-      ],
-      "reasoningEffort": "highest-supported",
-      "inputs": [
-        "request",
-        "node:increment-framing",
-        "node:business-amigo",
-        "node:development-amigo",
-        "node:testing-amigo",
-        "node:builder",
-        "node:rebuilder"
-      ],
-      "outputs": [
-        "uxReview"
-      ],
-      "customMessage": "Review every delivered change from a UX design perspective. Focus on user flow, interaction clarity, accessibility, language, visual consistency, and whether the increment feels coherent for real users.",
-      "assets": [
-        {
-          "kind": "agent-persona",
-          "path": "agents/ux-designer-reviewer.agent.md"
-        },
-        {
-          "kind": "agent-rule",
-          "path": "rules/agents/specialist-reviewer.rules.md"
-        }
-      ],
-      "next": "review-join"
-    },
-    {
-      "id": "review-join",
-      "kind": "Join",
-      "displayName": "Cross-Functional Review Join",
-      "forkId": "review-fork",
-      "next": "master-reviewer"
-    },
-    {
-      "id": "master-reviewer",
-      "kind": "Stage",
-      "displayName": "Master Review",
-      "role": "Review",
-      "agent": "master-reviewer",
-      "models": [
-        "gpt-5.4"
-      ],
-      "reasoningEffort": "highest-supported",
-      "inputs": [
-        "request",
-        "node:increment-framing",
-        "node:business-amigo",
-        "node:development-amigo",
-        "node:testing-amigo",
-        "node:builder",
-        "node:solution-architect-reviewer",
-        "node:principal-engineer-reviewer",
-        "node:devops-engineer-reviewer",
-        "node:platform-engineer-reviewer",
-        "node:developer-evangelist-reviewer",
-        "node:ux-designer-reviewer",
-        "node:rebuilder"
-      ],
-      "outputs": [
-        "reviewVerdict",
-        "reviewFindings"
-      ],
-      "customMessage": "Combine every specialist review into one master review. Deduplicate overlapping findings, preserve important disagreements, and produce one clear approval decision plus one consolidated set of builder instructions.",
-      "assets": [
-        {
-          "kind": "agent-persona",
-          "path": "agents/master-reviewer.agent.md"
-        },
-        {
-          "kind": "agent-rule",
-          "path": "rules/agents/master-reviewer.rules.md"
-        }
-      ],
-      "next": "review-decision"
-    },
-    {
-      "id": "review-decision",
-      "kind": "Decision",
-      "displayName": "Review Decision",
-      "role": "Decision",
-      "agent": "decision",
-      "models": [
-        "gpt-5.4"
-      ],
-      "reasoningEffort": "highest-supported",
-      "decisionMode": "Rules",
-      "ruleSet": "clean-agile-review",
-      "decisionSourceNodeId": "master-reviewer",
-      "inputs": [
-        "request",
-        "node:increment-framing",
-        "node:business-amigo",
-        "node:development-amigo",
-        "node:testing-amigo",
-        "node:builder",
-        "node:master-reviewer",
-        "node:rebuilder"
-      ],
-      "assets": [
-        {
-          "kind": "agent-persona",
-          "path": "agents/decision.agent.md"
-        },
-        {
-          "kind": "agent-rule",
-          "path": "rules/agents/decision.rules.md"
-        }
-      ],
-      "choices": [
-        {
-          "id": "approve",
-          "displayName": "Approve",
-          "nextNodeId": "approved"
-        },
-        {
-          "id": "rebuild",
-          "displayName": "Rebuild",
-          "nextNodeId": "rebuilder"
-        },
-        {
-          "id": "stop",
-          "displayName": "Stop",
-          "nextNodeId": "stopped"
-        }
-      ]
-    },
-    {
-      "id": "rebuilder",
-      "kind": "Stage",
-      "displayName": "Focused Rework",
-      "role": "Rework",
-      "agent": "rebuilder",
-      "models": [
-        "gpt-5.4"
-      ],
-      "reasoningEffort": "highest-supported",
-      "inputs": [
-        "request",
-        "node:increment-framing",
-        "node:business-amigo",
-        "node:development-amigo",
-        "node:testing-amigo",
-        "node:builder",
-        "node:github-poll",
-        "node:master-reviewer",
-        "node:rebuilder"
-      ],
-      "outputs": [
-        "reworkSummary",
-        "updatedValidation"
-      ],
-      "customMessage": "Apply the smallest effective correction set needed to resolve review findings while preserving valid work and maintaining technical quality.",
-      "assets": [
-        {
-          "kind": "agent-persona",
-          "path": "agents/rebuilder.agent.md"
-        },
-        {
-          "kind": "agent-rule",
-          "path": "rules/agents/rebuilder.rules.md"
-        }
-      ],
-      "next": "github-sync"
-    },
-    {
-      "id": "approved",
-      "kind": "Exit",
-      "displayName": "Approved Exit",
-      "exitStatus": "Approved"
-    },
-    {
-      "id": "stopped",
-      "kind": "Exit",
-      "displayName": "Stopped Exit",
-      "exitStatus": "Stopped"
-    }
+    { "id": "approved", "kind": "Exit", "displayName": "Approved Exit", "exitStatus": "Approved" },
+    { "id": "stopped", "kind": "Exit", "displayName": "Stopped Exit", "exitStatus": "Stopped" }
   ],
   "policy": {
     "decisionMode": "Rules",
     "maxReviewCycles": 2,
     "maxRebuilds": 1,
     "maxParallelism": 6,
-    "maxNodeVisits": 20
+    "maxNodeVisits": 30
   }
 }

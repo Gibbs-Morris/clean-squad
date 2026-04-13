@@ -84,11 +84,111 @@ public sealed class WorkflowDecisionResolverTests
         Assert.Equal("approved", decision.NextNodeId);
     }
 
+    /// <summary>
+    ///     Verifies clean-agile review rules approve when the master review explicitly approves the phase.
+    /// </summary>
+    /// <returns>A task that represents the asynchronous test.</returns>
+    [Fact]
+    public async Task ResolveAsyncApprovesCleanAgileReviewWhenApprovedAsync()
+    {
+        WorkflowDecisionResolver resolver = new(new FakeWorkflowAgentRunner([]));
+        WorkflowDecisionContext context = CreateContext(
+            WorkflowDecisionMode.Rules,
+            "clean-agile-review",
+            "Approved: yes\n## Consolidated Assessment\nReady to proceed.\n",
+            configureNode: node => node.DecisionSourceNodeId = "phase-master-review");
+
+        WorkflowDecision decision = await resolver.ResolveAsync(context);
+
+        Assert.Equal(WorkflowDecisionAction.Approve, decision.Action);
+        Assert.Equal("approve", decision.ChoiceId);
+        Assert.Equal("approved", decision.NextNodeId);
+    }
+
+    /// <summary>
+    ///     Verifies clean-agile review rules request phase rework when approval is denied and a rework path exists.
+    /// </summary>
+    /// <returns>A task that represents the asynchronous test.</returns>
+    [Fact]
+    public async Task ResolveAsyncRequestsReworkForCleanAgileReviewWhenDeniedAsync()
+    {
+        WorkflowDecisionResolver resolver = new(new FakeWorkflowAgentRunner([]));
+        WorkflowDecisionContext context = CreateContext(
+            WorkflowDecisionMode.Rules,
+            "clean-agile-review",
+            "Approved: no\n## Consolidated Assessment\nArchitecture needs refinement.\n",
+            state => state.Steps.Add(new WorkflowStepState
+            {
+                StepNumber = 1,
+                NodeId = "phase-master-review",
+                Status = WorkflowStepStatus.Completed,
+                StartedAtUtc = TimeProvider.System.GetUtcNow(),
+                CompletedAtUtc = TimeProvider.System.GetUtcNow(),
+            }),
+            node =>
+            {
+                node.DecisionSourceNodeId = "phase-master-review";
+                node.Choices =
+                [
+                    new WorkflowDecisionOptionDefinition { Id = "approve", NextNodeId = "approved" },
+                    new WorkflowDecisionOptionDefinition { Id = "rework", NextNodeId = "three-amigos-fork" },
+                    new WorkflowDecisionOptionDefinition { Id = "stop", NextNodeId = "stopped" },
+                ];
+            });
+
+        WorkflowDecision decision = await resolver.ResolveAsync(context);
+
+        Assert.Equal(WorkflowDecisionAction.Branch, decision.Action);
+        Assert.Equal("rework", decision.ChoiceId);
+        Assert.Equal("three-amigos-fork", decision.NextNodeId);
+    }
+
+    /// <summary>
+    ///     Verifies clean-agile review rules stop when rebuild limits have already been consumed.
+    /// </summary>
+    /// <returns>A task that represents the asynchronous test.</returns>
+    [Fact]
+    public async Task ResolveAsyncStopsCleanAgileReviewWhenRebuildLimitIsReachedAsync()
+    {
+        WorkflowDecisionResolver resolver = new(new FakeWorkflowAgentRunner([]));
+        WorkflowDecisionContext context = CreateContext(
+            WorkflowDecisionMode.Rules,
+            "clean-agile-review",
+            "Approved: no\n## Consolidated Assessment\nCode still needs work.\n",
+            state =>
+            {
+                state.Steps.Add(new WorkflowStepState
+                {
+                    StepNumber = 1,
+                    NodeId = "code-master-review",
+                    Status = WorkflowStepStatus.Completed,
+                    StartedAtUtc = TimeProvider.System.GetUtcNow(),
+                    CompletedAtUtc = TimeProvider.System.GetUtcNow(),
+                });
+                state.Steps.Add(new WorkflowStepState
+                {
+                    StepNumber = 2,
+                    NodeId = "rebuilder",
+                    Status = WorkflowStepStatus.Completed,
+                    StartedAtUtc = TimeProvider.System.GetUtcNow(),
+                    CompletedAtUtc = TimeProvider.System.GetUtcNow(),
+                });
+            },
+            configureNode: node => node.DecisionSourceNodeId = "code-master-review");
+
+        WorkflowDecision decision = await resolver.ResolveAsync(context);
+
+        Assert.Equal(WorkflowDecisionAction.Stop, decision.Action);
+        Assert.Equal("stop", decision.ChoiceId);
+        Assert.Equal("stopped", decision.NextNodeId);
+    }
+
     private static WorkflowDecisionContext CreateContext(
         WorkflowDecisionMode decisionMode,
         string? ruleSet,
         string sourceMarkdown,
-        Action<WorkflowRunState>? configureState = null)
+        Action<WorkflowRunState>? configureState = null,
+        Action<WorkflowNodeDefinition>? configureNode = null)
     {
         string tempDirectoryPath = Path.Combine(Path.GetTempPath(), $"clean-squad-decision-{Guid.NewGuid():N}");
         WorkflowDefinition definition = new()
@@ -115,6 +215,7 @@ public sealed class WorkflowDecisionResolverTests
                 new WorkflowDecisionOptionDefinition { Id = "stop", NextNodeId = "stopped" },
             ],
         };
+        configureNode?.Invoke(node);
         WorkflowArtifacts artifacts = WorkflowArtifacts.Create(
             tempDirectoryPath,
             Path.Combine(tempDirectoryPath, "workflow.json"),
@@ -148,6 +249,7 @@ public sealed class WorkflowDecisionResolverTests
             IReadOnlyList<string> attachmentFilePaths,
             IReadOnlyList<string> modelIds,
             string? reasoningEffort,
+            TimeSpan? responseTimeout = null,
             CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();

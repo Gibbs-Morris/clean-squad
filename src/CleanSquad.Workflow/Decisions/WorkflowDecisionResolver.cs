@@ -54,6 +54,7 @@ public sealed partial class WorkflowDecisionResolver : IWorkflowDecisionResolver
                 context.AttachmentFilePaths,
                 context.Node.Models,
                 context.Node.ReasoningEffort,
+                WorkflowResponseTimeout.TryParse(context.Node.ResponseTimeout, out TimeSpan responseTimeout) ? responseTimeout : null,
                 cancellationToken);
 
             WorkflowDecision agentDecision = this.ParseDecision(context.Node, decisionMarkdown);
@@ -79,7 +80,81 @@ public sealed partial class WorkflowDecisionResolver : IWorkflowDecisionResolver
             return ParseLegacyReview(context);
         }
 
+        if (string.Equals(context.Node.RuleSet, "clean-agile-review", StringComparison.OrdinalIgnoreCase))
+        {
+            return ParseApprovalReview(context);
+        }
+
         return this.ParseDecision(context.Node, context.SourceMarkdown);
+    }
+
+    private WorkflowDecision ParseApprovalReview(WorkflowDecisionContext context)
+    {
+        if (!TryParseApproved(context.SourceMarkdown, out bool approved))
+        {
+            return ParseDecision(context.Node, context.SourceMarkdown);
+        }
+
+        if (approved)
+        {
+            WorkflowDecisionOptionDefinition approveChoice = FindChoice(context.Node, "approve");
+            return new WorkflowDecision(
+                WorkflowDecisionAction.Approve,
+                "The review approved the current phase.",
+                "review-rules",
+                context.SourceMarkdown.Trim(),
+                approveChoice.Id,
+                approveChoice.NextNodeId);
+        }
+
+        int reviewCount = CountCompletedSteps(
+            context.State,
+            string.IsNullOrWhiteSpace(context.Node.DecisionSourceNodeId) ? context.Node.Id : context.Node.DecisionSourceNodeId);
+
+        if (reviewCount >= context.Definition.Policy.MaxReviewCycles || HasReachedRebuildLimit(context))
+        {
+            WorkflowDecisionOptionDefinition stopChoice = FindChoice(context.Node, "stop");
+            return new WorkflowDecision(
+                WorkflowDecisionAction.Stop,
+                "The configured review or rebuild policy limit was reached.",
+                "review-rules",
+                context.SourceMarkdown.Trim(),
+                stopChoice.Id,
+                stopChoice.NextNodeId);
+        }
+
+        WorkflowDecisionOptionDefinition? reworkChoice = FindChoiceOrDefault(context.Node, "rework");
+        if (reworkChoice is not null)
+        {
+            return new WorkflowDecision(
+                WorkflowDecisionAction.Branch,
+                "The review denied approval and requested rework for the current phase.",
+                "review-rules",
+                context.SourceMarkdown.Trim(),
+                reworkChoice.Id,
+                reworkChoice.NextNodeId);
+        }
+
+        WorkflowDecisionOptionDefinition? rebuildChoice = FindChoiceOrDefault(context.Node, "rebuild");
+        if (rebuildChoice is not null)
+        {
+            return new WorkflowDecision(
+                WorkflowDecisionAction.Rebuild,
+                "The review denied approval and requested another implementation iteration.",
+                "review-rules",
+                context.SourceMarkdown.Trim(),
+                rebuildChoice.Id,
+                rebuildChoice.NextNodeId);
+        }
+
+        WorkflowDecisionOptionDefinition fallbackStopChoice = FindChoice(context.Node, "stop");
+        return new WorkflowDecision(
+            WorkflowDecisionAction.Stop,
+            "The review denied approval and no rework path was configured.",
+            "review-rules",
+            context.SourceMarkdown.Trim(),
+            fallbackStopChoice.Id,
+            fallbackStopChoice.NextNodeId);
     }
 
     private static WorkflowDecision ParseLegacyReview(WorkflowDecisionContext context)
@@ -159,10 +234,36 @@ public sealed partial class WorkflowDecisionResolver : IWorkflowDecisionResolver
             .Split('\n', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
     }
 
+    private static bool TryParseApproved(string content, out bool approved)
+    {
+        foreach (string line in SplitLines(content))
+        {
+            if (!line.StartsWith("Approved:", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            int separatorIndex = line.IndexOf(':', StringComparison.Ordinal);
+            string value = line[(separatorIndex + 1)..].Trim();
+            approved = value.Equals("yes", StringComparison.OrdinalIgnoreCase)
+                || value.Equals("true", StringComparison.OrdinalIgnoreCase)
+                || value.Equals("approved", StringComparison.OrdinalIgnoreCase);
+            return true;
+        }
+
+        approved = false;
+        return false;
+    }
+
     private static WorkflowDecisionOptionDefinition FindChoice(WorkflowNodeDefinition node, string value)
     {
         return node.Choices.FirstOrDefault(choice => string.Equals(choice.Id, value, StringComparison.OrdinalIgnoreCase))
             ?? throw new InvalidOperationException($"The decision node '{node.Id}' does not define a '{value}' choice.");
+    }
+
+    private static WorkflowDecisionOptionDefinition? FindChoiceOrDefault(WorkflowNodeDefinition node, string value)
+    {
+        return node.Choices.FirstOrDefault(existingChoice => string.Equals(existingChoice.Id, value, StringComparison.OrdinalIgnoreCase));
     }
 
     private static string ResolveAgentName(WorkflowNodeDefinition node)
@@ -180,6 +281,18 @@ public sealed partial class WorkflowDecisionResolver : IWorkflowDecisionResolver
         return state.Steps.Count(step =>
             step.Status == WorkflowStepStatus.Completed
             && string.Equals(step.NodeId, nodeId, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static bool HasReachedRebuildLimit(WorkflowDecisionContext context)
+    {
+        WorkflowDecisionOptionDefinition? rebuildChoice = FindChoiceOrDefault(context.Node, "rebuild");
+        if (rebuildChoice is null || string.IsNullOrWhiteSpace(rebuildChoice.NextNodeId))
+        {
+            return false;
+        }
+
+        int rebuildCount = CountCompletedSteps(context.State, rebuildChoice.NextNodeId);
+        return rebuildCount >= context.Definition.Policy.MaxRebuilds;
     }
 
     [LoggerMessage(EventId = 300, Level = LogLevel.Debug, Message = "Resolving decision for node {NodeId} using agent mode with {AttachmentCount} attachments.")]

@@ -25,8 +25,12 @@ The `default/` package is the canonical CleanSquad workflow and SHOULD model a C
 
 In practice that means the default graph should:
 
+- classify high-level work as either a single story or an epic before implementation begins
 - frame the smallest valuable increment first
+- decompose epic-sized work into ordered, reviewable stories with explicit dependency and stacked-PR guidance
+- add architecture and solution design work before implementation when the request materially changes system shape, boundaries, or code structure
 - establish shared understanding through the Three Amigos perspectives (business, development, testing)
+- shift specialist review left so architecture, collaboration outputs, and code all receive feedback before the latest possible moment
 - implement with technical excellence and fast feedback
 - review against working, validated output
 - rework in small focused loops when necessary
