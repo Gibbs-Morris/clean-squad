@@ -300,12 +300,6 @@ public static class WorkflowDefinitionLoader
         {
             ValidateNodeTargets(node, nodesById, errors);
         }
-
-        if (!string.IsNullOrWhiteSpace(definition.OnErrorNodeId)
-            && !nodesById.ContainsKey(definition.OnErrorNodeId))
-        {
-            errors.Add($"The onErrorNodeId '{definition.OnErrorNodeId}' references an unknown node.");
-        }
     }
 
     private static void ValidateInputs(IReadOnlyList<WorkflowNodeDefinition> nodes, List<string> errors)
