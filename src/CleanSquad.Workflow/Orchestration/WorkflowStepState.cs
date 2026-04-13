@@ -40,6 +40,11 @@ public sealed class WorkflowStepState
     public IReadOnlyList<string> Models { get; set; } = [];
 
     /// <summary>
+    ///     Gets or sets the reasoning-effort preference captured for the step.
+    /// </summary>
+    public string? ReasoningEffort { get; set; }
+
+    /// <summary>
     ///     Gets or sets the input references captured for the step.
     /// </summary>
     public IReadOnlyList<string> InputReferences { get; set; } = [];

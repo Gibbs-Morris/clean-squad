@@ -48,7 +48,7 @@ public sealed class WorkflowRunStateTests
             StartedAtUtc = timeProvider.GetUtcNow(),
         });
 
-        state.PrepareForResume();
+        state.PrepareForResume(timeProvider);
 
         Assert.Equal(WorkflowRunStatus.Running, state.Status);
         Assert.Null(state.CompletedAtUtc);
@@ -56,6 +56,42 @@ public sealed class WorkflowRunStateTests
         Assert.Single(state.PendingActivations, activation => activation.NodeId == "builder");
         Assert.Contains(state.PendingActivations, activation => activation.NodeId == "planner");
         Assert.All(state.Steps, step => Assert.Equal(WorkflowStepStatus.Failed, step.Status));
+    }
+
+    /// <summary>
+    ///     Verifies paused waits remain paused until their resume time and then enqueue their next node.
+    /// </summary>
+    [Fact]
+    public void PrepareForResumeResumesExpiredWaitNodes()
+    {
+        FixedTimeProvider timeProvider = new(new DateTimeOffset(2026, 4, 11, 18, 30, 0, TimeSpan.Zero));
+        WorkflowRunState state = WorkflowRunState.Create("run-1", "Test Workflow", "planner", timeProvider);
+        state.Status = WorkflowRunStatus.Paused;
+        state.PendingActivations.Clear();
+        state.WaitingNodes.Add(new WorkflowWaitState
+        {
+            NodeId = "wait-for-review",
+            NextNodeId = "builder",
+            WaitDuration = "00:05:00",
+            Reason = "Wait for delayed review comments.",
+            WaitStartedAtUtc = timeProvider.GetUtcNow(),
+            WaitUntilUtc = timeProvider.GetUtcNow().AddMinutes(5),
+        });
+
+        state.PrepareForResume(timeProvider);
+
+        Assert.Equal(WorkflowRunStatus.Paused, state.Status);
+        Assert.Empty(state.PendingActivations);
+        Assert.Single(state.WaitingNodes);
+
+        timeProvider.Advance(TimeSpan.FromMinutes(5));
+
+        state.PrepareForResume(timeProvider);
+
+        Assert.Equal(WorkflowRunStatus.Running, state.Status);
+        WorkflowPendingActivation activation = Assert.Single(state.PendingActivations);
+        Assert.Equal("builder", activation.NodeId);
+        Assert.Empty(state.WaitingNodes);
     }
 
     /// <summary>

@@ -53,6 +53,7 @@ public sealed partial class WorkflowDecisionResolver : IWorkflowDecisionResolver
                 prompt,
                 context.AttachmentFilePaths,
                 context.Node.Models,
+                context.Node.ReasoningEffort,
                 cancellationToken);
 
             WorkflowDecision agentDecision = this.ParseDecision(context.Node, decisionMarkdown);

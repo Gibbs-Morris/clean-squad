@@ -16,6 +16,7 @@ public interface IWorkflowAgentRunner
     /// <param name="prompt">The prompt to send to the agent.</param>
     /// <param name="attachmentFilePaths">The markdown files that should be attached for the stage.</param>
     /// <param name="modelIds">The preferred backend model identifiers for the stage.</param>
+    /// <param name="reasoningEffort">The reasoning-effort preference for the selected model.</param>
     /// <param name="cancellationToken">The cancellation token for the operation.</param>
     /// <returns>The markdown response from the agent.</returns>
     Task<string> RunAsync(
@@ -23,5 +24,6 @@ public interface IWorkflowAgentRunner
         string prompt,
         IReadOnlyList<string> attachmentFilePaths,
         IReadOnlyList<string> modelIds,
+        string? reasoningEffort,
         CancellationToken cancellationToken = default);
 }

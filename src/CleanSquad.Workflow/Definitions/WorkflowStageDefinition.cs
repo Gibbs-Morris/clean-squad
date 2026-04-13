@@ -28,6 +28,12 @@ public sealed class WorkflowStageDefinition
     public IReadOnlyList<string> Models { get; set; } = [];
 
     /// <summary>
+    ///     Gets or sets the reasoning-effort preference for the selected model.
+    ///     Valid values are <c>low</c>, <c>medium</c>, <c>high</c>, <c>xhigh</c>, and <c>highest-supported</c>.
+    /// </summary>
+    public string? ReasoningEffort { get; set; }
+
+    /// <summary>
     ///     Gets or sets the attachment source references used for the stage.
     /// </summary>
     public IReadOnlyList<string> Inputs { get; set; } = [];

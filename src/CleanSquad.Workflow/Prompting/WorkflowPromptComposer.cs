@@ -42,6 +42,7 @@ public static class WorkflowPromptComposer
         string modelList = node.Models.Count == 0
             ? "- (default)"
             : string.Join(Environment.NewLine, node.Models.Select(model => $"- {model}"));
+        string reasoningEffort = WorkflowReasoningEffort.Normalize(node.ReasoningEffort) ?? "(model default)";
         string inputList = node.Inputs.Count == 0
             ? "- request"
             : string.Join(Environment.NewLine, node.Inputs.Select(input => $"- {input}"));
@@ -74,7 +75,10 @@ Use only the workflow assets and markdown context listed below.
 {outputList}
 
 ### Preferred Models
-{modelList}{customMessageSection}
+{modelList}
+
+### Reasoning Effort
+- {reasoningEffort}{customMessageSection}
 
 ## Workflow Assets
 {assetMarkdown}
@@ -151,6 +155,7 @@ Use only the workflow assets and markdown context listed below.
             Role = stageDefinition.Role ?? stage.ToString(),
             Agent = stageDefinition.Agent,
             Models = stageDefinition.Models,
+            ReasoningEffort = WorkflowReasoningEffort.Normalize(stageDefinition.ReasoningEffort),
             Inputs = stageDefinition.Inputs,
             Outputs = stageDefinition.Outputs,
             CustomMessage = stageDefinition.CustomMessage,

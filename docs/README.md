@@ -25,7 +25,7 @@ Goal-oriented. Pick the guide for the task you need to complete right now.
 - [Run a workflow](how-to/run-a-workflow.md)
   — Start a new workflow run from a request document or inline markdown.
 - [Resume an interrupted workflow](how-to/resume-a-workflow.md)
-  — Continue a run that stopped before completing.
+  — Continue a run that stopped or paused before completing.
 - [Validate a workflow definition](how-to/validate-a-workflow-definition.md)
   — Check that a `workflow.json` file is structurally correct.
 - [Generate a workflow diagram](how-to/generate-a-workflow-diagram.md)

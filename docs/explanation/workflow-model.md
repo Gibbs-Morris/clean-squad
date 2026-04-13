@@ -30,6 +30,7 @@ flowchart LR
 | `Stage` | Runs an agent to produce outputs. The primary unit of work. |
 | `Fork` | Splits execution into parallel branches that all run concurrently. |
 | `Join` | Waits for all branches from a matching `Fork` to complete before continuing. |
+| `Wait` | Intentionally pauses the workflow for a configured duration so it can be resumed later. |
 | `Decision` | Evaluates agent output and routes the graph to one of several named choices. |
 | `Exit` | Terminates the workflow with a named status (`Approved`, `Stopped`). |
 
@@ -53,7 +54,7 @@ The engine follows these steps for every run:
 flowchart TD
     S([Start]) --> EP[Resolve entry point]
     EP --> Q[Enqueue first node activation]
-    Q --> LOOP[Drain control activations\nFork · Join · Exit]
+    Q --> LOOP[Drain control activations\nFork · Join · Wait · Exit]
     LOOP --> WAVE{Any stage nodes\nin wave?}
     WAVE -- Yes --> PAR[Execute stages in parallel\nTask.WhenAll]
     PAR --> NEXT[Enqueue next nodes]
@@ -61,11 +62,11 @@ flowchart TD
     WAVE -- No --> DEC{Decision pending?}
     DEC -- Yes --> DECIDE[Resolve decision\nRules or Agent]
     DECIDE --> LOOP
-    DEC -- No --> END([Exit reached])
+    DEC -- No --> END([Exit or pause reached])
 ```
 
 1. The engine resolves the entry point and enqueues the first activation.
-2. It drains **control activations** synchronously: Fork nodes fan out, Join nodes gate until all branches complete, Exit nodes terminate the run.
+2. It drains **control activations** synchronously: Fork nodes fan out, Join nodes gate until all branches complete, Wait nodes intentionally pause the run, and Exit nodes terminate it.
 3. It collects the current **stage wave** — all `Stage` nodes that are ready to run at the same time — and runs them in parallel.
 4. After a wave completes, it enqueues the successor nodes and loops.
 5. When a `Decision` node is encountered, the engine resolves the route using either agent output rules or a dedicated decision agent, then continues from the chosen branch.
@@ -80,9 +81,13 @@ Every workflow run writes its progress to a **run folder** on disk. The run fold
 - `event.ndjson` — a structured event log of every step and transition
 - agent output files for each completed stage
 
-If a run is interrupted — by an error, a timeout, or a deliberate stop — it can be **resumed** from its last known state.
+If a run is interrupted — by an error, a timeout, a deliberate stop, or an intentional wait pause — it can be **resumed** from its last known state.
 The engine reads `state.json`, re-enqueues any pending activations, and continues from where it left off.
 Stages that already completed are not re-executed.
+
+When a workflow pauses at a `Wait` node, the run status becomes `Paused` instead of `Failed`.
+The run folder records the active waiting node, the reason, and the earliest resume time.
+If you resume too early, the workflow remains paused and preserves the same waiting state.
 
 ---
 
@@ -154,12 +159,19 @@ flowchart TD
     DA --> JOIN
     TA --> JOIN
     JOIN --> BLD[Implementation]
-    BLD --> REV[Technical Review]
+    BLD --> GHS[GitHub Sync]
+    GHS --> WRL[Wait For Review Lag]
+    WRL --> GHP[GitHub Poll]
+    GHP --> GHD{GitHub Feedback}
+    GHD -- Ready --> REV[Technical Review]
+    GHD -- Rework --> RBL[Focused Rework]
+    GHD -- Wait --> WRL
     REV --> DEC{Review Decision}
     DEC -- Approve --> APP([Exit: Approved])
-    DEC -- Rebuild --> RBL[Focused Rework]
-    RBL --> REV
+    DEC -- Rebuild --> RBL
+    RBL --> GHS
     DEC -- Stop --> STP([Exit: Stopped])
 ```
 
 Each stage has a distinct role and a corresponding agent persona that shapes how the agent approaches its work.
+The default workflow now includes a dedicated GitHub manager loop so pull request creation, delayed automated review feedback, and pending CI results can be handled explicitly before the review and rework loops continue.

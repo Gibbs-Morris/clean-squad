@@ -18,7 +18,7 @@ public sealed class WorkflowRunState
     /// <summary>
     ///     Gets or sets the schema version for persisted run state.
     /// </summary>
-    public string SchemaVersion { get; set; } = "2.0";
+    public string SchemaVersion { get; set; } = "3.0";
 
     /// <summary>
     ///     Gets or sets the run identifier.
@@ -91,6 +91,11 @@ public sealed class WorkflowRunState
     public Collection<WorkflowParallelGroupState> ParallelGroups { get; } = [];
 
     /// <summary>
+    ///     Gets the active wait states that intentionally paused the workflow.
+    /// </summary>
+    public Collection<WorkflowWaitState> WaitingNodes { get; } = [];
+
+    /// <summary>
     ///     Gets the decisions recorded during the run.
     /// </summary>
     public Collection<WorkflowDecision> Decisions { get; } = [];
@@ -150,8 +155,13 @@ public sealed class WorkflowRunState
     /// <summary>
     ///     Marks any in-progress work as pending so the run can resume safely.
     /// </summary>
-    public void PrepareForResume()
+    /// <param name="timeProvider">The time provider used to evaluate whether paused waits are ready to continue.</param>
+    public void PrepareForResume(TimeProvider timeProvider)
     {
+        ArgumentNullException.ThrowIfNull(timeProvider);
+
+        DateTimeOffset now = timeProvider.GetUtcNow();
+        bool recoveredExecutableWork = false;
         foreach (WorkflowStepState step in this.Steps
                      .Where(step => step.Status is WorkflowStepStatus.InProgress or WorkflowStepStatus.Failed)
                      .OrderBy(step => step.ActivationSequenceNumber))
@@ -174,6 +184,33 @@ public sealed class WorkflowRunState
             step.Status = WorkflowStepStatus.Failed;
             step.Message = "Recovered for resume after an interrupted or failed execution.";
             step.CompletedAtUtc ??= step.StartedAtUtc;
+            recoveredExecutableWork = true;
+        }
+
+        WorkflowWaitState[] expiredWaits = this.WaitingNodes
+            .Where(wait => wait.WaitUntilUtc <= now)
+            .OrderBy(wait => wait.WaitUntilUtc)
+            .ThenBy(wait => wait.NodeId, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        foreach (WorkflowWaitState wait in expiredWaits)
+        {
+            bool alreadyQueued = this.PendingActivations.Any(activation =>
+                string.Equals(activation.NodeId, wait.NextNodeId, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(activation.ParallelGroupId, wait.ParallelGroupId, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(activation.BranchId, wait.BranchId, StringComparison.OrdinalIgnoreCase));
+            if (!alreadyQueued)
+            {
+                this.PendingActivations.Add(new WorkflowPendingActivation
+                {
+                    SequenceNumber = this.NextActivationSequenceNumber++,
+                    NodeId = wait.NextNodeId,
+                    ParallelGroupId = wait.ParallelGroupId,
+                    BranchId = wait.BranchId,
+                });
+            }
+
+            this.WaitingNodes.Remove(wait);
+            recoveredExecutableWork = true;
         }
 
         WorkflowPendingActivation[] orderedActivations = this.PendingActivations
@@ -185,7 +222,11 @@ public sealed class WorkflowRunState
             this.PendingActivations.Add(activation);
         }
 
-        if (this.Status is WorkflowRunStatus.Failed or WorkflowRunStatus.Stopped)
+        recoveredExecutableWork |= this.PendingActivations.Count > 0;
+
+        bool shouldResume = this.Status is WorkflowRunStatus.Failed or WorkflowRunStatus.Stopped
+            || (this.Status == WorkflowRunStatus.Paused && recoveredExecutableWork);
+        if (shouldResume)
         {
             this.Status = WorkflowRunStatus.Running;
             this.CompletedAtUtc = null;

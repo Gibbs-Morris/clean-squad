@@ -228,12 +228,71 @@ public sealed class WorkflowOrchestratorTests
             Assert.Equal(["buildSummary"], step.OutputNames);
             Assert.Equal("Focus on the requested file only.", step.CustomMessage);
             Assert.Equal(["model-build-fast"], step.Models);
+            Assert.Equal(WorkflowReasoningEffort.High, step.ReasoningEffort);
+            Assert.Equal(WorkflowReasoningEffort.High, call.ReasoningEffort);
         }
         finally
         {
             Directory.Delete(tempDirectoryPath, true);
         }
     }
+
+    /// <summary>
+    ///     Verifies a wait node pauses the workflow intentionally and later resumes to completion.
+    /// </summary>
+    /// <returns>A task that represents the asynchronous test.</returns>
+    [Fact]
+    public async Task ExecuteAsyncPausesAtWaitNodeUntilResumedAsync()
+    {
+        string tempDirectoryPath = CreateTempDirectory();
+
+        try
+        {
+              FixedTimeProvider timeProvider = new(new DateTimeOffset(2026, 4, 13, 9, 0, 0, TimeSpan.Zero));
+              string definitionPath = await CreateWaitWorkflowDefinitionAsync(tempDirectoryPath);
+              string requestPath = Path.Combine(tempDirectoryPath, "request.md");
+              await File.WriteAllTextAsync(requestPath, "# Request\n", System.Text.Encoding.UTF8);
+
+              FakeWorkflowAgentRunner runner = new([
+                  "# Build\n## Summary\nBuilt the change\n",
+              ]);
+              MarkdownArtifactService artifactService = new(timeProvider);
+              WorkflowOrchestrator orchestrator = new(
+                  artifactService,
+                  runner,
+                  new WorkflowDecisionResolver(runner),
+                  timeProvider: timeProvider);
+
+              WorkflowRunResult pausedResult = await orchestrator.ExecuteAsync(tempDirectoryPath, definitionPath, requestPath);
+              WorkflowArtifacts artifacts = artifactService.LoadRunArtifacts(pausedResult.RunDirectoryPath);
+              WorkflowRunState pausedState = artifactService.ReadState(artifacts);
+
+              Assert.Equal(WorkflowRunStatus.Paused, pausedResult.Status);
+              Assert.Single(runner.Calls);
+              WorkflowWaitState waitState = Assert.Single(pausedState.WaitingNodes);
+              Assert.Equal("approved", waitState.NextNodeId);
+              Assert.Contains(pausedState.Steps, step => string.Equals(step.NodeId, "wait-for-review-lag", StringComparison.OrdinalIgnoreCase));
+
+              timeProvider.Advance(TimeSpan.FromMinutes(5));
+
+              WorkflowRunResult resumedResult = await orchestrator.ExecuteAsync(
+                  new WorkflowExecutionRequest(
+                      tempDirectoryPath,
+                      null,
+                      null,
+                      ResumePath: pausedResult.RunDirectoryPath));
+
+              WorkflowRunState resumedState = artifactService.ReadState(artifacts);
+
+              Assert.Equal(WorkflowRunStatus.Approved, resumedResult.Status);
+              Assert.Empty(resumedState.WaitingNodes);
+              Assert.Single(runner.Calls);
+        }
+        finally
+        {
+              Directory.Delete(tempDirectoryPath, true);
+        }
+      }
 
     /// <summary>
     ///     Verifies a failed workflow can be resumed from persisted state.
@@ -463,12 +522,63 @@ public sealed class WorkflowOrchestratorTests
       "role": "Builder",
       "agent": "builder-agent",
       "models": ["model-build-fast"],
+      "reasoningEffort": "high",
       "inputs": ["request", "node:planner"],
       "outputs": ["buildSummary"],
       "customMessage": "Focus on the requested file only.",
       "assets": [
         { "kind": "agent", "path": "assets/builder.md" }
       ],
+      "next": "approved"
+    },
+    {
+      "id": "approved",
+      "kind": "Exit",
+      "exitStatus": "Approved"
+    }
+  ],
+  "policy": {
+    "decisionMode": "Rules",
+    "maxReviewCycles": 2,
+    "maxRebuilds": 1,
+    "maxParallelism": 1,
+    "maxNodeVisits": 8
+  }
+}
+""";
+        await File.WriteAllTextAsync(definitionPath, definitionJson, System.Text.Encoding.UTF8);
+        return definitionPath;
+    }
+
+    private static async Task<string> CreateWaitWorkflowDefinitionAsync(string tempDirectoryPath)
+    {
+        string assetsDirectoryPath = Path.Combine(tempDirectoryPath, "assets");
+        Directory.CreateDirectory(assetsDirectoryPath);
+        await File.WriteAllTextAsync(Path.Combine(assetsDirectoryPath, "builder.md"), "builder", System.Text.Encoding.UTF8);
+        string definitionPath = Path.Combine(tempDirectoryPath, "workflow.wait.json");
+        string definitionJson = """
+{
+  "name": "Wait Workflow",
+  "defaultEntryPoint": "default",
+  "entryPoints": [
+    { "id": "default", "nodeId": "builder" }
+  ],
+  "nodes": [
+    {
+      "id": "builder",
+      "kind": "Stage",
+      "role": "Builder",
+      "assets": [
+        { "kind": "agent", "path": "assets/builder.md" }
+      ],
+      "next": "wait-for-review-lag"
+    },
+    {
+      "id": "wait-for-review-lag",
+      "kind": "Wait",
+      "displayName": "Wait For Review Lag",
+      "waitDuration": "00:05:00",
+      "waitReason": "Wait for delayed automated review comments.",
       "next": "approved"
     },
     {
@@ -520,10 +630,11 @@ public sealed class WorkflowOrchestratorTests
             string prompt,
             IReadOnlyList<string> attachmentFilePaths,
             IReadOnlyList<string> modelIds,
+            string? reasoningEffort,
             CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            this.Calls.Add(new AgentCall(agentName, prompt, attachmentFilePaths, modelIds.ToArray()));
+            this.Calls.Add(new AgentCall(agentName, prompt, attachmentFilePaths, modelIds.ToArray(), reasoningEffort));
             if (this.exceptionAtCall.HasValue && this.Calls.Count == this.exceptionAtCall.Value)
             {
               throw this.exceptionFactory?.Invoke(this.Calls.Count, agentName) ?? new InvalidOperationException($"Boom on {agentName}");
@@ -533,5 +644,10 @@ public sealed class WorkflowOrchestratorTests
         }
     }
 
-    private sealed record AgentCall(string AgentName, string Prompt, IReadOnlyList<string> AttachmentFilePaths, IReadOnlyList<string> ModelIds);
+    private sealed record AgentCall(
+      string AgentName,
+      string Prompt,
+      IReadOnlyList<string> AttachmentFilePaths,
+      IReadOnlyList<string> ModelIds,
+      string? ReasoningEffort);
 }

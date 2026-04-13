@@ -100,6 +100,7 @@ public static class WorkflowDiagramRenderer
             switch (node.Kind)
             {
                 case WorkflowNodeKind.Stage:
+                case WorkflowNodeKind.Wait:
                 case WorkflowNodeKind.Join:
                     AppendEdge(builder, sourceMermaidId, node.Next, mermaidIdsByNodeId, null);
                     break;

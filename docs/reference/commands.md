@@ -72,7 +72,7 @@ Exactly one of `<request-document>` or `--request-text` must be supplied.
 
 | Exit code | Meaning |
 | --- | --- |
-| `0` | Run completed successfully. |
+| `0` | Run completed successfully or paused intentionally. |
 | `1` | Validation error, missing file, or execution failure. |
 
 ```shell
@@ -91,7 +91,7 @@ dotnet run --project src/CleanSquad.Cli -- workflow run `
 
 ## workflow resume
 
-Resume a previously interrupted workflow run from its saved state.
+Resume a previously interrupted or intentionally paused workflow run from its saved state.
 
 ```text
 cleansquad workflow resume <run-path> [--entry-point <id>] [--workspace-root <path>]
@@ -108,7 +108,7 @@ cleansquad workflow resume <run-path> [--entry-point <id>] [--workspace-root <pa
 
 | Exit code | Meaning |
 | --- | --- |
-| `0` | Run resumed and completed successfully. |
+| `0` | Run resumed successfully and either completed or paused again intentionally. |
 | `1` | Validation error, missing state file, or execution failure. |
 
 ```shell

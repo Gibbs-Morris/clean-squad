@@ -171,6 +171,7 @@ public sealed class WorkflowDefinitionLoaderTests
                 "      \"kind\": \"Stage\",",
                 "      \"role\": \"Research\",",
                 "      \"models\": [\" model-alpha \", \"model-alpha\", \"model-beta\"],",
+                "      \"reasoningEffort\": \" HIGH \",",
                 "      \"assets\": [{ \"kind\": \"agent\", \"path\": \"assets/research.md\" }],",
                 "      \"next\": \"approved\"",
                 "    },",
@@ -183,6 +184,7 @@ public sealed class WorkflowDefinitionLoaderTests
             WorkflowDefinition definition = WorkflowDefinitionLoader.LoadFromFile(definitionPath);
 
             Assert.Equal(["model-alpha", "model-beta"], definition.Nodes[0].Models);
+            Assert.Equal(WorkflowReasoningEffort.High, definition.Nodes[0].ReasoningEffort);
         }
         finally
         {
@@ -422,6 +424,90 @@ public sealed class WorkflowDefinitionLoaderTests
 
             Assert.True(result.IsValid);
             Assert.Contains(result.Warnings, warning => warning.Contains("not reachable", StringComparison.OrdinalIgnoreCase));
+        }
+        finally
+        {
+            Directory.Delete(tempDirectoryPath, true);
+        }
+    }
+
+    /// <summary>
+    ///     Verifies validation rejects wait nodes that omit a positive wait duration.
+    /// </summary>
+    [Fact]
+    public void ValidateFileRejectsWaitNodeWithoutPositiveDuration()
+    {
+        string tempDirectoryPath = CreateTempDirectory();
+
+        try
+        {
+            string definitionPath = Path.Combine(tempDirectoryPath, "workflow.json");
+            string definitionJson = string.Join(
+                Environment.NewLine,
+                "{",
+                "  \"name\": \"Wait Validation Test\",",
+                "  \"defaultEntryPoint\": \"default\",",
+                "  \"entryPoints\": [{ \"id\": \"default\", \"nodeId\": \"wait\" }],",
+                "  \"nodes\": [",
+                "    {",
+                "      \"id\": \"wait\",",
+                "      \"kind\": \"Wait\",",
+                "      \"waitDuration\": \"00:00:00\",",
+                "      \"next\": \"approved\"",
+                "    },",
+                "    { \"id\": \"approved\", \"kind\": \"Exit\", \"exitStatus\": \"Approved\" }",
+                "  ],",
+                "  \"policy\": { \"decisionMode\": \"Rules\", \"maxReviewCycles\": 2, \"maxRebuilds\": 1 }",
+                "}");
+            File.WriteAllText(definitionPath, definitionJson, System.Text.Encoding.UTF8);
+
+            WorkflowDefinitionValidationResult result = WorkflowDefinitionLoader.ValidateFile(definitionPath);
+
+            Assert.False(result.IsValid);
+            Assert.Contains(result.Errors, error => error.Contains("waitDuration", StringComparison.OrdinalIgnoreCase));
+        }
+        finally
+        {
+            Directory.Delete(tempDirectoryPath, true);
+        }
+    }
+
+    /// <summary>
+    ///     Verifies validation rejects highest-supported reasoning effort when no preferred model is configured.
+    /// </summary>
+    [Fact]
+    public void ValidateFileRejectsHighestSupportedReasoningEffortWithoutModels()
+    {
+        string tempDirectoryPath = CreateTempDirectory();
+
+        try
+        {
+            string definitionPath = Path.Combine(tempDirectoryPath, "workflow.json");
+            string definitionJson = string.Join(
+                Environment.NewLine,
+                "{",
+                "  \"name\": \"Reasoning Effort Validation Test\",",
+                "  \"defaultEntryPoint\": \"default\",",
+                "  \"entryPoints\": [{ \"id\": \"default\", \"nodeId\": \"research\" }],",
+                "  \"nodes\": [",
+                "    {",
+                "      \"id\": \"research\",",
+                "      \"kind\": \"Stage\",",
+                "      \"role\": \"Research\",",
+                "      \"reasoningEffort\": \"highest-supported\",",
+                "      \"next\": \"approved\"",
+                "    },",
+                "    { \"id\": \"approved\", \"kind\": \"Exit\", \"exitStatus\": \"Approved\" }",
+                "  ],",
+                "  \"policy\": { \"decisionMode\": \"Rules\", \"maxReviewCycles\": 2, \"maxRebuilds\": 1 }",
+                "}");
+            File.WriteAllText(definitionPath, definitionJson, System.Text.Encoding.UTF8);
+
+            WorkflowDefinitionValidationResult result = WorkflowDefinitionLoader.ValidateFile(definitionPath);
+
+            Assert.False(result.IsValid);
+            Assert.Contains(result.Errors, error => error.Contains("reasoningEffort", StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(result.Errors, error => error.Contains("configured model", StringComparison.OrdinalIgnoreCase));
         }
         finally
         {

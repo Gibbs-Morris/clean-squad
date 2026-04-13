@@ -63,17 +63,21 @@ public sealed partial class CopilotWorkflowAgentRunner : IWorkflowAgentRunner
         string prompt,
         IReadOnlyList<string> attachmentFilePaths,
         IReadOnlyList<string> modelIds,
+        string? reasoningEffort,
         CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(prompt);
         ArgumentNullException.ThrowIfNull(attachmentFilePaths);
         ArgumentNullException.ThrowIfNull(modelIds);
         cancellationToken.ThrowIfCancellationRequested();
+        string? modelId = SelectPreferredModelId(modelIds);
+        string? configuredReasoningEffort = WorkflowReasoningEffort.Normalize(reasoningEffort);
         this.LogExecutingRole(
             agentName,
             this.workspaceRootPath,
             attachmentFilePaths.Count,
-            modelIds.Count == 0 ? "(default)" : string.Join(",", modelIds));
+            modelIds.Count == 0 ? "(default)" : string.Join(",", modelIds),
+            configuredReasoningEffort ?? "(model default)");
         string promptWithContext = await BuildPromptWithContextAsync(prompt, attachmentFilePaths, cancellationToken);
 
         try
@@ -83,7 +87,9 @@ public sealed partial class CopilotWorkflowAgentRunner : IWorkflowAgentRunner
                 Cwd = this.workspaceRootPath,
             });
 
-            await using var session = await client.CreateSessionAsync(CreateSessionConfig(this.workspaceRootPath, modelIds), cancellationToken);
+            await client.StartAsync(cancellationToken);
+            string? resolvedReasoningEffort = await ResolveReasoningEffortAsync(client, modelId, configuredReasoningEffort, cancellationToken);
+            await using var session = await client.CreateSessionAsync(CreateSessionConfig(this.workspaceRootPath, modelId, resolvedReasoningEffort), cancellationToken);
 
             AssistantMessageEvent? reply = await session.SendAndWaitAsync(
                 new MessageOptions
@@ -145,23 +151,81 @@ public sealed partial class CopilotWorkflowAgentRunner : IWorkflowAgentRunner
     ///     Creates the SDK session configuration used for workflow-backed Copilot interactions.
     /// </summary>
     /// <param name="workspaceRootPath">The workspace root that the session should treat as its working directory.</param>
-    /// <param name="modelIds">The preferred model identifiers for the current workflow stage.</param>
+    /// <param name="modelId">The preferred model identifier for the current workflow stage.</param>
+    /// <param name="reasoningEffort">The resolved reasoning-effort preference for the selected model.</param>
     /// <returns>The configured session settings.</returns>
-    internal static SessionConfig CreateSessionConfig(string workspaceRootPath, IReadOnlyList<string> modelIds)
+    internal static SessionConfig CreateSessionConfig(string workspaceRootPath, string? modelId, string? reasoningEffort)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(workspaceRootPath);
-        ArgumentNullException.ThrowIfNull(modelIds);
 
         return new SessionConfig
         {
             WorkingDirectory = workspaceRootPath,
-            Model = modelIds.Count > 0 ? modelIds[0] : null,
+            Model = modelId,
+            ReasoningEffort = WorkflowReasoningEffort.Normalize(reasoningEffort),
             OnPermissionRequest = PermissionHandler.ApproveAll,
         };
     }
 
-    [LoggerMessage(EventId = 100, Level = LogLevel.Debug, Message = "Executing Copilot workflow role {RoleName} from workspace {WorkspaceRootPath} with {AttachmentCount} attachments and models {Models}.")]
-    private partial void LogExecutingRole(string roleName, string workspaceRootPath, int attachmentCount, string models);
+    /// <summary>
+    ///     Resolves the configured reasoning-effort request to an SDK-supported value.
+    /// </summary>
+    /// <param name="client">The started Copilot client.</param>
+    /// <param name="modelId">The selected model identifier.</param>
+    /// <param name="configuredReasoningEffort">The configured reasoning-effort request.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The resolved reasoning-effort value to send to the SDK, or <see langword="null" />.</returns>
+    internal static async Task<string?> ResolveReasoningEffortAsync(
+        CopilotClient client,
+        string? modelId,
+        string? configuredReasoningEffort,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(client);
+
+        string? normalizedReasoningEffort = WorkflowReasoningEffort.Normalize(configuredReasoningEffort);
+        if (normalizedReasoningEffort is null)
+        {
+            return null;
+        }
+
+        if (!WorkflowReasoningEffort.IsHighestSupportedValue(normalizedReasoningEffort)
+            || string.IsNullOrWhiteSpace(modelId))
+        {
+            return normalizedReasoningEffort;
+        }
+
+        IReadOnlyList<ModelInfo> availableModels = await client.ListModelsAsync(cancellationToken);
+        ModelInfo? selectedModel = availableModels.FirstOrDefault(availableModel =>
+            string.Equals(availableModel.Id, modelId, StringComparison.OrdinalIgnoreCase));
+        if (selectedModel is null)
+        {
+            return null;
+        }
+
+        return ResolveHighestSupportedReasoningEffort(selectedModel.SupportedReasoningEfforts)
+            ?? selectedModel.DefaultReasoningEffort;
+    }
+
+    /// <summary>
+    ///     Resolves the highest supported reasoning-effort value reported for a model.
+    /// </summary>
+    /// <param name="supportedReasoningEfforts">The supported reasoning-effort values reported by the model metadata.</param>
+    /// <returns>The highest supported reasoning-effort value, or <see langword="null" />.</returns>
+    internal static string? ResolveHighestSupportedReasoningEffort(IReadOnlyList<string>? supportedReasoningEfforts)
+    {
+        return WorkflowReasoningEffort.SelectHighestSupported(supportedReasoningEfforts);
+    }
+
+    private static string? SelectPreferredModelId(IReadOnlyList<string> modelIds)
+    {
+        ArgumentNullException.ThrowIfNull(modelIds);
+
+        return modelIds.FirstOrDefault(modelId => !string.IsNullOrWhiteSpace(modelId))?.Trim();
+    }
+
+    [LoggerMessage(EventId = 100, Level = LogLevel.Debug, Message = "Executing Copilot workflow role {RoleName} from workspace {WorkspaceRootPath} with {AttachmentCount} attachments, models {Models}, and reasoning effort {ReasoningEffort}.")]
+    private partial void LogExecutingRole(string roleName, string workspaceRootPath, int attachmentCount, string models, string reasoningEffort);
 
     [LoggerMessage(EventId = 101, Level = LogLevel.Error, Message = "Copilot workflow role {RoleName} returned an empty response.")]
     private partial void LogEmptyResponse(Exception exception, string roleName);

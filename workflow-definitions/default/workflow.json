@@ -69,6 +69,10 @@
       "displayName": "Increment Framing",
       "role": "Planning",
       "agent": "planner",
+      "models": [
+        "gpt-5.4"
+      ],
+      "reasoningEffort": "highest-supported",
       "inputs": [
         "request"
       ],
@@ -116,6 +120,10 @@
       "displayName": "Business Amigo",
       "role": "Business",
       "agent": "business-amigo",
+      "models": [
+        "gpt-5.4"
+      ],
+      "reasoningEffort": "highest-supported",
       "inputs": [
         "request",
         "node:increment-framing"
@@ -143,6 +151,10 @@
       "displayName": "Development Amigo",
       "role": "Development",
       "agent": "development-amigo",
+      "models": [
+        "gpt-5.4"
+      ],
+      "reasoningEffort": "highest-supported",
       "inputs": [
         "request",
         "node:increment-framing",
@@ -171,6 +183,10 @@
       "displayName": "Testing Amigo",
       "role": "Testing",
       "agent": "testing-amigo",
+      "models": [
+        "gpt-5.4"
+      ],
+      "reasoningEffort": "highest-supported",
       "inputs": [
         "request",
         "node:increment-framing",
@@ -206,6 +222,10 @@
       "displayName": "Implementation",
       "role": "Implementation",
       "agent": "builder",
+      "models": [
+        "gpt-5.4"
+      ],
+      "reasoningEffort": "highest-supported",
       "inputs": [
         "request",
         "node:increment-framing",
@@ -228,7 +248,151 @@
           "path": "rules/agents/builder.rules.md"
         }
       ],
-      "next": "review-fork"
+      "next": "github-sync"
+    },
+    {
+      "id": "github-sync",
+      "kind": "Stage",
+      "displayName": "GitHub Sync",
+      "role": "GitHub",
+      "agent": "github-manager",
+      "inputs": [
+        "request",
+        "node:increment-framing",
+        "node:builder",
+        "node:rebuilder",
+        "node:github-poll"
+      ],
+      "outputs": [
+        "githubSyncStatus"
+      ],
+      "customMessage": "Push the current branch, create or update the pull request, and if prior GitHub feedback exists reply to eligible review threads with the fix summary or the reason the change was intentionally not made. Resolve only bot, AI, or automated threads when policy allows.",
+      "assets": [
+        {
+          "kind": "agent-persona",
+          "path": "agents/github-manager.agent.md"
+        },
+        {
+          "kind": "agent-rule",
+          "path": "rules/agents/github-manager.rules.md"
+        },
+        {
+          "kind": "instruction",
+          "path": "instructions/general/github-integration.instructions.md"
+        },
+        {
+          "kind": "repository-instruction",
+          "path": "instructions/repository/github-review-policy.instructions.md"
+        }
+      ],
+      "next": "wait-for-cloud-review-lag"
+    },
+    {
+      "id": "wait-for-cloud-review-lag",
+      "kind": "Wait",
+      "displayName": "Wait For Cloud Review Lag",
+      "waitDuration": "00:05:00",
+      "waitReason": "Pause to allow delayed automated or cloud review comments to appear after the latest push.",
+      "next": "github-poll"
+    },
+    {
+      "id": "github-poll",
+      "kind": "Stage",
+      "displayName": "GitHub Poll",
+      "role": "GitHub",
+      "agent": "github-manager",
+      "inputs": [
+        "request",
+        "node:increment-framing",
+        "node:builder",
+        "node:rebuilder",
+        "node:github-sync"
+      ],
+      "outputs": [
+        "githubFeedbackSummary",
+        "githubRoutingChoice"
+      ],
+      "customMessage": "Inspect the pull request, review threads, and required status checks. Summarize the current GitHub evidence and emit the single routing choice that the workflow should follow next.",
+      "assets": [
+        {
+          "kind": "agent-persona",
+          "path": "agents/github-manager.agent.md"
+        },
+        {
+          "kind": "agent-rule",
+          "path": "rules/agents/github-manager.rules.md"
+        },
+        {
+          "kind": "instruction",
+          "path": "instructions/general/github-integration.instructions.md"
+        },
+        {
+          "kind": "repository-instruction",
+          "path": "instructions/repository/github-review-policy.instructions.md"
+        }
+      ],
+      "next": "github-feedback-decision"
+    },
+    {
+      "id": "github-feedback-decision",
+      "kind": "Decision",
+      "displayName": "GitHub Feedback Decision",
+      "role": "Decision",
+      "agent": "decision",
+      "decisionMode": "Rules",
+      "ruleSet": "github-feedback",
+      "decisionSourceNodeId": "github-poll",
+      "inputs": [
+        "request",
+        "node:github-sync",
+        "node:github-poll",
+        "node:rebuilder"
+      ],
+      "assets": [
+        {
+          "kind": "agent-persona",
+          "path": "agents/decision.agent.md"
+        },
+        {
+          "kind": "agent-rule",
+          "path": "rules/agents/decision.rules.md"
+        }
+      ],
+      "choices": [
+        {
+          "id": "ready",
+          "displayName": "Ready For Review",
+          "nextNodeId": "review-fork"
+        },
+        {
+          "id": "rework",
+          "displayName": "Needs Rework",
+          "nextNodeId": "rebuilder"
+        },
+        {
+          "id": "wait-for-comments",
+          "displayName": "Wait For Comments",
+          "nextNodeId": "wait-for-cloud-review-lag"
+        },
+        {
+          "id": "wait-for-ci",
+          "displayName": "Wait For CI",
+          "nextNodeId": "wait-for-ci-checks"
+        },
+        {
+          "id": "stop",
+          "displayName": "Stop",
+          "nextNodeId": "stopped"
+        }
+      ]
+    },
+    {
+      "id": "wait-for-ci-checks",
+      "kind": "Wait",
+      "displayName": "Wait For CI Checks",
+      "waitDuration": "00:05:00",
+      "waitReason": "Pause before polling GitHub again because required status checks are still pending.",
+      "next": "github-poll"
     },
     {
       "id": "review-fork",
@@ -268,6 +432,10 @@
       "displayName": "Solution Architecture Review",
       "role": "Review",
       "agent": "solution-architect-reviewer",
+      "models": [
+        "gpt-5.4"
+      ],
+      "reasoningEffort": "highest-supported",
       "inputs": [
         "request",
         "node:increment-framing",
@@ -299,6 +467,10 @@
       "displayName": "Principal Engineer Review",
       "role": "Review",
       "agent": "principal-engineer-reviewer",
+      "models": [
+        "gpt-5.4"
+      ],
+      "reasoningEffort": "highest-supported",
       "inputs": [
         "request",
         "node:increment-framing",
@@ -330,6 +502,10 @@
       "displayName": "DevOps Review",
       "role": "Review",
       "agent": "devops-engineer-reviewer",
+      "models": [
+        "gpt-5.4"
+      ],
+      "reasoningEffort": "highest-supported",
       "inputs": [
         "request",
         "node:increment-framing",
@@ -361,6 +537,10 @@
       "displayName": "Platform Review",
       "role": "Review",
       "agent": "platform-engineer-reviewer",
+      "models": [
+        "gpt-5.4"
+      ],
+      "reasoningEffort": "highest-supported",
       "inputs": [
         "request",
         "node:increment-framing",
@@ -392,6 +572,10 @@
       "displayName": "Developer Evangelist Review",
       "role": "Review",
       "agent": "developer-evangelist-reviewer",
+      "models": [
+        "gpt-5.4"
+      ],
+      "reasoningEffort": "highest-supported",
       "inputs": [
         "request",
         "node:increment-framing",
@@ -423,6 +607,10 @@
       "displayName": "UX Review",
       "role": "Review",
       "agent": "ux-designer-reviewer",
+      "models": [
+        "gpt-5.4"
+      ],
+      "reasoningEffort": "highest-supported",
       "inputs": [
         "request",
         "node:increment-framing",
@@ -461,6 +649,10 @@
       "displayName": "Master Review",
       "role": "Review",
       "agent": "master-reviewer",
+      "models": [
+        "gpt-5.4"
+      ],
+      "reasoningEffort": "highest-supported",
       "inputs": [
         "request",
         "node:increment-framing",
@@ -499,6 +691,10 @@
       "displayName": "Review Decision",
       "role": "Decision",
       "agent": "decision",
+      "models": [
+        "gpt-5.4"
+      ],
+      "reasoningEffort": "highest-supported",
       "decisionMode": "Rules",
       "ruleSet": "clean-agile-review",
       "decisionSourceNodeId": "master-reviewer",
@@ -546,6 +742,10 @@
       "displayName": "Focused Rework",
       "role": "Rework",
       "agent": "rebuilder",
+      "models": [
+        "gpt-5.4"
+      ],
+      "reasoningEffort": "highest-supported",
       "inputs": [
         "request",
         "node:increment-framing",
@@ -553,6 +753,7 @@
         "node:development-amigo",
         "node:testing-amigo",
         "node:builder",
+        "node:github-poll",
         "node:master-reviewer",
         "node:rebuilder"
       ],
@@ -571,7 +772,7 @@
           "path": "rules/agents/rebuilder.rules.md"
         }
       ],
-      "next": "review-fork"
+      "next": "github-sync"
     },
     {
       "id": "approved",
@@ -591,6 +792,6 @@
     "maxReviewCycles": 2,
     "maxRebuilds": 1,
     "maxParallelism": 6,
-    "maxNodeVisits": 12
+    "maxNodeVisits": 20
   }
 }

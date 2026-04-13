@@ -7,7 +7,7 @@ namespace CleanSquad.Workflow.UnitTests.TestFixtures;
 /// </summary>
 internal sealed class FixedTimeProvider : TimeProvider
 {
-    private readonly DateTimeOffset utcNow;
+    private DateTimeOffset utcNow;
 
     /// <summary>
     ///     Initializes a new instance of the <see cref="FixedTimeProvider" /> class.
@@ -22,5 +22,14 @@ internal sealed class FixedTimeProvider : TimeProvider
     public override DateTimeOffset GetUtcNow()
     {
         return this.utcNow;
+    }
+
+    /// <summary>
+    ///     Advances the configured UTC timestamp by the provided duration.
+    /// </summary>
+    /// <param name="duration">The duration to add to the current UTC timestamp.</param>
+    public void Advance(TimeSpan duration)
+    {
+        this.utcNow = this.utcNow.Add(duration);
     }
 }

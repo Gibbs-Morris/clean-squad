@@ -143,28 +143,35 @@ public static class WorkflowDefinitionLoader
         ValidateStageAssets(definition.SharedAssets, "sharedAssets", errors);
         ValidateOptionalIdentifier(definition.Planner?.Agent, "planner.agent", errors);
         ValidateModels(definition.Planner?.Models, "planner.models", errors);
+        ValidateReasoningEffort(definition.Planner?.Models, definition.Planner?.ReasoningEffort, "planner.reasoningEffort", errors);
         ValidateOutputNames(definition.Planner?.Outputs, "planner.outputs", errors);
         ValidateStageAssets(definition.Planner?.Assets, "planner.assets", errors);
         ValidateOptionalIdentifier(definition.Builder?.Agent, "builder.agent", errors);
         ValidateModels(definition.Builder?.Models, "builder.models", errors);
+        ValidateReasoningEffort(definition.Builder?.Models, definition.Builder?.ReasoningEffort, "builder.reasoningEffort", errors);
         ValidateOutputNames(definition.Builder?.Outputs, "builder.outputs", errors);
         ValidateStageAssets(definition.Builder?.Assets, "builder.assets", errors);
         ValidateOptionalIdentifier(definition.Reviewer?.Agent, "reviewer.agent", errors);
         ValidateModels(definition.Reviewer?.Models, "reviewer.models", errors);
+        ValidateReasoningEffort(definition.Reviewer?.Models, definition.Reviewer?.ReasoningEffort, "reviewer.reasoningEffort", errors);
         ValidateOutputNames(definition.Reviewer?.Outputs, "reviewer.outputs", errors);
         ValidateStageAssets(definition.Reviewer?.Assets, "reviewer.assets", errors);
         ValidateOptionalIdentifier(definition.Decision?.Agent, "decision.agent", errors);
         ValidateModels(definition.Decision?.Models, "decision.models", errors);
+        ValidateReasoningEffort(definition.Decision?.Models, definition.Decision?.ReasoningEffort, "decision.reasoningEffort", errors);
         ValidateOutputNames(definition.Decision?.Outputs, "decision.outputs", errors);
         ValidateStageAssets(definition.Decision?.Assets, "decision.assets", errors);
         ValidateOptionalIdentifier(definition.Rebuilder?.Agent, "rebuilder.agent", errors);
         ValidateModels(definition.Rebuilder?.Models, "rebuilder.models", errors);
+        ValidateReasoningEffort(definition.Rebuilder?.Models, definition.Rebuilder?.ReasoningEffort, "rebuilder.reasoningEffort", errors);
         ValidateOutputNames(definition.Rebuilder?.Outputs, "rebuilder.outputs", errors);
         ValidateStageAssets(definition.Rebuilder?.Assets, "rebuilder.assets", errors);
         ValidateStageAssetsForNodes(definition.Nodes, errors);
         ValidateModelsForNodes(definition.Nodes, errors);
+        ValidateReasoningEffortForNodes(definition.Nodes, errors);
         ValidateOutputsForNodes(definition.Nodes, errors);
         ValidateAgentsForNodes(definition.Nodes, errors);
+        ValidateWaitConfiguration(definition.Nodes, errors);
         ValidateEntryPoints(definition, errors);
         ValidateNodes(definition, errors);
         ValidateInputs(definition.Nodes, errors);
@@ -349,6 +356,7 @@ public static class WorkflowDefinitionLoader
         switch (node.Kind)
         {
             case WorkflowNodeKind.Stage:
+            case WorkflowNodeKind.Wait:
                 ValidateTarget(node.Next, $"node '{node.Id}'.next", nodesById, errors);
                 break;
 
@@ -503,6 +511,14 @@ public static class WorkflowDefinitionLoader
         }
     }
 
+    private static void ValidateReasoningEffortForNodes(IReadOnlyList<WorkflowNodeDefinition> nodes, List<string> errors)
+    {
+        foreach (WorkflowNodeDefinition node in nodes)
+        {
+            ValidateReasoningEffort(node.Models, node.ReasoningEffort, $"nodes[{node.Id}].reasoningEffort", errors);
+        }
+    }
+
     private static void ValidateOutputsForNodes(IReadOnlyList<WorkflowNodeDefinition> nodes, List<string> errors)
     {
         foreach (WorkflowNodeDefinition node in nodes)
@@ -519,6 +535,39 @@ public static class WorkflowDefinitionLoader
         }
     }
 
+    private static void ValidateWaitConfiguration(IReadOnlyList<WorkflowNodeDefinition> nodes, List<string> errors)
+    {
+        foreach (WorkflowNodeDefinition node in nodes)
+        {
+            if (node.Kind == WorkflowNodeKind.Wait)
+            {
+                if (string.IsNullOrWhiteSpace(node.WaitDuration))
+                {
+                    errors.Add($"The wait node '{node.Id}' must define waitDuration.");
+                    continue;
+                }
+
+                if (!TimeSpan.TryParse(node.WaitDuration, System.Globalization.CultureInfo.InvariantCulture, out TimeSpan waitDuration)
+                    || waitDuration <= TimeSpan.Zero)
+                {
+                    errors.Add($"The wait node '{node.Id}' must define a positive waitDuration using the .NET TimeSpan format.");
+                }
+
+                continue;
+            }
+
+            if (!string.IsNullOrWhiteSpace(node.WaitDuration))
+            {
+                errors.Add($"The workflow node '{node.Id}' cannot define waitDuration unless its kind is Wait.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(node.WaitReason))
+            {
+                errors.Add($"The workflow node '{node.Id}' cannot define waitReason unless its kind is Wait.");
+            }
+        }
+    }
+
     private static void ValidateModels(IReadOnlyList<string>? models, string propertyName, List<string> errors)
     {
         if (models is null)
@@ -532,6 +581,31 @@ public static class WorkflowDefinitionLoader
             {
                 errors.Add($"The workflow definition property '{propertyName}' must not contain blank model identifiers.");
             }
+        }
+    }
+
+    private static void ValidateReasoningEffort(
+        IReadOnlyList<string>? models,
+        string? reasoningEffort,
+        string propertyName,
+        List<string> errors)
+    {
+        if (string.IsNullOrWhiteSpace(reasoningEffort))
+        {
+            return;
+        }
+
+        string? normalizedReasoningEffort = WorkflowReasoningEffort.Normalize(reasoningEffort);
+        if (normalizedReasoningEffort is null)
+        {
+            errors.Add($"The workflow definition property '{propertyName}' must be one of 'low', 'medium', 'high', 'xhigh', or '{WorkflowReasoningEffort.HighestSupported}'.");
+            return;
+        }
+
+        if (WorkflowReasoningEffort.IsHighestSupportedValue(normalizedReasoningEffort)
+            && (models is null || models.Count == 0))
+        {
+            errors.Add($"The workflow definition property '{propertyName}' requires at least one configured model when set to '{WorkflowReasoningEffort.HighestSupported}'.");
         }
     }
 
@@ -637,6 +711,7 @@ public static class WorkflowDefinitionLoader
             switch (node.Kind)
             {
                 case WorkflowNodeKind.Stage:
+                case WorkflowNodeKind.Wait:
                 case WorkflowNodeKind.Join:
                     if (!string.IsNullOrWhiteSpace(node.Next))
                     {
@@ -806,6 +881,7 @@ public static class WorkflowDefinitionLoader
         {
             definition.Planner.Agent = NormalizeOptionalText(definition.Planner.Agent);
             definition.Planner.Models = NormalizeModels(definition.Planner.Models);
+            definition.Planner.ReasoningEffort = WorkflowReasoningEffort.Normalize(definition.Planner.ReasoningEffort);
             definition.Planner.Inputs = NormalizeReferences(definition.Planner.Inputs);
             definition.Planner.Outputs = NormalizeNames(definition.Planner.Outputs);
             definition.Planner.CustomMessage = NormalizeOptionalText(definition.Planner.CustomMessage);
@@ -815,6 +891,7 @@ public static class WorkflowDefinitionLoader
         {
             definition.Builder.Agent = NormalizeOptionalText(definition.Builder.Agent);
             definition.Builder.Models = NormalizeModels(definition.Builder.Models);
+            definition.Builder.ReasoningEffort = WorkflowReasoningEffort.Normalize(definition.Builder.ReasoningEffort);
             definition.Builder.Inputs = NormalizeReferences(definition.Builder.Inputs);
             definition.Builder.Outputs = NormalizeNames(definition.Builder.Outputs);
             definition.Builder.CustomMessage = NormalizeOptionalText(definition.Builder.CustomMessage);
@@ -824,6 +901,7 @@ public static class WorkflowDefinitionLoader
         {
             definition.Reviewer.Agent = NormalizeOptionalText(definition.Reviewer.Agent);
             definition.Reviewer.Models = NormalizeModels(definition.Reviewer.Models);
+            definition.Reviewer.ReasoningEffort = WorkflowReasoningEffort.Normalize(definition.Reviewer.ReasoningEffort);
             definition.Reviewer.Inputs = NormalizeReferences(definition.Reviewer.Inputs);
             definition.Reviewer.Outputs = NormalizeNames(definition.Reviewer.Outputs);
             definition.Reviewer.CustomMessage = NormalizeOptionalText(definition.Reviewer.CustomMessage);
@@ -833,6 +911,7 @@ public static class WorkflowDefinitionLoader
         {
             definition.Decision.Agent = NormalizeOptionalText(definition.Decision.Agent);
             definition.Decision.Models = NormalizeModels(definition.Decision.Models);
+            definition.Decision.ReasoningEffort = WorkflowReasoningEffort.Normalize(definition.Decision.ReasoningEffort);
             definition.Decision.Inputs = NormalizeReferences(definition.Decision.Inputs);
             definition.Decision.Outputs = NormalizeNames(definition.Decision.Outputs);
             definition.Decision.CustomMessage = NormalizeOptionalText(definition.Decision.CustomMessage);
@@ -842,6 +921,7 @@ public static class WorkflowDefinitionLoader
         {
             definition.Rebuilder.Agent = NormalizeOptionalText(definition.Rebuilder.Agent);
             definition.Rebuilder.Models = NormalizeModels(definition.Rebuilder.Models);
+            definition.Rebuilder.ReasoningEffort = WorkflowReasoningEffort.Normalize(definition.Rebuilder.ReasoningEffort);
             definition.Rebuilder.Inputs = NormalizeReferences(definition.Rebuilder.Inputs);
             definition.Rebuilder.Outputs = NormalizeNames(definition.Rebuilder.Outputs);
             definition.Rebuilder.CustomMessage = NormalizeOptionalText(definition.Rebuilder.CustomMessage);
@@ -880,9 +960,12 @@ public static class WorkflowDefinitionLoader
             {
                 node.Agent = NormalizeOptionalText(node.Agent);
                 node.Models = NormalizeModels(node.Models);
+                node.ReasoningEffort = WorkflowReasoningEffort.Normalize(node.ReasoningEffort);
                 node.Inputs = NormalizeReferences(node.Inputs);
                 node.Outputs = NormalizeNames(node.Outputs);
                 node.CustomMessage = NormalizeOptionalText(node.CustomMessage);
+                node.WaitDuration = NormalizeOptionalText(node.WaitDuration);
+                node.WaitReason = NormalizeOptionalText(node.WaitReason);
                 node.Assets = NormalizeAssets(node.Assets, baseDirectoryPath, $"nodes[{node.Id ?? index.ToString(System.Globalization.CultureInfo.InvariantCulture)}].assets", errors);
                 return node;
             }).ToList();
@@ -1126,6 +1209,7 @@ public static class WorkflowDefinitionLoader
             Role = definition.Decision?.Role ?? WorkflowStage.Decision.ToString(),
             Agent = definition.Decision?.Agent,
             Models = definition.Decision?.Models ?? [],
+            ReasoningEffort = definition.Decision?.ReasoningEffort,
             Assets = definition.Decision?.Assets ?? [],
             Inputs = definition.Decision?.Inputs?.Count > 0
                 ? definition.Decision.Inputs
@@ -1185,6 +1269,7 @@ public static class WorkflowDefinitionLoader
             Role = string.IsNullOrWhiteSpace(stage.Role) ? fallbackRole : stage.Role,
             Agent = stage.Agent,
             Models = stage.Models,
+            ReasoningEffort = stage.ReasoningEffort,
             Assets = stage.Assets,
             Inputs = stage.Inputs.Count > 0 ? stage.Inputs : defaultInputs,
             Outputs = stage.Outputs,

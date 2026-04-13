@@ -133,6 +133,8 @@ public sealed partial class MarkdownArtifactService : IWorkflowArtifactService
             $"- {index + 1:00}: {decision.Action} ({decision.Source}) - {decision.Reason}");
         IEnumerable<string> pendingLines = state.PendingActivations.Select(activation =>
             $"- {activation.SequenceNumber:0000}: {activation.NodeId}{FormatBranchSuffix(activation.BranchId)}");
+        IEnumerable<string> waitingLines = state.WaitingNodes.Select(wait =>
+            $"- {wait.NodeId}: waiting until {wait.WaitUntilUtc:O} for '{wait.NextNodeId}' ({wait.Reason}){FormatBranchSuffix(wait.BranchId)}");
         IEnumerable<string> stepLines = state.Steps.OrderBy(step => step.StepNumber).Select(step =>
             $"- {step.StepNumber:0000}: {step.NodeId} [{step.Status}] attempt={step.Attempt}");
         string stateMarkdown = $"""
@@ -155,6 +157,9 @@ CompletedUtc: {(state.CompletedAtUtc.HasValue ? state.CompletedAtUtc.Value.ToStr
 
 ## Pending Activations
 {string.Join(Environment.NewLine, pendingLines.DefaultIfEmpty("- none"))}
+
+## Waiting Nodes
+{string.Join(Environment.NewLine, waitingLines.DefaultIfEmpty("- none"))}
 
 ## Steps
 {string.Join(Environment.NewLine, stepLines.DefaultIfEmpty("- none"))}

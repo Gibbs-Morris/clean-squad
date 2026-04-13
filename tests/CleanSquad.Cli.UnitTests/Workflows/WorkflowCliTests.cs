@@ -154,6 +154,50 @@ public sealed class WorkflowCliTests
     }
 
     /// <summary>
+    ///     Verifies paused workflows are reported as intentional waits rather than failures.
+    /// </summary>
+    /// <returns>A task that represents the asynchronous test.</returns>
+    [Fact]
+    public async Task BuildOutputAsyncReportsPausedWorkflowStatusAsync()
+    {
+        string tempDirectoryPath = CreateTempDirectory();
+
+        try
+        {
+            string workflowDefinitionPath = Path.Combine(tempDirectoryPath, "workflow.json");
+            string requestPath = Path.Combine(tempDirectoryPath, "request.md");
+            await File.WriteAllTextAsync(workflowDefinitionPath, "{}", Encoding.UTF8);
+            await File.WriteAllTextAsync(requestPath, "# Request\n", Encoding.UTF8);
+            using StringWriter outputWriter = new();
+
+            FakeWorkflowOrchestrator orchestrator = new(
+                new WorkflowRunResult(
+                    Path.Combine(tempDirectoryPath, ".workflow-testing", "workflow-runs", "demo"),
+                    Path.Combine(tempDirectoryPath, ".workflow-testing", "workflow-runs", "demo", "final.md"),
+                    Path.Combine(tempDirectoryPath, ".workflow-testing", "workflow-runs", "demo", "state.md"),
+                    WorkflowRunStatus.Paused,
+                    false,
+                    0,
+                    0,
+                    Array.Empty<WorkflowDecision>()));
+
+            int exitCode = await CliApplication.InvokeAsync(
+                ["workflow", "run", "--definition", workflowDefinitionPath, requestPath],
+                orchestrator,
+                tempDirectoryPath,
+                outputWriter);
+            string output = outputWriter.ToString().Trim();
+
+            Assert.Equal(0, exitCode);
+            Assert.Contains("paused and is waiting to be resumed", output, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Directory.Delete(tempDirectoryPath, true);
+        }
+    }
+
+    /// <summary>
     ///     Verifies the workflow command rejects missing request files.
     /// </summary>
     /// <returns>A task that represents the asynchronous test.</returns>

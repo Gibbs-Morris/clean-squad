@@ -81,6 +81,7 @@ public sealed class WorkflowPromptComposerTests
                         Role = "Planning",
                         Agent = "planner-agent",
                         Models = ["model-plan-fast"],
+                        ReasoningEffort = WorkflowReasoningEffort.HighestSupported,
                         Inputs = ["request", "workflow"],
                         Outputs = ["planMarkdown", "riskSummary"],
                         CustomMessage = "Focus on delivery risks and keep the plan lean.",
@@ -107,6 +108,7 @@ public sealed class WorkflowPromptComposerTests
             Assert.Contains("- planMarkdown", prompt, StringComparison.Ordinal);
             Assert.Contains("- riskSummary", prompt, StringComparison.Ordinal);
             Assert.Contains("- model-plan-fast", prompt, StringComparison.Ordinal);
+            Assert.Contains("- highest-supported", prompt, StringComparison.Ordinal);
             Assert.Contains("Focus on delivery risks and keep the plan lean.", prompt, StringComparison.Ordinal);
         }
         finally

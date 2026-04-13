@@ -80,6 +80,51 @@ public sealed class MarkdownArtifactServiceTests
         }
     }
 
+    /// <summary>
+    ///     Verifies the state markdown records active waiting nodes for paused workflows.
+    /// </summary>
+    [Fact]
+    public void WriteStateIncludesWaitingNodes()
+    {
+        string tempDirectoryPath = CreateTempDirectory();
+
+        try
+        {
+            FixedTimeProvider timeProvider = new(new DateTimeOffset(2026, 4, 13, 10, 0, 0, TimeSpan.Zero));
+            WorkflowArtifacts artifacts = WorkflowArtifacts.Create(
+                tempDirectoryPath,
+                Path.Combine(tempDirectoryPath, "workflow.json"),
+                Path.Combine(tempDirectoryPath, "request.md"),
+                timeProvider);
+            Directory.CreateDirectory(artifacts.RunDirectoryPath);
+            MarkdownArtifactService service = new(timeProvider);
+            WorkflowRunState state = WorkflowRunState.Create(artifacts.RunId, "Test Workflow", "builder", timeProvider);
+            state.Status = WorkflowRunStatus.Paused;
+            state.PendingActivations.Clear();
+            state.WaitingNodes.Add(new WorkflowWaitState
+            {
+                NodeId = "wait-for-ci",
+                NextNodeId = "github-poll",
+                WaitDuration = "00:05:00",
+                Reason = "Wait for CI checks to finish.",
+                WaitStartedAtUtc = timeProvider.GetUtcNow(),
+                WaitUntilUtc = timeProvider.GetUtcNow().AddMinutes(5),
+            });
+
+            service.WriteState(artifacts, state);
+
+            string stateMarkdown = File.ReadAllText(artifacts.StateMarkdownPath);
+            Assert.Contains("Status: Paused", stateMarkdown, StringComparison.Ordinal);
+            Assert.Contains("## Waiting Nodes", stateMarkdown, StringComparison.Ordinal);
+            Assert.Contains("wait-for-ci", stateMarkdown, StringComparison.Ordinal);
+            Assert.Contains("github-poll", stateMarkdown, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Directory.Delete(tempDirectoryPath, true);
+        }
+    }
+
     private static string CreateTempDirectory()
     {
         string tempDirectoryPath = Path.Combine(Path.GetTempPath(), $"clean-squad-workflow-{Guid.NewGuid():N}");

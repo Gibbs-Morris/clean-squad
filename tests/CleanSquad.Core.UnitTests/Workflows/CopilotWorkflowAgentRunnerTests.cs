@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using CleanSquad.Core.Workflows;
+using CleanSquad.Workflow;
 using GitHub.Copilot.SDK;
 
 namespace CleanSquad.Core.UnitTests.Workflows;
@@ -19,7 +20,8 @@ public sealed class CopilotWorkflowAgentRunnerTests
     {
         SessionConfig config = CopilotWorkflowAgentRunner.CreateSessionConfig(
             @"c:\repo",
-            ["gpt-5", "gpt-4.1"]);
+            "gpt-5.4",
+            WorkflowReasoningEffort.High);
 
         PermissionRequestResult result = await config.OnPermissionRequest!(
             new PermissionRequestWrite
@@ -35,7 +37,8 @@ public sealed class CopilotWorkflowAgentRunnerTests
             });
 
         Assert.Equal(@"c:\repo", config.WorkingDirectory);
-        Assert.Equal("gpt-5", config.Model);
+        Assert.Equal("gpt-5.4", config.Model);
+        Assert.Equal(WorkflowReasoningEffort.High, config.ReasoningEffort);
         Assert.Equal(PermissionRequestResultKind.Approved, result.Kind);
     }
 
@@ -49,7 +52,8 @@ public sealed class CopilotWorkflowAgentRunnerTests
     {
         SessionConfig config = CopilotWorkflowAgentRunner.CreateSessionConfig(
             @"c:\repo",
-            []);
+            null,
+            null);
 
         PermissionRequestResult result = await config.OnPermissionRequest!(
             new PermissionRequestShell
@@ -69,6 +73,19 @@ public sealed class CopilotWorkflowAgentRunnerTests
             });
 
         Assert.Null(config.Model);
+        Assert.Null(config.ReasoningEffort);
         Assert.Equal(PermissionRequestResultKind.Approved, result.Kind);
+    }
+
+    /// <summary>
+    ///     Verifies the workflow runner can resolve the strongest supported reasoning effort for the selected model.
+    /// </summary>
+    [Fact]
+    public void ResolveHighestSupportedReasoningEffortReturnsStrongestSupportedValue()
+    {
+        string? resolvedReasoningEffort = CopilotWorkflowAgentRunner.ResolveHighestSupportedReasoningEffort(
+            [WorkflowReasoningEffort.Medium, WorkflowReasoningEffort.ExtraHigh, WorkflowReasoningEffort.High]);
+
+        Assert.Equal(WorkflowReasoningEffort.ExtraHigh, resolvedReasoningEffort);
     }
 }

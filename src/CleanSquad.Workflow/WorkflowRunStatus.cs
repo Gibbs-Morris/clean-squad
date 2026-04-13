@@ -11,6 +11,11 @@ public enum WorkflowRunStatus
     Running,
 
     /// <summary>
+    ///     The workflow intentionally paused at a wait node and may be resumed later.
+    /// </summary>
+    Paused,
+
+    /// <summary>
     ///     The workflow completed with approval.
     /// </summary>
     Approved,

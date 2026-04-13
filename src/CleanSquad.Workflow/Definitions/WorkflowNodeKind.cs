@@ -26,6 +26,11 @@ public enum WorkflowNodeKind
     Join,
 
     /// <summary>
+    ///     Pauses the workflow until a configured wait duration has elapsed.
+    /// </summary>
+    Wait,
+
+    /// <summary>
     ///     Terminates the workflow with a final status.
     /// </summary>
     Exit,

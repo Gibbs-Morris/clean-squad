@@ -147,6 +147,7 @@ public sealed class WorkflowDecisionResolverTests
             string prompt,
             IReadOnlyList<string> attachmentFilePaths,
             IReadOnlyList<string> modelIds,
+            string? reasoningEffort,
             CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();

@@ -39,6 +39,12 @@ public sealed class WorkflowNodeDefinition
     public IReadOnlyList<string> Models { get; set; } = [];
 
     /// <summary>
+    ///     Gets or sets the reasoning-effort preference for the selected model.
+    ///     Valid values are <c>low</c>, <c>medium</c>, <c>high</c>, <c>xhigh</c>, and <c>highest-supported</c>.
+    /// </summary>
+    public string? ReasoningEffort { get; set; }
+
+    /// <summary>
     ///     Gets or sets the static assets used by the node.
     /// </summary>
     public IReadOnlyList<WorkflowAssetReference> Assets { get; set; } = [];
@@ -62,6 +68,16 @@ public sealed class WorkflowNodeDefinition
     ///     Gets or sets the next node identifier for linear continuation.
     /// </summary>
     public string? Next { get; set; }
+
+    /// <summary>
+    ///     Gets or sets the wait duration for a wait node using the .NET <see cref="System.TimeSpan" /> string format.
+    /// </summary>
+    public string? WaitDuration { get; set; }
+
+    /// <summary>
+    ///     Gets or sets the human-readable reason recorded when a wait node pauses the workflow.
+    /// </summary>
+    public string? WaitReason { get; set; }
 
     /// <summary>
     ///     Gets or sets the decision resolution mode.
