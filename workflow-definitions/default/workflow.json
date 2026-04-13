@@ -837,14 +837,35 @@
       "agent": "github-manager",
       "inputs": ["request", "node:epic-planning", "node:story-stack-planning", "node:story-selection", "node:builder", "node:rebuilder", "node:code-master-reviewer", "node:github-poll"],
       "outputs": ["githubSyncStatus", "storyStackSyncStatus"],
-      "customMessage": "Push or update the selected story branch, create or update its stacked pull request, retarget child pull request bases intentionally when parents merge, and respond to eligible automated review threads.",
+      "customMessage": "Inspect or update verified GitHub state for the selected story branch and stacked pull request. If branch, pull request, review-thread, or CI state cannot be directly verified, do not claim those actions occurred; emit a stop choice with the missing evidence instead.",
       "assets": [
         { "kind": "agent-persona", "path": "agents/github-manager.agent.md" },
         { "kind": "agent-rule", "path": "rules/agents/github-manager.rules.md" },
         { "kind": "instruction", "path": "instructions/general/github-integration.instructions.md" },
         { "kind": "repository-instruction", "path": "instructions/repository/github-review-policy.instructions.md" }
       ],
-      "next": "wait-for-cloud-review-lag"
+      "next": "github-sync-decision"
+    },
+    {
+      "id": "github-sync-decision",
+      "kind": "Decision",
+      "displayName": "GitHub Sync Decision",
+      "role": "Decision",
+      "agent": "decision",
+      "decisionMode": "Rules",
+      "decisionSourceNodeId": "github-sync",
+      "inputs": ["request", "node:story-selection", "node:github-sync", "node:rebuilder"],
+      "assets": [
+        { "kind": "agent-persona", "path": "agents/decision.agent.md" },
+        { "kind": "agent-rule", "path": "rules/agents/decision.rules.md" }
+      ],
+      "choices": [
+        { "id": "ready", "displayName": "Ready", "nextNodeId": "story-selection" },
+        { "id": "rework", "displayName": "Needs Rework", "nextNodeId": "rebuilder" },
+        { "id": "wait-for-comments", "displayName": "Wait For Comments", "nextNodeId": "wait-for-cloud-review-lag" },
+        { "id": "wait-for-ci", "displayName": "Wait For CI", "nextNodeId": "wait-for-ci-checks" },
+        { "id": "stop", "displayName": "Stop", "nextNodeId": "stopped" }
+      ]
     },
     {
       "id": "wait-for-cloud-review-lag",
