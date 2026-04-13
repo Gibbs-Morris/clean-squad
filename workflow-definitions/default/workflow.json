@@ -25,7 +25,7 @@
     },
     {
       "id": "review",
-      "nodeId": "reviewer"
+      "nodeId": "review-fork"
     }
   ],
   "sharedAssets": [
@@ -228,14 +228,46 @@
           "path": "rules/agents/builder.rules.md"
         }
       ],
-      "next": "reviewer"
+      "next": "review-fork"
     },
     {
-      "id": "reviewer",
+      "id": "review-fork",
+      "kind": "Fork",
+      "displayName": "Cross-Functional Review Fork",
+      "joinNodeId": "review-join",
+      "branches": [
+        {
+          "id": "solution-architecture",
+          "nextNodeId": "solution-architect-reviewer"
+        },
+        {
+          "id": "principal-engineering",
+          "nextNodeId": "principal-engineer-reviewer"
+        },
+        {
+          "id": "devops",
+          "nextNodeId": "devops-engineer-reviewer"
+        },
+        {
+          "id": "platform",
+          "nextNodeId": "platform-engineer-reviewer"
+        },
+        {
+          "id": "developer-evangelism",
+          "nextNodeId": "developer-evangelist-reviewer"
+        },
+        {
+          "id": "ux",
+          "nextNodeId": "ux-designer-reviewer"
+        }
+      ]
+    },
+    {
+      "id": "solution-architect-reviewer",
       "kind": "Stage",
-      "displayName": "Technical Review",
+      "displayName": "Solution Architecture Review",
       "role": "Review",
-      "agent": "reviewer",
+      "agent": "solution-architect-reviewer",
       "inputs": [
         "request",
         "node:increment-framing",
@@ -246,18 +278,217 @@
         "node:rebuilder"
       ],
       "outputs": [
-        "reviewVerdict",
-        "reviewFindings"
+        "solutionArchitectureReview"
       ],
-      "customMessage": "Review the implementation for correctness, validation quality, simplicity, and maintainability. Approve only when the increment is demonstrably ready.",
+      "customMessage": "Review every delivered change from a solution architecture perspective. Focus on boundaries, cohesion, coupling, long-term maintainability, and whether the implementation fits the intended system shape.",
       "assets": [
         {
           "kind": "agent-persona",
-          "path": "agents/reviewer.agent.md"
+          "path": "agents/solution-architect-reviewer.agent.md"
         },
         {
           "kind": "agent-rule",
-          "path": "rules/agents/reviewer.rules.md"
+          "path": "rules/agents/specialist-reviewer.rules.md"
+        }
+      ],
+      "next": "review-join"
+    },
+    {
+      "id": "principal-engineer-reviewer",
+      "kind": "Stage",
+      "displayName": "Principal Engineer Review",
+      "role": "Review",
+      "agent": "principal-engineer-reviewer",
+      "inputs": [
+        "request",
+        "node:increment-framing",
+        "node:business-amigo",
+        "node:development-amigo",
+        "node:testing-amigo",
+        "node:builder",
+        "node:rebuilder"
+      ],
+      "outputs": [
+        "principalEngineerReview"
+      ],
+      "customMessage": "Review every delivered change from a principal engineer perspective. Focus on correctness, technical quality, test evidence, performance, resilience, and whether the implementation is the simplest sound solution.",
+      "assets": [
+        {
+          "kind": "agent-persona",
+          "path": "agents/principal-engineer-reviewer.agent.md"
+        },
+        {
+          "kind": "agent-rule",
+          "path": "rules/agents/specialist-reviewer.rules.md"
+        }
+      ],
+      "next": "review-join"
+    },
+    {
+      "id": "devops-engineer-reviewer",
+      "kind": "Stage",
+      "displayName": "DevOps Review",
+      "role": "Review",
+      "agent": "devops-engineer-reviewer",
+      "inputs": [
+        "request",
+        "node:increment-framing",
+        "node:business-amigo",
+        "node:development-amigo",
+        "node:testing-amigo",
+        "node:builder",
+        "node:rebuilder"
+      ],
+      "outputs": [
+        "devOpsReview"
+      ],
+      "customMessage": "Review every delivered change from a DevOps perspective. Focus on build reliability, deployment safety, operational readiness, telemetry, release risks, and feedback loops in automation.",
+      "assets": [
+        {
+          "kind": "agent-persona",
+          "path": "agents/devops-engineer-reviewer.agent.md"
+        },
+        {
+          "kind": "agent-rule",
+          "path": "rules/agents/specialist-reviewer.rules.md"
+        }
+      ],
+      "next": "review-join"
+    },
+    {
+      "id": "platform-engineer-reviewer",
+      "kind": "Stage",
+      "displayName": "Platform Review",
+      "role": "Review",
+      "agent": "platform-engineer-reviewer",
+      "inputs": [
+        "request",
+        "node:increment-framing",
+        "node:business-amigo",
+        "node:development-amigo",
+        "node:testing-amigo",
+        "node:builder",
+        "node:rebuilder"
+      ],
+      "outputs": [
+        "platformReview"
+      ],
+      "customMessage": "Review every delivered change from a platform engineering perspective. Focus on developer experience, runtime consistency, environment assumptions, scalability of tooling, and platform-level maintainability.",
+      "assets": [
+        {
+          "kind": "agent-persona",
+          "path": "agents/platform-engineer-reviewer.agent.md"
+        },
+        {
+          "kind": "agent-rule",
+          "path": "rules/agents/specialist-reviewer.rules.md"
+        }
+      ],
+      "next": "review-join"
+    },
+    {
+      "id": "developer-evangelist-reviewer",
+      "kind": "Stage",
+      "displayName": "Developer Evangelist Review",
+      "role": "Review",
+      "agent": "developer-evangelist-reviewer",
+      "inputs": [
+        "request",
+        "node:increment-framing",
+        "node:business-amigo",
+        "node:development-amigo",
+        "node:testing-amigo",
+        "node:builder",
+        "node:rebuilder"
+      ],
+      "outputs": [
+        "developerEvangelistReview"
+      ],
+      "customMessage": "Review every delivered change from a developer evangelist perspective. Focus on clarity, learnability, adoption friction, examples, naming, and whether the change helps other developers succeed.",
+      "assets": [
+        {
+          "kind": "agent-persona",
+          "path": "agents/developer-evangelist-reviewer.agent.md"
+        },
+        {
+          "kind": "agent-rule",
+          "path": "rules/agents/specialist-reviewer.rules.md"
+        }
+      ],
+      "next": "review-join"
+    },
+    {
+      "id": "ux-designer-reviewer",
+      "kind": "Stage",
+      "displayName": "UX Review",
+      "role": "Review",
+      "agent": "ux-designer-reviewer",
+      "inputs": [
+        "request",
+        "node:increment-framing",
+        "node:business-amigo",
+        "node:development-amigo",
+        "node:testing-amigo",
+        "node:builder",
+        "node:rebuilder"
+      ],
+      "outputs": [
+        "uxReview"
+      ],
+      "customMessage": "Review every delivered change from a UX design perspective. Focus on user flow, interaction clarity, accessibility, language, visual consistency, and whether the increment feels coherent for real users.",
+      "assets": [
+        {
+          "kind": "agent-persona",
+          "path": "agents/ux-designer-reviewer.agent.md"
+        },
+        {
+          "kind": "agent-rule",
+          "path": "rules/agents/specialist-reviewer.rules.md"
+        }
+      ],
+      "next": "review-join"
+    },
+    {
+      "id": "review-join",
+      "kind": "Join",
+      "displayName": "Cross-Functional Review Join",
+      "forkId": "review-fork",
+      "next": "master-reviewer"
+    },
+    {
+      "id": "master-reviewer",
+      "kind": "Stage",
+      "displayName": "Master Review",
+      "role": "Review",
+      "agent": "master-reviewer",
+      "inputs": [
+        "request",
+        "node:increment-framing",
+        "node:business-amigo",
+        "node:development-amigo",
+        "node:testing-amigo",
+        "node:builder",
+        "node:solution-architect-reviewer",
+        "node:principal-engineer-reviewer",
+        "node:devops-engineer-reviewer",
+        "node:platform-engineer-reviewer",
+        "node:developer-evangelist-reviewer",
+        "node:ux-designer-reviewer",
+        "node:rebuilder"
+      ],
+      "outputs": [
+        "reviewVerdict",
+        "reviewFindings"
+      ],
+      "customMessage": "Combine every specialist review into one master review. Deduplicate overlapping findings, preserve important disagreements, and produce one clear approval decision plus one consolidated set of builder instructions.",
+      "assets": [
+        {
+          "kind": "agent-persona",
+          "path": "agents/master-reviewer.agent.md"
+        },
+        {
+          "kind": "agent-rule",
+          "path": "rules/agents/master-reviewer.rules.md"
         }
       ],
       "next": "review-decision"
@@ -270,7 +501,7 @@
       "agent": "decision",
       "decisionMode": "Rules",
       "ruleSet": "clean-agile-review",
-      "decisionSourceNodeId": "reviewer",
+      "decisionSourceNodeId": "master-reviewer",
       "inputs": [
         "request",
         "node:increment-framing",
@@ -278,7 +509,7 @@
         "node:development-amigo",
         "node:testing-amigo",
         "node:builder",
-        "node:reviewer",
+        "node:master-reviewer",
         "node:rebuilder"
       ],
       "assets": [
@@ -322,7 +553,7 @@
         "node:development-amigo",
         "node:testing-amigo",
         "node:builder",
-        "node:reviewer",
+        "node:master-reviewer",
         "node:rebuilder"
       ],
       "outputs": [
@@ -340,7 +571,7 @@
           "path": "rules/agents/rebuilder.rules.md"
         }
       ],
-      "next": "reviewer"
+      "next": "review-fork"
     },
     {
       "id": "approved",
@@ -359,7 +590,7 @@
     "decisionMode": "Rules",
     "maxReviewCycles": 2,
     "maxRebuilds": 1,
-    "maxParallelism": 3,
+    "maxParallelism": 6,
     "maxNodeVisits": 12
   }
 }

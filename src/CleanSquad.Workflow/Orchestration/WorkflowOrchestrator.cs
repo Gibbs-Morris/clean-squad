@@ -76,6 +76,7 @@ public sealed partial class WorkflowOrchestrator : IWorkflowOrchestrator
         runActivity?.SetTag("workflow.run_id", runContext.Artifacts.RunId);
         WorkflowTelemetry.RunCounter.Add(1);
         Log(runContext.Artifacts, LogLevel.Information, 1000, "workflow.run.started", null, $"Workflow run '{runContext.Artifacts.RunId}' started.");
+        this.LogWorkflowRunStarting(runContext.Definition.Name, runContext.Artifacts.RunId);
         this.workflowArtifactService.WriteState(runContext.Artifacts, runContext.State);
 
         try
@@ -116,6 +117,7 @@ public sealed partial class WorkflowOrchestrator : IWorkflowOrchestrator
             this.workflowArtifactService.WriteState(runContext.Artifacts, runContext.State);
             runActivity?.SetTag("workflow.status", runContext.State.Status.ToString());
             Log(runContext.Artifacts, LogLevel.Information, 1001, "workflow.run.completed", runContext.State.ExitNodeId, $"Workflow run '{runContext.Artifacts.RunId}' completed with status '{runContext.State.Status}'.");
+            this.LogWorkflowRunCompleted(runContext.Definition.Name, runContext.Artifacts.RunId, runContext.State.Status.ToString());
 
             return CreateResult(runContext);
         }
@@ -284,6 +286,7 @@ public sealed partial class WorkflowOrchestrator : IWorkflowOrchestrator
         this.workflowArtifactService.WriteState(runContext.Artifacts, runContext.State);
         Log(runContext.Artifacts, LogLevel.Information, 3000, "workflow.decision.started", node.Id, $"Started decision node '{node.Id}'.");
 
+        this.LogDecisionEvaluating(node.Id, step.StepNumber, attachments.Count);
         try
         {
             WorkflowDecision decision = await this.workflowDecisionResolver.ResolveAsync(
@@ -313,6 +316,11 @@ public sealed partial class WorkflowOrchestrator : IWorkflowOrchestrator
             runContext.State.UpdatedAtUtc = this.timeProvider.GetUtcNow();
             this.workflowArtifactService.WriteState(runContext.Artifacts, runContext.State);
             Log(runContext.Artifacts, LogLevel.Information, 3001, "workflow.decision.completed", node.Id, $"Decision node '{node.Id}' selected '{decision.ChoiceId ?? decision.Action.ToString()}'.");
+            this.LogDecisionResolved(
+                node.Id,
+                step.StepNumber,
+                decision.ChoiceId ?? decision.Action.ToString(),
+                decision.NextNodeId ?? "(none)");
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
@@ -348,6 +356,7 @@ public sealed partial class WorkflowOrchestrator : IWorkflowOrchestrator
         runContext.State.UpdatedAtUtc = this.timeProvider.GetUtcNow();
         this.workflowArtifactService.WriteState(runContext.Artifacts, runContext.State);
         Log(runContext.Artifacts, LogLevel.Information, 4000, "workflow.fork.completed", node.Id, $"Fork node '{node.Id}' created group '{groupId}'.");
+        this.LogForkProcessed(node.Id, node.Branches.Count);
     }
 
     private void ProcessJoin(WorkflowRunContext runContext, WorkflowPendingActivation activation, WorkflowNodeDefinition node)
@@ -374,6 +383,7 @@ public sealed partial class WorkflowOrchestrator : IWorkflowOrchestrator
             runContext.State.UpdatedAtUtc = this.timeProvider.GetUtcNow();
             this.workflowArtifactService.WriteState(runContext.Artifacts, runContext.State);
             Log(runContext.Artifacts, LogLevel.Information, 4001, "workflow.join.waiting", node.Id, $"Join node '{node.Id}' is waiting for remaining branches.");
+            this.LogJoinProgress(node.Id, group.CompletedBranchIds.Count, group.ExpectedBranchIds.Count);
             return;
         }
 
@@ -388,6 +398,7 @@ public sealed partial class WorkflowOrchestrator : IWorkflowOrchestrator
         runContext.State.UpdatedAtUtc = this.timeProvider.GetUtcNow();
         this.workflowArtifactService.WriteState(runContext.Artifacts, runContext.State);
         Log(runContext.Artifacts, LogLevel.Information, 4002, "workflow.join.completed", node.Id, $"Join node '{node.Id}' released group '{group.GroupId}'.");
+        this.LogJoinReleased(node.Id, group.CompletedBranchIds.Count);
     }
 
     private void ProcessExit(WorkflowRunContext runContext, WorkflowPendingActivation activation, WorkflowNodeDefinition node)
@@ -399,6 +410,7 @@ public sealed partial class WorkflowOrchestrator : IWorkflowOrchestrator
         runContext.State.UpdatedAtUtc = runContext.State.CompletedAtUtc.Value;
         this.workflowArtifactService.WriteState(runContext.Artifacts, runContext.State);
         Log(runContext.Artifacts, LogLevel.Information, 4003, "workflow.exit.reached", node.Id, $"Exit node '{node.Id}' set status '{node.ExitStatus}'.");
+        this.LogExitReached(node.Id, node.ExitStatus.ToString());
     }
 
     private WorkflowStepState StartStep(WorkflowRunContext runContext, WorkflowPendingActivation activation, WorkflowNodeDefinition node)
@@ -472,6 +484,7 @@ public sealed partial class WorkflowOrchestrator : IWorkflowOrchestrator
         step.Message = message;
         runContext.State.UpdatedAtUtc = this.timeProvider.GetUtcNow();
         Log(runContext.Artifacts, LogLevel.Error, 2002, "workflow.step.failed", step.NodeId, message);
+        this.LogAgentFailed(step.AgentName, step.NodeId, step.StepNumber);
     }
 
     private async Task<StageExecutionOutcome> ExecuteStageAsync(
@@ -491,12 +504,20 @@ public sealed partial class WorkflowOrchestrator : IWorkflowOrchestrator
             }
 
             string prompt = await WorkflowPromptComposer.ComposeAsync(definition, execution.Node, execution.AttachmentFilePaths, cancellationToken);
+            string agentName = ResolveAgentName(execution.Node);
+            this.LogAgentInvoking(
+                agentName,
+                execution.Node.Id,
+                execution.Step.StepNumber,
+                execution.AttachmentFilePaths.Count,
+                FormatAttachmentNames(execution.AttachmentFilePaths));
             string markdown = await this.workflowAgentRunner.RunAsync(
-                ResolveAgentName(execution.Node),
+                agentName,
                 prompt,
                 execution.AttachmentFilePaths,
                 execution.Step.Models,
                 cancellationToken);
+            this.LogAgentFinished(agentName, execution.Node.Id, execution.Step.StepNumber, markdown.Length);
             this.workflowArtifactService.WriteMarkdown(execution.Step.OutputPath!, markdown);
             return new StageExecutionOutcome(execution.Activation, execution.Node, execution.Step, markdown, null);
         }
@@ -677,6 +698,11 @@ RunId: {artifacts.RunId}
         return string.IsNullOrWhiteSpace(node.Role) ? node.Id : node.Role;
     }
 
+    private static string FormatAttachmentNames(IReadOnlyList<string> paths)
+    {
+        return paths.Count == 0 ? "(none)" : string.Join(", ", paths.Select(Path.GetFileName));
+    }
+
     private void Log(
         WorkflowArtifacts artifacts,
         LogLevel level,
@@ -735,4 +761,37 @@ RunId: {artifacts.RunId}
 
     [LoggerMessage(EventId = 400, Level = LogLevel.Error, Message = "Decision node {NodeId} failed for run {RunId}.")]
     private partial void LogDecisionNodeFailed(Exception exception, string nodeId, string runId);
+
+    [LoggerMessage(EventId = 401, Level = LogLevel.Information, Message = "Workflow '{WorkflowName}' (run {RunId}) starting.")]
+    private partial void LogWorkflowRunStarting(string workflowName, string runId);
+
+    [LoggerMessage(EventId = 402, Level = LogLevel.Information, Message = "Workflow '{WorkflowName}' (run {RunId}) completed with status '{Status}'.")]
+    private partial void LogWorkflowRunCompleted(string workflowName, string runId, string status);
+
+    [LoggerMessage(EventId = 410, Level = LogLevel.Information, Message = "Invoking agent '{AgentName}' for node '{NodeId}' (step {StepNumber}) with {AttachmentCount} file(s): {AttachmentNames}")]
+    private partial void LogAgentInvoking(string agentName, string nodeId, int stepNumber, int attachmentCount, string attachmentNames);
+
+    [LoggerMessage(EventId = 411, Level = LogLevel.Information, Message = "Agent '{AgentName}' for node '{NodeId}' (step {StepNumber}) finished ({ResponseLength} chars).")]
+    private partial void LogAgentFinished(string agentName, string nodeId, int stepNumber, int responseLength);
+
+    [LoggerMessage(EventId = 412, Level = LogLevel.Error, Message = "Agent '{AgentName}' for node '{NodeId}' (step {StepNumber}) failed.")]
+    private partial void LogAgentFailed(string agentName, string nodeId, int stepNumber);
+
+    [LoggerMessage(EventId = 413, Level = LogLevel.Information, Message = "Evaluating decision '{NodeId}' (step {StepNumber}) from {AttachmentCount} source(s).")]
+    private partial void LogDecisionEvaluating(string nodeId, int stepNumber, int attachmentCount);
+
+    [LoggerMessage(EventId = 414, Level = LogLevel.Information, Message = "Decision '{NodeId}' (step {StepNumber}): choice='{Choice}', next='{NextNode}'.")]
+    private partial void LogDecisionResolved(string nodeId, int stepNumber, string choice, string nextNode);
+
+    [LoggerMessage(EventId = 420, Level = LogLevel.Information, Message = "Fork '{NodeId}' started {BranchCount} branch(es).")]
+    private partial void LogForkProcessed(string nodeId, int branchCount);
+
+    [LoggerMessage(EventId = 421, Level = LogLevel.Information, Message = "Join '{NodeId}': {CompletedCount}/{ExpectedCount} branch(es) completed, waiting for more.")]
+    private partial void LogJoinProgress(string nodeId, int completedCount, int expectedCount);
+
+    [LoggerMessage(EventId = 422, Level = LogLevel.Information, Message = "Join '{NodeId}' released all {CompletedCount} branch(es).")]
+    private partial void LogJoinReleased(string nodeId, int completedCount);
+
+    [LoggerMessage(EventId = 423, Level = LogLevel.Information, Message = "Exit '{NodeId}' reached with status '{ExitStatus}'.")]
+    private partial void LogExitReached(string nodeId, string exitStatus);
 }
