@@ -3,8 +3,29 @@
 In this tutorial you will validate an existing workflow definition and then run it against a real request.
 By the end you will have a completed workflow run folder on disk and a clear picture of how the CLI fits together.
 
-This tutorial assumes you have already cloned the repository and have the .NET SDK installed.
-If you have not yet set up the project, follow the steps in the repository README before continuing.
+---
+
+## Prerequisites
+
+Before you begin, make sure you have the following in place:
+
+- **.NET SDK 10.0.103 or later (patch roll-forward)**
+  The repository's `global.json` pins `10.0.103` with `latestPatch` roll-forward. Install the SDK from [dot.net](https://dotnet.microsoft.com/download) if needed.
+
+- **Repository cloned to your machine**
+
+  ```shell
+  git clone https://github.com/Gibbs-Morris/clean-squad.git
+  cd clean-squad
+  ```
+
+- **Packages restored**
+
+  ```shell
+  dotnet restore CleanSquad.slnx
+  ```
+
+Once `dotnet restore` completes without errors you are ready to follow the steps below.
 
 ---
 

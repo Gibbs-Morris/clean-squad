@@ -4,6 +4,11 @@ Documentation for the CleanSquad command-line interface, organised by the [Diát
 
 ---
 
+> **New to CleanSquad? Start here →** [Run your first workflow](tutorial/run-your-first-workflow.md)
+> Validate a definition, write a request, and complete a full workflow run from scratch. Takes about ten minutes.
+
+---
+
 ## Tutorial
 
 Learning-oriented. Start here if you are new to the CLI.

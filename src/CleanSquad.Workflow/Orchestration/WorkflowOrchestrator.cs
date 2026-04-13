@@ -435,9 +435,7 @@ public sealed partial class WorkflowOrchestrator : IWorkflowOrchestrator
             CustomMessage = node.CustomMessage,
             Attempt = visitCount,
             ActivationSequenceNumber = activation.SequenceNumber,
-            OutputPath = node.Kind is WorkflowNodeKind.Stage or WorkflowNodeKind.Decision
-                ? runContext.Artifacts.GetStepMarkdownPath(stepNumber, node.Id)
-                : null,
+            OutputPath = runContext.Artifacts.GetStepMarkdownPath(stepNumber, node.Id),
             ParallelGroupId = activation.ParallelGroupId,
             BranchId = activation.BranchId,
             Status = WorkflowStepStatus.InProgress,
@@ -459,7 +457,40 @@ public sealed partial class WorkflowOrchestrator : IWorkflowOrchestrator
         step.Status = WorkflowStepStatus.Completed;
         step.CompletedAtUtc = this.timeProvider.GetUtcNow();
         step.Message = message;
+        WriteControlStepMarkdown(step, node, message);
         return step;
+    }
+
+    /// <summary>
+    ///     Writes a short summary markdown file for a control-flow node (Fork, Join, or Exit)
+    ///     so that every step number in the run directory has a corresponding visible file.
+    /// </summary>
+    private void WriteControlStepMarkdown(WorkflowStepState step, WorkflowNodeDefinition node, string message)
+    {
+        if (string.IsNullOrWhiteSpace(step.OutputPath))
+        {
+            return;
+        }
+
+        string branchList = node.Branches.Count > 0
+            ? string.Join("\n", node.Branches.Select(b => $"- **{b.Id}** → `{b.NextNodeId}`"))
+            : string.Empty;
+
+        string markdown = $"""
+            # {node.DisplayName ?? node.Id}
+
+            **Kind:** {node.Kind}
+            **Status:** {step.Status}
+
+            {message}
+            """;
+
+        if (!string.IsNullOrEmpty(branchList))
+        {
+            markdown += $"\n\n## Branches\n\n{branchList}\n";
+        }
+
+        this.workflowArtifactService.WriteMarkdown(step.OutputPath, markdown);
     }
 
     private void CompleteStageStep(WorkflowRunContext runContext, StageExecutionOutcome outcome)

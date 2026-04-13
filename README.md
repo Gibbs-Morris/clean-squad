@@ -48,6 +48,8 @@ dotnet run --project src/CleanSquad.Cli/CleanSquad.Cli.csproj -- Delta
 
 ## Documentation
 
+> **New to CleanSquad?** Start with the [Run your first workflow](docs/tutorial/run-your-first-workflow.md) tutorial — it walks you through a complete run in about ten minutes.
+
 Full CLI documentation lives in [`docs/README.md`](docs/README.md) and is organized by the [Diátaxis](https://diataxis.fr/) framework:
 
 - **Tutorial** — step-by-step guide for running your first workflow
