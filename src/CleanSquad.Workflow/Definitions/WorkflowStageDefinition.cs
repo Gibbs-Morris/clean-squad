@@ -34,6 +34,11 @@ public sealed class WorkflowStageDefinition
     public string? ReasoningEffort { get; set; }
 
     /// <summary>
+    ///     Gets or sets the optional response timeout for the stage using the .NET <see cref="System.TimeSpan" /> string format.
+    /// </summary>
+    public string? ResponseTimeout { get; set; }
+
+    /// <summary>
     ///     Gets or sets the attachment source references used for the stage.
     /// </summary>
     public IReadOnlyList<string> Inputs { get; set; } = [];

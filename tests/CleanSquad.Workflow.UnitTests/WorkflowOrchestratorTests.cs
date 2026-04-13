@@ -158,6 +158,8 @@ public sealed class WorkflowOrchestratorTests
             Assert.Equal(WorkflowRunStatus.Failed, failedState.Status);
             Assert.Equal("SendAndWaitAsync timed out after 00:01:00", failedResearchStep.Message);
             Assert.NotNull(completedResearchStep.CompletedAtUtc);
+            Assert.True(File.Exists(failedResearchStep.OutputPath));
+            Assert.Contains("# Stage Failure", await File.ReadAllTextAsync(failedResearchStep.OutputPath!), StringComparison.Ordinal);
 
             FakeWorkflowAgentRunner resumeRunner = new([
                 "# Research\n## Test Insights\n- Recovered test path\n",
@@ -230,6 +232,8 @@ public sealed class WorkflowOrchestratorTests
             Assert.Equal(["model-build-fast"], step.Models);
             Assert.Equal(WorkflowReasoningEffort.High, step.ReasoningEffort);
             Assert.Equal(WorkflowReasoningEffort.High, call.ReasoningEffort);
+            Assert.Equal("00:12:00", step.ResponseTimeout);
+            Assert.Equal(TimeSpan.FromMinutes(12), call.ResponseTimeout);
         }
         finally
         {
@@ -523,6 +527,7 @@ public sealed class WorkflowOrchestratorTests
       "agent": "builder-agent",
       "models": ["model-build-fast"],
       "reasoningEffort": "high",
+      "responseTimeout": "00:12:00",
       "inputs": ["request", "node:planner"],
       "outputs": ["buildSummary"],
       "customMessage": "Focus on the requested file only.",
@@ -609,9 +614,11 @@ public sealed class WorkflowOrchestratorTests
 
     private sealed class FakeWorkflowAgentRunner : IWorkflowAgentRunner
     {
+        private readonly object syncLock = new();
         private readonly Queue<string> responses;
         private readonly int? exceptionAtCall;
         private readonly Func<int, string, Exception>? exceptionFactory;
+        private int callCount;
 
         public FakeWorkflowAgentRunner(
             IEnumerable<string> responses,
@@ -631,23 +638,33 @@ public sealed class WorkflowOrchestratorTests
             IReadOnlyList<string> attachmentFilePaths,
             IReadOnlyList<string> modelIds,
             string? reasoningEffort,
+            TimeSpan? responseTimeout = null,
             CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            this.Calls.Add(new AgentCall(agentName, prompt, attachmentFilePaths, modelIds.ToArray(), reasoningEffort));
-            if (this.exceptionAtCall.HasValue && this.Calls.Count == this.exceptionAtCall.Value)
+            int callNumber;
+            string response;
+            lock (this.syncLock)
             {
-              throw this.exceptionFactory?.Invoke(this.Calls.Count, agentName) ?? new InvalidOperationException($"Boom on {agentName}");
+                callNumber = ++this.callCount;
+                this.Calls.Add(new AgentCall(agentName, prompt, attachmentFilePaths, modelIds.ToArray(), reasoningEffort, responseTimeout));
+                if (this.exceptionAtCall.HasValue && callNumber == this.exceptionAtCall.Value)
+                {
+                    throw this.exceptionFactory?.Invoke(callNumber, agentName) ?? new InvalidOperationException($"Boom on {agentName}");
+                }
+
+                response = this.responses.Dequeue();
             }
 
-            return Task.FromResult(this.responses.Dequeue());
+            return Task.FromResult(response);
         }
     }
 
     private sealed record AgentCall(
-      string AgentName,
-      string Prompt,
-      IReadOnlyList<string> AttachmentFilePaths,
-      IReadOnlyList<string> ModelIds,
-      string? ReasoningEffort);
+        string AgentName,
+        string Prompt,
+        IReadOnlyList<string> AttachmentFilePaths,
+        IReadOnlyList<string> ModelIds,
+        string? ReasoningEffort,
+        TimeSpan? ResponseTimeout);
 }

@@ -45,6 +45,11 @@ public sealed class WorkflowNodeDefinition
     public string? ReasoningEffort { get; set; }
 
     /// <summary>
+    ///     Gets or sets the optional per-node response timeout using the .NET <see cref="System.TimeSpan" /> string format.
+    /// </summary>
+    public string? ResponseTimeout { get; set; }
+
+    /// <summary>
     ///     Gets or sets the static assets used by the node.
     /// </summary>
     public IReadOnlyList<WorkflowAssetReference> Assets { get; set; } = [];

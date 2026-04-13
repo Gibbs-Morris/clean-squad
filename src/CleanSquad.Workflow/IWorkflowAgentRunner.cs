@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,6 +18,7 @@ public interface IWorkflowAgentRunner
     /// <param name="attachmentFilePaths">The markdown files that should be attached for the stage.</param>
     /// <param name="modelIds">The preferred backend model identifiers for the stage.</param>
     /// <param name="reasoningEffort">The reasoning-effort preference for the selected model.</param>
+    /// <param name="responseTimeout">The optional timeout override for this stage execution.</param>
     /// <param name="cancellationToken">The cancellation token for the operation.</param>
     /// <returns>The markdown response from the agent.</returns>
     Task<string> RunAsync(
@@ -25,5 +27,6 @@ public interface IWorkflowAgentRunner
         IReadOnlyList<string> attachmentFilePaths,
         IReadOnlyList<string> modelIds,
         string? reasoningEffort,
+        TimeSpan? responseTimeout = null,
         CancellationToken cancellationToken = default);
 }

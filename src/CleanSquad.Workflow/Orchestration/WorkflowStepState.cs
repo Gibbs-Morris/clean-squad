@@ -45,6 +45,11 @@ public sealed class WorkflowStepState
     public string? ReasoningEffort { get; set; }
 
     /// <summary>
+    ///     Gets or sets the configured response-timeout override captured for the step.
+    /// </summary>
+    public string? ResponseTimeout { get; set; }
+
+    /// <summary>
     ///     Gets or sets the input references captured for the step.
     /// </summary>
     public IReadOnlyList<string> InputReferences { get; set; } = [];

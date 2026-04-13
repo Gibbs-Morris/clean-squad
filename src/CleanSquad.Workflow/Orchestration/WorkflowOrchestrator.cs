@@ -269,7 +269,7 @@ public sealed partial class WorkflowOrchestrator : IWorkflowOrchestrator
                 continue;
             }
 
-            FailStep(runContext, outcome.Step, outcome.Exception.Message);
+            FailStep(runContext, outcome.Step, outcome.Exception.Message, outcome.Exception);
             firstFailure ??= outcome.Exception;
         }
 
@@ -331,7 +331,7 @@ public sealed partial class WorkflowOrchestrator : IWorkflowOrchestrator
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            FailStep(runContext, step, exception.Message);
+            FailStep(runContext, step, exception.Message, exception);
             this.workflowArtifactService.WriteState(runContext.Artifacts, runContext.State);
             this.LogDecisionNodeFailed(exception, node.Id, runContext.Artifacts.RunId);
             throw new InvalidOperationException(exception.Message, exception);
@@ -469,6 +469,7 @@ public sealed partial class WorkflowOrchestrator : IWorkflowOrchestrator
             AgentName = ResolveAgentName(node),
             Models = node.Models,
             ReasoningEffort = WorkflowReasoningEffort.Normalize(node.ReasoningEffort),
+            ResponseTimeout = WorkflowResponseTimeout.Normalize(node.ResponseTimeout),
             InputReferences = node.Inputs,
             OutputNames = node.Outputs,
             CustomMessage = node.CustomMessage,
@@ -547,14 +548,58 @@ public sealed partial class WorkflowOrchestrator : IWorkflowOrchestrator
         Log(runContext.Artifacts, LogLevel.Information, 2001, "workflow.step.completed", outcome.Node.Id, $"Completed node '{outcome.Node.Id}' step {outcome.Step.StepNumber:0000}.");
     }
 
-    private void FailStep(WorkflowRunContext runContext, WorkflowStepState step, string message)
+    private void FailStep(WorkflowRunContext runContext, WorkflowStepState step, string message, Exception? exception = null)
     {
         step.Status = WorkflowStepStatus.Failed;
         step.CompletedAtUtc = this.timeProvider.GetUtcNow();
         step.Message = message;
+        WriteFailedStepMarkdown(step, message, exception);
         runContext.State.UpdatedAtUtc = this.timeProvider.GetUtcNow();
-        Log(runContext.Artifacts, LogLevel.Error, 2002, "workflow.step.failed", step.NodeId, message);
-        this.LogAgentFailed(step.AgentName, step.NodeId, step.StepNumber);
+        Log(
+            runContext.Artifacts,
+            LogLevel.Error,
+            2002,
+            "workflow.step.failed",
+            step.NodeId,
+            message,
+            exception,
+            BuildStepFailureProperties(step));
+        this.LogAgentFailed(step.AgentName, step.NodeId, step.StepNumber, message);
+    }
+
+    private void WriteFailedStepMarkdown(WorkflowStepState step, string message, Exception? exception)
+    {
+        if (string.IsNullOrWhiteSpace(step.OutputPath))
+        {
+            return;
+        }
+
+        List<string> details = [];
+        if (!string.IsNullOrWhiteSpace(step.ResponseTimeout))
+        {
+            details.Add($"**Response Timeout:** {step.ResponseTimeout}");
+        }
+
+        if (exception is not null)
+        {
+            details.Add($"**Exception Type:** {exception.GetType().FullName ?? exception.GetType().Name}");
+        }
+
+        string detailSection = details.Count == 0 ? string.Empty : string.Join(Environment.NewLine, details) + Environment.NewLine + Environment.NewLine;
+        string markdown = $"""
+# Stage Failure
+
+**Node:** {step.NodeId}
+**Agent:** {step.AgentName}
+**Step:** {step.StepNumber:0000}
+**Status:** {step.Status}
+
+{detailSection}## Failure Message
+
+{message}
+""";
+
+        this.workflowArtifactService.WriteMarkdown(step.OutputPath, markdown);
     }
 
     private async Task<StageExecutionOutcome> ExecuteStageAsync(
@@ -578,6 +623,11 @@ public sealed partial class WorkflowOrchestrator : IWorkflowOrchestrator
                 activity?.SetTag("workflow.reasoning_effort", execution.Step.ReasoningEffort);
             }
 
+            if (!string.IsNullOrWhiteSpace(execution.Step.ResponseTimeout))
+            {
+                activity?.SetTag("workflow.response_timeout", execution.Step.ResponseTimeout);
+            }
+
             string prompt = await WorkflowPromptComposer.ComposeAsync(definition, execution.Node, execution.AttachmentFilePaths, cancellationToken);
             string agentName = ResolveAgentName(execution.Node);
             this.LogAgentInvoking(
@@ -585,13 +635,15 @@ public sealed partial class WorkflowOrchestrator : IWorkflowOrchestrator
                 execution.Node.Id,
                 execution.Step.StepNumber,
                 execution.AttachmentFilePaths.Count,
-                FormatAttachmentNames(execution.AttachmentFilePaths));
+                FormatAttachmentNames(execution.AttachmentFilePaths),
+                execution.Step.ResponseTimeout ?? "(runner default)");
             string markdown = await this.workflowAgentRunner.RunAsync(
                 agentName,
                 prompt,
                 execution.AttachmentFilePaths,
                 execution.Step.Models,
                 execution.Step.ReasoningEffort,
+                WorkflowResponseTimeout.TryParse(execution.Step.ResponseTimeout, out TimeSpan responseTimeout) ? responseTimeout : null,
                 cancellationToken);
             this.LogAgentFinished(agentName, execution.Node.Id, execution.Step.StepNumber, markdown.Length);
             this.workflowArtifactService.WriteMarkdown(execution.Step.OutputPath!, markdown);
@@ -721,7 +773,7 @@ Reason: {decision.Reason}
         string stepList = state.Steps.Count == 0
             ? "- none"
             : string.Join(Environment.NewLine, state.Steps.OrderBy(step => step.StepNumber).Select(step =>
-                $"- {step.StepNumber:0000}: {step.NodeId} [{step.Status}]" + FormatExecutionSettingsSuffix(step.Models, step.ReasoningEffort)));
+                $"- {step.StepNumber:0000}: {step.NodeId} [{step.Status}]" + FormatExecutionSettingsSuffix(step.Models, step.ReasoningEffort, step.ResponseTimeout)));
 
         return $"""
 # Final Workflow Output
@@ -771,7 +823,7 @@ RunId: {artifacts.RunId}
             && roleNames.Any(roleName => string.Equals(step.RoleName, roleName, StringComparison.OrdinalIgnoreCase)));
     }
 
-    private static string FormatExecutionSettingsSuffix(IReadOnlyList<string> models, string? reasoningEffort)
+    private static string FormatExecutionSettingsSuffix(IReadOnlyList<string> models, string? reasoningEffort, string? responseTimeout)
     {
         List<string> segments = [];
         if (models.Count > 0)
@@ -782,6 +834,11 @@ RunId: {artifacts.RunId}
         if (!string.IsNullOrWhiteSpace(reasoningEffort))
         {
             segments.Add($"reasoningEffort={reasoningEffort}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(responseTimeout))
+        {
+            segments.Add($"responseTimeout={responseTimeout}");
         }
 
         return segments.Count == 0 ? string.Empty : $" {string.Join(" ", segments)}";
@@ -809,7 +866,8 @@ RunId: {artifacts.RunId}
         string eventName,
         string? nodeId,
         string message,
-        Exception? exception = null)
+        Exception? exception = null,
+        IReadOnlyDictionary<string, string>? additionalProperties = null)
     {
         Dictionary<string, string> properties = new(StringComparer.OrdinalIgnoreCase)
         {
@@ -827,6 +885,14 @@ RunId: {artifacts.RunId}
             properties["exceptionMessage"] = exception.Message;
         }
 
+        if (additionalProperties is not null)
+        {
+            foreach (KeyValuePair<string, string> property in additionalProperties)
+            {
+                properties[property.Key] = property.Value;
+            }
+        }
+
         WorkflowLogEntry entry = new()
         {
             TimestampUtc = this.timeProvider.GetUtcNow(),
@@ -841,6 +907,22 @@ RunId: {artifacts.RunId}
         }
 
         this.workflowArtifactService.AppendLog(artifacts, entry);
+    }
+
+    private static Dictionary<string, string> BuildStepFailureProperties(WorkflowStepState step)
+    {
+        Dictionary<string, string> properties = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["stepNumber"] = step.StepNumber.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            ["agentName"] = step.AgentName,
+        };
+
+        if (!string.IsNullOrWhiteSpace(step.ResponseTimeout))
+        {
+            properties["responseTimeout"] = step.ResponseTimeout;
+        }
+
+        return properties;
     }
 
     private sealed record WorkflowRunContext(WorkflowDefinition Definition, WorkflowArtifacts Artifacts, WorkflowRunState State);
@@ -867,14 +949,14 @@ RunId: {artifacts.RunId}
     [LoggerMessage(EventId = 402, Level = LogLevel.Information, Message = "Workflow '{WorkflowName}' (run {RunId}) completed with status '{Status}'.")]
     private partial void LogWorkflowRunCompleted(string workflowName, string runId, string status);
 
-    [LoggerMessage(EventId = 410, Level = LogLevel.Information, Message = "Invoking agent '{AgentName}' for node '{NodeId}' (step {StepNumber}) with {AttachmentCount} file(s): {AttachmentNames}")]
-    private partial void LogAgentInvoking(string agentName, string nodeId, int stepNumber, int attachmentCount, string attachmentNames);
+    [LoggerMessage(EventId = 410, Level = LogLevel.Information, Message = "Invoking agent '{AgentName}' for node '{NodeId}' (step {StepNumber}) with {AttachmentCount} file(s): {AttachmentNames}. Timeout: {ResponseTimeout}")]
+    private partial void LogAgentInvoking(string agentName, string nodeId, int stepNumber, int attachmentCount, string attachmentNames, string responseTimeout);
 
     [LoggerMessage(EventId = 411, Level = LogLevel.Information, Message = "Agent '{AgentName}' for node '{NodeId}' (step {StepNumber}) finished ({ResponseLength} chars).")]
     private partial void LogAgentFinished(string agentName, string nodeId, int stepNumber, int responseLength);
 
-    [LoggerMessage(EventId = 412, Level = LogLevel.Error, Message = "Agent '{AgentName}' for node '{NodeId}' (step {StepNumber}) failed.")]
-    private partial void LogAgentFailed(string agentName, string nodeId, int stepNumber);
+    [LoggerMessage(EventId = 412, Level = LogLevel.Error, Message = "Agent '{AgentName}' for node '{NodeId}' (step {StepNumber}) failed: {FailureMessage}")]
+    private partial void LogAgentFailed(string agentName, string nodeId, int stepNumber, string failureMessage);
 
     [LoggerMessage(EventId = 413, Level = LogLevel.Information, Message = "Evaluating decision '{NodeId}' (step {StepNumber}) from {AttachmentCount} source(s).")]
     private partial void LogDecisionEvaluating(string nodeId, int stepNumber, int attachmentCount);

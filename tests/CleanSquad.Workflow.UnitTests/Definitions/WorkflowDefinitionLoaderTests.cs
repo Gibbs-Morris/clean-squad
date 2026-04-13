@@ -193,6 +193,51 @@ public sealed class WorkflowDefinitionLoaderTests
     }
 
     /// <summary>
+    ///     Verifies the loader normalizes configured response-timeout overrides.
+    /// </summary>
+    [Fact]
+    public void LoadNormalizesConfiguredResponseTimeout()
+    {
+        string tempDirectoryPath = CreateTempDirectory();
+
+        try
+        {
+            string assetsDirectoryPath = Path.Combine(tempDirectoryPath, "assets");
+            Directory.CreateDirectory(assetsDirectoryPath);
+            File.WriteAllText(Path.Combine(assetsDirectoryPath, "research.md"), "research", System.Text.Encoding.UTF8);
+            string definitionPath = Path.Combine(tempDirectoryPath, "workflow.json");
+            string definitionJson = string.Join(
+                Environment.NewLine,
+                "{",
+                "  \"name\": \"Timeout Loader Test\",",
+                "  \"defaultEntryPoint\": \"default\",",
+                "  \"entryPoints\": [{ \"id\": \"default\", \"nodeId\": \"research\" }],",
+                "  \"nodes\": [",
+                "    {",
+                "      \"id\": \"research\",",
+                "      \"kind\": \"Stage\",",
+                "      \"role\": \"Research\",",
+                "      \"responseTimeout\": \" 00:12:00 \",",
+                "      \"assets\": [{ \"kind\": \"agent\", \"path\": \"assets/research.md\" }],",
+                "      \"next\": \"approved\"",
+                "    },",
+                "    { \"id\": \"approved\", \"kind\": \"Exit\", \"exitStatus\": \"Approved\" }",
+                "  ],",
+                "  \"policy\": { \"decisionMode\": \"Rules\", \"maxReviewCycles\": 2, \"maxRebuilds\": 1 }",
+                "}");
+            File.WriteAllText(definitionPath, definitionJson, System.Text.Encoding.UTF8);
+
+            WorkflowDefinition definition = WorkflowDefinitionLoader.LoadFromFile(definitionPath);
+
+            Assert.Equal("00:12:00", definition.Nodes[0].ResponseTimeout);
+        }
+        finally
+        {
+            Directory.Delete(tempDirectoryPath, true);
+        }
+    }
+
+    /// <summary>
     ///     Verifies the loader rejects invalid workflow package contact metadata.
     /// </summary>
     [Fact]
@@ -508,6 +553,48 @@ public sealed class WorkflowDefinitionLoaderTests
             Assert.False(result.IsValid);
             Assert.Contains(result.Errors, error => error.Contains("reasoningEffort", StringComparison.OrdinalIgnoreCase));
             Assert.Contains(result.Errors, error => error.Contains("configured model", StringComparison.OrdinalIgnoreCase));
+        }
+        finally
+        {
+            Directory.Delete(tempDirectoryPath, true);
+        }
+    }
+
+    /// <summary>
+    ///     Verifies validation rejects invalid response-timeout overrides.
+    /// </summary>
+    [Fact]
+    public void ValidateFileRejectsInvalidResponseTimeout()
+    {
+        string tempDirectoryPath = CreateTempDirectory();
+
+        try
+        {
+            string definitionPath = Path.Combine(tempDirectoryPath, "workflow.json");
+            string definitionJson = string.Join(
+                Environment.NewLine,
+                "{",
+                "  \"name\": \"Response Timeout Validation Test\",",
+                "  \"defaultEntryPoint\": \"default\",",
+                "  \"entryPoints\": [{ \"id\": \"default\", \"nodeId\": \"research\" }],",
+                "  \"nodes\": [",
+                "    {",
+                "      \"id\": \"research\",",
+                "      \"kind\": \"Stage\",",
+                "      \"role\": \"Research\",",
+                "      \"responseTimeout\": \"00:00:00\",",
+                "      \"next\": \"approved\"",
+                "    },",
+                "    { \"id\": \"approved\", \"kind\": \"Exit\", \"exitStatus\": \"Approved\" }",
+                "  ],",
+                "  \"policy\": { \"decisionMode\": \"Rules\", \"maxReviewCycles\": 2, \"maxRebuilds\": 1 }",
+                "}");
+            File.WriteAllText(definitionPath, definitionJson, System.Text.Encoding.UTF8);
+
+            WorkflowDefinitionValidationResult result = WorkflowDefinitionLoader.ValidateFile(definitionPath);
+
+            Assert.False(result.IsValid);
+            Assert.Contains(result.Errors, error => error.Contains("responseTimeout", StringComparison.OrdinalIgnoreCase));
         }
         finally
         {
