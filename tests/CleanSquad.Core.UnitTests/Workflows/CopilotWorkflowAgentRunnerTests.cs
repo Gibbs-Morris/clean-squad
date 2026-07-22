@@ -40,7 +40,7 @@ public sealed class CopilotWorkflowAgentRunnerTests
         Assert.Equal(@"c:\repo", config.WorkingDirectory);
         Assert.Equal("gpt-5.4", config.Model);
         Assert.Equal(WorkflowReasoningEffort.High, config.ReasoningEffort);
-        Assert.Equal("PermissionDecisionApproveOnce", result.GetType().Name);
+        Assert.Equal("approve-once", result.Kind);
     }
 
     /// <summary>
@@ -75,7 +75,7 @@ public sealed class CopilotWorkflowAgentRunnerTests
 
         Assert.Null(config.Model);
         Assert.Null(config.ReasoningEffort);
-        Assert.Equal("PermissionDecisionApproveOnce", result.GetType().Name);
+        Assert.Equal("approve-once", result.Kind);
     }
 
     /// <summary>
