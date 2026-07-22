@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using CleanSquad.Workflow;
-using GitHub.Copilot.SDK;
+using GitHub.Copilot;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -93,7 +93,7 @@ public sealed partial class CopilotWorkflowAgentRunner : IWorkflowAgentRunner
         {
             await using var client = new CopilotClient(new CopilotClientOptions
             {
-                Cwd = this.workspaceRootPath,
+                WorkingDirectory = this.workspaceRootPath,
             });
 
             await client.StartAsync(cancellationToken);
@@ -224,7 +224,7 @@ public sealed partial class CopilotWorkflowAgentRunner : IWorkflowAgentRunner
             return normalizedReasoningEffort;
         }
 
-        IReadOnlyList<ModelInfo> availableModels = await client.ListModelsAsync(cancellationToken);
+        IList<ModelInfo> availableModels = await client.ListModelsAsync(cancellationToken);
         ModelInfo? selectedModel = availableModels.FirstOrDefault(availableModel =>
             string.Equals(availableModel.Id, modelId, StringComparison.OrdinalIgnoreCase));
         if (selectedModel is null)
@@ -232,7 +232,7 @@ public sealed partial class CopilotWorkflowAgentRunner : IWorkflowAgentRunner
             return null;
         }
 
-        return ResolveHighestSupportedReasoningEffort(selectedModel.SupportedReasoningEfforts)
+        return ResolveHighestSupportedReasoningEffort(selectedModel.SupportedReasoningEfforts?.ToList())
             ?? selectedModel.DefaultReasoningEffort;
     }
 

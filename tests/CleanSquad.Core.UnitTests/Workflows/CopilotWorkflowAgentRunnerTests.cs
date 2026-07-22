@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
 using CleanSquad.Core.Workflows;
 using CleanSquad.Workflow;
-using GitHub.Copilot.SDK;
+using GitHub.Copilot;
 
 namespace CleanSquad.Core.UnitTests.Workflows;
 
@@ -23,13 +23,14 @@ public sealed class CopilotWorkflowAgentRunnerTests
             "gpt-5.4",
             WorkflowReasoningEffort.High);
 
-        PermissionRequestResult result = await config.OnPermissionRequest!(
+        var result = await config.OnPermissionRequest!(
             new PermissionRequestWrite
             {
                 ToolCallId = "tool-1",
                 Intention = "Update the README",
                 FileName = "README.md",
                 Diff = "@@ -1 +1 @@",
+                CanOfferSessionApproval = true,
             },
             new PermissionInvocation
             {
@@ -39,7 +40,7 @@ public sealed class CopilotWorkflowAgentRunnerTests
         Assert.Equal(@"c:\repo", config.WorkingDirectory);
         Assert.Equal("gpt-5.4", config.Model);
         Assert.Equal(WorkflowReasoningEffort.High, config.ReasoningEffort);
-        Assert.Equal(PermissionRequestResultKind.Approved, result.Kind);
+        Assert.Equal("PermissionDecisionApproveOnce", result.GetType().Name);
     }
 
     /// <summary>
@@ -55,7 +56,7 @@ public sealed class CopilotWorkflowAgentRunnerTests
             null,
             null);
 
-        PermissionRequestResult result = await config.OnPermissionRequest!(
+        var result = await config.OnPermissionRequest!(
             new PermissionRequestShell
             {
                 ToolCallId = "tool-2",
@@ -74,7 +75,7 @@ public sealed class CopilotWorkflowAgentRunnerTests
 
         Assert.Null(config.Model);
         Assert.Null(config.ReasoningEffort);
-        Assert.Equal(PermissionRequestResultKind.Approved, result.Kind);
+        Assert.Equal("PermissionDecisionApproveOnce", result.GetType().Name);
     }
 
     /// <summary>
