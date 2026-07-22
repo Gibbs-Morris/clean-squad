@@ -28,5 +28,5 @@ public enum WorkflowStage
     /// <summary>
     ///     The builder retry after review feedback.
     /// </summary>
-    Rebuilder,
+    Rebuilder
 }

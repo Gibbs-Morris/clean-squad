@@ -49,7 +49,7 @@ public sealed class CleanupChecklistServiceTests
             MissionTaskTemplate = "Codify the mission for {SquadName}",
             BuildTaskName = "Protect the golden pipeline",
             ReleaseTaskName = "Ship the package with confidence",
-            SummaryTemplate = "{SquadName}: {TaskCount} workflow policies ready.",
+            SummaryTemplate = "{SquadName}: {TaskCount} workflow policies ready."
         };
 
         IReadOnlyList<CleanTask> checklist = CleanupChecklistService.CreateStarterChecklist(null, options);

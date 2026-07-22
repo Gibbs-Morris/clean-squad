@@ -13,5 +13,5 @@ public enum WorkflowDefinitionValidationSeverity
     /// <summary>
     ///     The issue does not block execution but should be reviewed.
     /// </summary>
-    Warning,
+    Warning
 }

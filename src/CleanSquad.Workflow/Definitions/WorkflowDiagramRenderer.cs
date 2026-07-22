@@ -29,16 +29,16 @@ public static class WorkflowDiagramRenderer
             : definition.DefaultEntryPoint;
 
         return $"""
-# Workflow Diagram
+                # Workflow Diagram
 
-- Name: {definition.Name}
-- Definition: {normalizedDefinitionPath}
-- Default entry point: {defaultEntryPoint}
+                - Name: {definition.Name}
+                - Definition: {normalizedDefinitionPath}
+                - Default entry point: {defaultEntryPoint}
 
-```mermaid
-{mermaid}
-```
-""";
+                ```mermaid
+                {mermaid}
+                ```
+                """;
     }
 
     /// <summary>
@@ -108,7 +108,8 @@ public static class WorkflowDiagramRenderer
                 case WorkflowNodeKind.Decision:
                     foreach (WorkflowDecisionOptionDefinition choice in node.Choices)
                     {
-                        AppendEdge(builder, sourceMermaidId, choice.NextNodeId, mermaidIdsByNodeId, choice.DisplayName ?? choice.Id);
+                        AppendEdge(builder, sourceMermaidId, choice.NextNodeId, mermaidIdsByNodeId,
+                            choice.DisplayName ?? choice.Id);
                     }
 
                     break;
@@ -140,7 +141,7 @@ public static class WorkflowDiagramRenderer
         {
             WorkflowNodeKind.Decision => $"{{\"{label}\"}}",
             WorkflowNodeKind.Exit => $"([\"{label}\"])",
-            _ => $"[\"{label}\"]",
+            _ => $"[\"{label}\"]"
         };
     }
 
@@ -151,7 +152,8 @@ public static class WorkflowDiagramRenderer
         Dictionary<string, string> mermaidIdsByNodeId,
         string? label)
     {
-        if (string.IsNullOrWhiteSpace(targetNodeId) || !mermaidIdsByNodeId.TryGetValue(targetNodeId, out string? targetMermaidId))
+        if (string.IsNullOrWhiteSpace(targetNodeId) ||
+            !mermaidIdsByNodeId.TryGetValue(targetNodeId, out string? targetMermaidId))
         {
             return;
         }
@@ -180,7 +182,8 @@ public static class WorkflowDiagramRenderer
         Dictionary<string, string> mermaidIdsByNodeId,
         string label)
     {
-        if (string.IsNullOrWhiteSpace(targetNodeId) || !mermaidIdsByNodeId.TryGetValue(targetNodeId, out string? targetMermaidId))
+        if (string.IsNullOrWhiteSpace(targetNodeId) ||
+            !mermaidIdsByNodeId.TryGetValue(targetNodeId, out string? targetMermaidId))
         {
             return;
         }

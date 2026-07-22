@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 using CleanSquad.Workflow.Definitions;
 using CleanSquad.Workflow.Prompting;
@@ -24,8 +25,8 @@ public sealed class WorkflowPromptComposerTests
         {
             string sharedAssetPath = Path.Combine(tempDirectoryPath, "shared.md");
             string plannerAssetPath = Path.Combine(tempDirectoryPath, "planner.md");
-            await File.WriteAllTextAsync(sharedAssetPath, "shared", System.Text.Encoding.UTF8);
-            await File.WriteAllTextAsync(plannerAssetPath, "planner", System.Text.Encoding.UTF8);
+            await File.WriteAllTextAsync(sharedAssetPath, "shared", Encoding.UTF8);
+            await File.WriteAllTextAsync(plannerAssetPath, "planner", Encoding.UTF8);
             WorkflowDefinition definition = new()
             {
                 Name = "Prompt Test",
@@ -33,14 +34,15 @@ public sealed class WorkflowPromptComposerTests
                 Planner = new WorkflowStageDefinition
                 {
                     DisplayName = "Planner",
-                    Assets = [new WorkflowAssetReference("agent", plannerAssetPath)],
+                    Assets = [new WorkflowAssetReference("agent", plannerAssetPath)]
                 },
                 Builder = new WorkflowStageDefinition(),
                 Reviewer = new WorkflowStageDefinition(),
-                Rebuilder = new WorkflowStageDefinition(),
+                Rebuilder = new WorkflowStageDefinition()
             };
 
-            string prompt = await WorkflowPromptComposer.ComposeAsync(definition, WorkflowStage.Planner, ["request.md"]);
+            string prompt =
+                await WorkflowPromptComposer.ComposeAsync(definition, WorkflowStage.Planner, ["request.md"]);
 
             Assert.Contains("instruction: shared.md", prompt, StringComparison.OrdinalIgnoreCase);
             Assert.Contains("agent: planner.md", prompt, StringComparison.OrdinalIgnoreCase);
@@ -65,8 +67,8 @@ public sealed class WorkflowPromptComposerTests
         {
             string sharedAssetPath = Path.Combine(tempDirectoryPath, "shared.md");
             string plannerAssetPath = Path.Combine(tempDirectoryPath, "planner.md");
-            await File.WriteAllTextAsync(sharedAssetPath, "shared", System.Text.Encoding.UTF8);
-            await File.WriteAllTextAsync(plannerAssetPath, "planner", System.Text.Encoding.UTF8);
+            await File.WriteAllTextAsync(sharedAssetPath, "shared", Encoding.UTF8);
+            await File.WriteAllTextAsync(plannerAssetPath, "planner", Encoding.UTF8);
             WorkflowDefinition definition = new()
             {
                 Name = "Prompt Config Test",
@@ -86,17 +88,17 @@ public sealed class WorkflowPromptComposerTests
                         Outputs = ["planMarkdown", "riskSummary"],
                         CustomMessage = "Focus on delivery risks and keep the plan lean.",
                         Assets = [new WorkflowAssetReference("agent", plannerAssetPath)],
-                        Next = "done",
+                        Next = "done"
                     },
                     new WorkflowNodeDefinition
                     {
                         Id = "done",
                         Kind = WorkflowNodeKind.Exit,
-                        ExitStatus = WorkflowRunStatus.Approved,
-                    },
+                        ExitStatus = WorkflowRunStatus.Approved
+                    }
                 ],
                 EntryPoints = [new WorkflowEntryPointDefinition { Id = "default", NodeId = "planner" }],
-                DefaultEntryPoint = "default",
+                DefaultEntryPoint = "default"
             };
 
             string prompt = await WorkflowPromptComposer.ComposeAsync(definition, definition.Nodes[0], ["request.md"]);

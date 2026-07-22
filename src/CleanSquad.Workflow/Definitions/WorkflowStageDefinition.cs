@@ -34,7 +34,8 @@ public sealed class WorkflowStageDefinition
     public string? ReasoningEffort { get; set; }
 
     /// <summary>
-    ///     Gets or sets the optional response timeout for the stage using the .NET <see cref="System.TimeSpan" /> string format.
+    ///     Gets or sets the optional response timeout for the stage using the .NET <see cref="System.TimeSpan" /> string
+    ///     format.
     /// </summary>
     public string? ResponseTimeout { get; set; }
 

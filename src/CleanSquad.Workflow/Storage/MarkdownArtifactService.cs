@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -17,14 +18,16 @@ namespace CleanSquad.Workflow.Storage;
 public sealed partial class MarkdownArtifactService : IWorkflowArtifactService
 {
     private static readonly UTF8Encoding Utf8WithoutBom = new(false);
+
     private static readonly JsonSerializerOptions JsonSerializerOptions = new()
     {
-        WriteIndented = true,
+        WriteIndented = true
     };
 
-    private readonly TimeProvider timeProvider;
     private readonly ILogger<MarkdownArtifactService> logger;
     private readonly WorkflowStorageOptions storageOptions;
+
+    private readonly TimeProvider timeProvider;
 
     /// <summary>
     ///     Initializes a new instance of the <see cref="MarkdownArtifactService" /> class.
@@ -52,7 +55,8 @@ public sealed partial class MarkdownArtifactService : IWorkflowArtifactService
     }
 
     /// <inheritdoc />
-    public WorkflowArtifacts CreateRunArtifacts(string workspaceRootPath, string workflowDefinitionPath, string sourceRequestPath)
+    public WorkflowArtifacts CreateRunArtifacts(string workspaceRootPath, string workflowDefinitionPath,
+        string sourceRequestPath)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(workspaceRootPath);
         ArgumentException.ThrowIfNullOrWhiteSpace(workflowDefinitionPath);
@@ -68,13 +72,14 @@ public sealed partial class MarkdownArtifactService : IWorkflowArtifactService
             throw new FileNotFoundException("The request markdown file could not be found.", sourceRequestPath);
         }
 
-        WorkflowArtifacts artifacts = WorkflowArtifacts.Create(workspaceRootPath, workflowDefinitionPath, sourceRequestPath, this.timeProvider, this.storageOptions);
+        WorkflowArtifacts artifacts = WorkflowArtifacts.Create(workspaceRootPath, workflowDefinitionPath,
+            sourceRequestPath, timeProvider, storageOptions);
         Directory.CreateDirectory(artifacts.RunDirectoryPath);
         Directory.CreateDirectory(artifacts.StepsDirectoryPath);
 
         File.Copy(Path.GetFullPath(workflowDefinitionPath), artifacts.WorkflowDefinitionPath, true);
-        this.WriteMarkdown(artifacts.RequestMarkdownPath, ReadMarkdown(sourceRequestPath));
-        this.LogCreatedArtifacts(
+        WriteMarkdown(artifacts.RequestMarkdownPath, ReadMarkdown(sourceRequestPath));
+        LogCreatedArtifacts(
             artifacts.RunDirectoryPath,
             artifacts.RequestMarkdownPath);
 
@@ -85,7 +90,7 @@ public sealed partial class MarkdownArtifactService : IWorkflowArtifactService
     public WorkflowArtifacts LoadRunArtifacts(string runPathOrStatePath)
     {
         WorkflowArtifacts artifacts = WorkflowArtifacts.LoadExisting(runPathOrStatePath);
-        this.LogLoadedArtifacts(artifacts.RunDirectoryPath);
+        LogLoadedArtifacts(artifacts.RunDirectoryPath);
         return artifacts;
     }
 
@@ -102,7 +107,7 @@ public sealed partial class MarkdownArtifactService : IWorkflowArtifactService
         }
 
         File.WriteAllText(path, NormalizeMarkdown(content), Utf8WithoutBom);
-        this.LogWroteMarkdown(path);
+        LogWroteMarkdown(path);
     }
 
     /// <inheritdoc />
@@ -116,9 +121,9 @@ public sealed partial class MarkdownArtifactService : IWorkflowArtifactService
         }
 
         string json = File.ReadAllText(artifacts.StateJsonPath, Encoding.UTF8);
-        this.LogReadState(artifacts.StateJsonPath);
+        LogReadState(artifacts.StateJsonPath);
         return JsonSerializer.Deserialize<WorkflowRunState>(json, JsonSerializerOptions)
-            ?? throw new InvalidOperationException("The workflow state JSON could not be deserialized.");
+               ?? throw new InvalidOperationException("The workflow state JSON could not be deserialized.");
     }
 
     /// <inheritdoc />
@@ -138,38 +143,38 @@ public sealed partial class MarkdownArtifactService : IWorkflowArtifactService
         IEnumerable<string> stepLines = state.Steps.OrderBy(step => step.StepNumber).Select(step =>
             $"- {step.StepNumber:0000}: {step.NodeId} [{step.Status}] attempt={step.Attempt}");
         string stateMarkdown = $"""
-# Workflow State
-Status: {state.Status}
-RunId: {artifacts.RunId}
-Workflow: {state.WorkflowName}
-EntryNode: {state.EntryNodeId}
-ExitNode: {state.ExitNodeId ?? "(not reached)"}
-StartedUtc: {state.StartedAtUtc:O}
-UpdatedUtc: {state.UpdatedAtUtc:O}
-CompletedUtc: {(state.CompletedAtUtc.HasValue ? state.CompletedAtUtc.Value.ToString("O", System.Globalization.CultureInfo.InvariantCulture) : "(not completed)")}
+                                # Workflow State
+                                Status: {state.Status}
+                                RunId: {artifacts.RunId}
+                                Workflow: {state.WorkflowName}
+                                EntryNode: {state.EntryNodeId}
+                                ExitNode: {state.ExitNodeId ?? "(not reached)"}
+                                StartedUtc: {state.StartedAtUtc:O}
+                                UpdatedUtc: {state.UpdatedAtUtc:O}
+                                CompletedUtc: {(state.CompletedAtUtc.HasValue ? state.CompletedAtUtc.Value.ToString("O", CultureInfo.InvariantCulture) : "(not completed)")}
 
-## Files
-- workflow: {Path.GetFileName(artifacts.WorkflowDefinitionPath)}
-- request: {Path.GetFileName(artifacts.RequestMarkdownPath)}
-- final: {Path.GetFileName(artifacts.FinalMarkdownPath)}
-- state-json: {Path.GetFileName(artifacts.StateJsonPath)}
-- events: {Path.GetFileName(artifacts.EventLogPath)}
+                                ## Files
+                                - workflow: {Path.GetFileName(artifacts.WorkflowDefinitionPath)}
+                                - request: {Path.GetFileName(artifacts.RequestMarkdownPath)}
+                                - final: {Path.GetFileName(artifacts.FinalMarkdownPath)}
+                                - state-json: {Path.GetFileName(artifacts.StateJsonPath)}
+                                - events: {Path.GetFileName(artifacts.EventLogPath)}
 
-## Pending Activations
-{string.Join(Environment.NewLine, pendingLines.DefaultIfEmpty("- none"))}
+                                ## Pending Activations
+                                {string.Join(Environment.NewLine, pendingLines.DefaultIfEmpty("- none"))}
 
-## Waiting Nodes
-{string.Join(Environment.NewLine, waitingLines.DefaultIfEmpty("- none"))}
+                                ## Waiting Nodes
+                                {string.Join(Environment.NewLine, waitingLines.DefaultIfEmpty("- none"))}
 
-## Steps
-{string.Join(Environment.NewLine, stepLines.DefaultIfEmpty("- none"))}
+                                ## Steps
+                                {string.Join(Environment.NewLine, stepLines.DefaultIfEmpty("- none"))}
 
-## Decisions
-{string.Join(Environment.NewLine, decisionLines.DefaultIfEmpty("- none"))}
-""";
+                                ## Decisions
+                                {string.Join(Environment.NewLine, decisionLines.DefaultIfEmpty("- none"))}
+                                """;
 
-        this.WriteMarkdown(artifacts.StateMarkdownPath, stateMarkdown);
-        this.LogPersistedState(artifacts.RunId);
+        WriteMarkdown(artifacts.StateMarkdownPath, stateMarkdown);
+        LogPersistedState(artifacts.RunId);
     }
 
     /// <inheritdoc />
@@ -186,7 +191,7 @@ CompletedUtc: {(state.CompletedAtUtc.HasValue ? state.CompletedAtUtc.Value.ToStr
 
         string line = JsonSerializer.Serialize(entry, JsonSerializerOptions);
         File.AppendAllText(artifacts.EventLogPath, line + Environment.NewLine, Utf8WithoutBom);
-        this.LogAppendedEvent(entry.EventName, artifacts.RunId);
+        LogAppendedEvent(entry.EventName, artifacts.RunId);
     }
 
     /// <summary>
@@ -241,10 +246,12 @@ CompletedUtc: {(state.CompletedAtUtc.HasValue ? state.CompletedAtUtc.Value.ToStr
         return string.IsNullOrWhiteSpace(branchId) ? string.Empty : $" (branch={branchId})";
     }
 
-    [LoggerMessage(EventId = 200, Level = LogLevel.Information, Message = "Created workflow artifacts at {RunDirectoryPath} for request {RequestPath}.")]
+    [LoggerMessage(EventId = 200, Level = LogLevel.Information,
+        Message = "Created workflow artifacts at {RunDirectoryPath} for request {RequestPath}.")]
     private partial void LogCreatedArtifacts(string runDirectoryPath, string requestPath);
 
-    [LoggerMessage(EventId = 201, Level = LogLevel.Information, Message = "Loaded existing workflow artifacts from {RunDirectoryPath}.")]
+    [LoggerMessage(EventId = 201, Level = LogLevel.Information,
+        Message = "Loaded existing workflow artifacts from {RunDirectoryPath}.")]
     private partial void LogLoadedArtifacts(string runDirectoryPath);
 
     [LoggerMessage(EventId = 202, Level = LogLevel.Debug, Message = "Wrote markdown artifact to {ArtifactPath}.")]
@@ -256,6 +263,7 @@ CompletedUtc: {(state.CompletedAtUtc.HasValue ? state.CompletedAtUtc.Value.ToStr
     [LoggerMessage(EventId = 204, Level = LogLevel.Debug, Message = "Persisted workflow state for run {RunId}.")]
     private partial void LogPersistedState(string runId);
 
-    [LoggerMessage(EventId = 205, Level = LogLevel.Debug, Message = "Appended workflow log event {EventName} for run {RunId}.")]
+    [LoggerMessage(EventId = 205, Level = LogLevel.Debug,
+        Message = "Appended workflow log event {EventName} for run {RunId}.")]
     private partial void LogAppendedEvent(string eventName, string runId);
 }

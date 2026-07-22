@@ -1,4 +1,5 @@
 using System;
+using CleanSquad.Core.Workflows;
 using CleanSquad.Workflow;
 using CleanSquad.Workflow.Storage;
 using Microsoft.Extensions.Logging;
@@ -25,6 +26,7 @@ public static class WorkflowOrchestratorFactory
         ILoggerFactory? loggerFactory = null,
         IOptions<WorkflowStorageOptions>? storageOptions = null)
     {
-        return Workflows.CopilotWorkflowOrchestratorFactory.Create(workspaceRootPath, timeProvider, loggerFactory, storageOptions);
+        return CopilotWorkflowOrchestratorFactory.Create(workspaceRootPath, timeProvider, loggerFactory,
+            storageOptions);
     }
 }

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using CleanSquad.Workflow;
 using CleanSquad.Workflow.Decisions;
 using CleanSquad.Workflow.Definitions;
 using CleanSquad.Workflow.Orchestration;
@@ -56,7 +55,7 @@ public sealed class WorkflowDecisionResolverTests
                     NodeId = "rebuilder",
                     Status = WorkflowStepStatus.Completed,
                     StartedAtUtc = TimeProvider.System.GetUtcNow(),
-                    CompletedAtUtc = TimeProvider.System.GetUtcNow(),
+                    CompletedAtUtc = TimeProvider.System.GetUtcNow()
                 });
             });
 
@@ -74,7 +73,8 @@ public sealed class WorkflowDecisionResolverTests
     [Fact]
     public async Task ResolveAsyncFallsBackToFirstChoiceWhenAgentOutputIsUnsupportedAsync()
     {
-        WorkflowDecisionResolver resolver = new(new FakeWorkflowAgentRunner(["# Decision\nNo explicit choice provided."]));
+        WorkflowDecisionResolver resolver =
+            new(new FakeWorkflowAgentRunner(["# Decision\nNo explicit choice provided."]));
         WorkflowDecisionContext context = CreateContext(WorkflowDecisionMode.Agent, null, string.Empty);
 
         WorkflowDecision decision = await resolver.ResolveAsync(context);
@@ -123,7 +123,7 @@ public sealed class WorkflowDecisionResolverTests
                 NodeId = "phase-master-review",
                 Status = WorkflowStepStatus.Completed,
                 StartedAtUtc = TimeProvider.System.GetUtcNow(),
-                CompletedAtUtc = TimeProvider.System.GetUtcNow(),
+                CompletedAtUtc = TimeProvider.System.GetUtcNow()
             }),
             node =>
             {
@@ -132,7 +132,7 @@ public sealed class WorkflowDecisionResolverTests
                 [
                     new WorkflowDecisionOptionDefinition { Id = "approve", NextNodeId = "approved" },
                     new WorkflowDecisionOptionDefinition { Id = "rework", NextNodeId = "three-amigos-fork" },
-                    new WorkflowDecisionOptionDefinition { Id = "stop", NextNodeId = "stopped" },
+                    new WorkflowDecisionOptionDefinition { Id = "stop", NextNodeId = "stopped" }
                 ];
             });
 
@@ -163,7 +163,7 @@ public sealed class WorkflowDecisionResolverTests
                     NodeId = "code-master-review",
                     Status = WorkflowStepStatus.Completed,
                     StartedAtUtc = TimeProvider.System.GetUtcNow(),
-                    CompletedAtUtc = TimeProvider.System.GetUtcNow(),
+                    CompletedAtUtc = TimeProvider.System.GetUtcNow()
                 });
                 state.Steps.Add(new WorkflowStepState
                 {
@@ -171,10 +171,10 @@ public sealed class WorkflowDecisionResolverTests
                     NodeId = "rebuilder",
                     Status = WorkflowStepStatus.Completed,
                     StartedAtUtc = TimeProvider.System.GetUtcNow(),
-                    CompletedAtUtc = TimeProvider.System.GetUtcNow(),
+                    CompletedAtUtc = TimeProvider.System.GetUtcNow()
                 });
             },
-            configureNode: node => node.DecisionSourceNodeId = "code-master-review");
+            node => node.DecisionSourceNodeId = "code-master-review");
 
         WorkflowDecision decision = await resolver.ResolveAsync(context);
 
@@ -198,8 +198,8 @@ public sealed class WorkflowDecisionResolverTests
             {
                 DecisionMode = decisionMode,
                 MaxRebuilds = 1,
-                MaxReviewCycles = 2,
-            },
+                MaxReviewCycles = 2
+            }
         };
         WorkflowNodeDefinition node = new()
         {
@@ -212,8 +212,8 @@ public sealed class WorkflowDecisionResolverTests
             [
                 new WorkflowDecisionOptionDefinition { Id = "approve", NextNodeId = "approved" },
                 new WorkflowDecisionOptionDefinition { Id = "rebuild", NextNodeId = "rebuilder" },
-                new WorkflowDecisionOptionDefinition { Id = "stop", NextNodeId = "stopped" },
-            ],
+                new WorkflowDecisionOptionDefinition { Id = "stop", NextNodeId = "stopped" }
+            ]
         };
         configureNode?.Invoke(node);
         WorkflowArtifacts artifacts = WorkflowArtifacts.Create(
@@ -253,7 +253,7 @@ public sealed class WorkflowDecisionResolverTests
             CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            return Task.FromResult(this.responses.Dequeue());
+            return Task.FromResult(responses.Dequeue());
         }
     }
 }

@@ -2,6 +2,7 @@ using System.Threading.Tasks;
 using CleanSquad.Core.Workflows;
 using CleanSquad.Workflow;
 using GitHub.Copilot;
+using GitHub.Copilot.Rpc;
 
 namespace CleanSquad.Core.UnitTests.Workflows;
 
@@ -23,18 +24,18 @@ public sealed class CopilotWorkflowAgentRunnerTests
             "gpt-5.4",
             WorkflowReasoningEffort.High);
 
-        var result = await config.OnPermissionRequest!(
+        PermissionDecision result = await config.OnPermissionRequest!(
             new PermissionRequestWrite
             {
                 ToolCallId = "tool-1",
                 Intention = "Update the README",
                 FileName = "README.md",
                 Diff = "@@ -1 +1 @@",
-                CanOfferSessionApproval = true,
+                CanOfferSessionApproval = true
             },
             new PermissionInvocation
             {
-                SessionId = "session-1",
+                SessionId = "session-1"
             });
 
         Assert.Equal(@"c:\repo", config.WorkingDirectory);
@@ -56,7 +57,7 @@ public sealed class CopilotWorkflowAgentRunnerTests
             null,
             null);
 
-        var result = await config.OnPermissionRequest!(
+        PermissionDecision result = await config.OnPermissionRequest!(
             new PermissionRequestShell
             {
                 ToolCallId = "tool-2",
@@ -66,11 +67,11 @@ public sealed class CopilotWorkflowAgentRunnerTests
                 PossiblePaths = [],
                 PossibleUrls = [],
                 HasWriteFileRedirection = false,
-                CanOfferSessionApproval = true,
+                CanOfferSessionApproval = true
             },
             new PermissionInvocation
             {
-                SessionId = "session-2",
+                SessionId = "session-2"
             });
 
         Assert.Null(config.Model);

@@ -31,13 +31,13 @@ public sealed class WorkflowStorageOptions
     public string GetWorkflowRunsRootPath(string workspaceRootPath)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(workspaceRootPath);
-        ValidateDirectoryName(this.WorkflowTestingDirectoryName, nameof(this.WorkflowTestingDirectoryName));
-        ValidateDirectoryName(this.WorkflowRunsDirectoryName, nameof(this.WorkflowRunsDirectoryName));
+        ValidateDirectoryName(WorkflowTestingDirectoryName, nameof(WorkflowTestingDirectoryName));
+        ValidateDirectoryName(WorkflowRunsDirectoryName, nameof(WorkflowRunsDirectoryName));
 
         return Path.Combine(
             Path.GetFullPath(workspaceRootPath),
-            this.WorkflowTestingDirectoryName,
-            this.WorkflowRunsDirectoryName);
+            WorkflowTestingDirectoryName,
+            WorkflowRunsDirectoryName);
     }
 
     /// <summary>
@@ -48,8 +48,8 @@ public sealed class WorkflowStorageOptions
     public string GetKnowledgeRootPath(string workspaceRootPath)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(workspaceRootPath);
-        ValidateDirectoryName(this.KnowledgeDirectoryName, nameof(this.KnowledgeDirectoryName));
-        return Path.Combine(Path.GetFullPath(workspaceRootPath), this.KnowledgeDirectoryName);
+        ValidateDirectoryName(KnowledgeDirectoryName, nameof(KnowledgeDirectoryName));
+        return Path.Combine(Path.GetFullPath(workspaceRootPath), KnowledgeDirectoryName);
     }
 
     private static void ValidateDirectoryName(string value, string parameterName)

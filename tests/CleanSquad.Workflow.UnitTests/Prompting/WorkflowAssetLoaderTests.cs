@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 using CleanSquad.Workflow.Definitions;
 using CleanSquad.Workflow.Prompting;
@@ -24,14 +25,14 @@ public sealed class WorkflowAssetLoaderTests
         {
             string instructionPath = Path.Combine(tempDirectoryPath, "instruction.md");
             string agentPath = Path.Combine(tempDirectoryPath, "agent.md");
-            await File.WriteAllTextAsync(instructionPath, "instruction content\n\n", System.Text.Encoding.UTF8);
-            await File.WriteAllTextAsync(agentPath, "agent content\r\n", System.Text.Encoding.UTF8);
+            await File.WriteAllTextAsync(instructionPath, "instruction content\n\n", Encoding.UTF8);
+            await File.WriteAllTextAsync(agentPath, "agent content\r\n", Encoding.UTF8);
 
             string markdown = await WorkflowAssetLoader.LoadMarkdownBlocksAsync(
-                [
-                    new WorkflowAssetReference("instruction", instructionPath),
-                    new WorkflowAssetReference("agent", agentPath),
-                ]);
+            [
+                new WorkflowAssetReference("instruction", instructionPath),
+                new WorkflowAssetReference("agent", agentPath)
+            ]);
 
             Assert.Contains("### instruction: instruction.md", markdown, StringComparison.OrdinalIgnoreCase);
             Assert.Contains("instruction content", markdown, StringComparison.Ordinal);
