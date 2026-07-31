@@ -185,9 +185,9 @@
       "role": "Architecture",
       "agent": "enterprise-architect",
       "responseTimeout": "00:10:00",
-      "inputs": ["request", "node:story-selection", "node:increment-framing"],
+      "inputs": ["request", "node:story-selection", "node:increment-framing", "node:architecture-master-reviewer"],
       "outputs": ["enterpriseArchitectureScope", "enterpriseConstraints", "enterpriseDependencyMap"],
-      "customMessage": "Define enterprise scope, boundaries, dependencies, and guardrails proportionately for the current story and epic context.",
+      "customMessage": "Define enterprise scope, boundaries, dependencies, and guardrails proportionately for the current story and epic context. On rework, address the attached architecture master review findings.",
       "assets": [
         { "kind": "agent-persona", "path": "agents/enterprise-architect.agent.md" },
         { "kind": "agent-rule", "path": "rules/agents/enterprise-architect.rules.md" }

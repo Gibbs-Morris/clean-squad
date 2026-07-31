@@ -741,6 +741,10 @@ public sealed class WorkflowDefinitionLoaderTests
                 ]));
         Assert.NotNull(result.Definition);
         Assert.Equal(["gpt-5.6-sol"], result.Definition.AgentDefaults.Models);
+        WorkflowNodeDefinition enterpriseArchitecture = Assert.Single(
+            result.Definition.Nodes,
+            node => string.Equals(node.Id, "enterprise-architecture", StringComparison.Ordinal));
+        Assert.Contains("node:architecture-master-reviewer", enterpriseArchitecture.Inputs);
     }
 
     private static string CreateTempDirectory()
