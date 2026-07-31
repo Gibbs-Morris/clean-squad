@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 using CleanSquad.Workflow.Definitions;
 using CleanSquad.Workflow.Prompting;
@@ -24,8 +25,8 @@ public sealed class WorkflowPromptComposerTests
         {
             string sharedAssetPath = Path.Combine(tempDirectoryPath, "shared.md");
             string plannerAssetPath = Path.Combine(tempDirectoryPath, "planner.md");
-            await File.WriteAllTextAsync(sharedAssetPath, "shared", System.Text.Encoding.UTF8);
-            await File.WriteAllTextAsync(plannerAssetPath, "planner", System.Text.Encoding.UTF8);
+            await File.WriteAllTextAsync(sharedAssetPath, "shared", Encoding.UTF8);
+            await File.WriteAllTextAsync(plannerAssetPath, "planner", Encoding.UTF8);
             WorkflowDefinition definition = new()
             {
                 Name = "Prompt Test",
@@ -40,7 +41,8 @@ public sealed class WorkflowPromptComposerTests
                 Rebuilder = new WorkflowStageDefinition(),
             };
 
-            string prompt = await WorkflowPromptComposer.ComposeAsync(definition, WorkflowStage.Planner, ["request.md"]);
+            string prompt =
+                await WorkflowPromptComposer.ComposeAsync(definition, WorkflowStage.Planner, ["request.md"]);
 
             Assert.Contains("instruction: shared.md", prompt, StringComparison.OrdinalIgnoreCase);
             Assert.Contains("agent: planner.md", prompt, StringComparison.OrdinalIgnoreCase);
@@ -65,8 +67,8 @@ public sealed class WorkflowPromptComposerTests
         {
             string sharedAssetPath = Path.Combine(tempDirectoryPath, "shared.md");
             string plannerAssetPath = Path.Combine(tempDirectoryPath, "planner.md");
-            await File.WriteAllTextAsync(sharedAssetPath, "shared", System.Text.Encoding.UTF8);
-            await File.WriteAllTextAsync(plannerAssetPath, "planner", System.Text.Encoding.UTF8);
+            await File.WriteAllTextAsync(sharedAssetPath, "shared", Encoding.UTF8);
+            await File.WriteAllTextAsync(plannerAssetPath, "planner", Encoding.UTF8);
             WorkflowDefinition definition = new()
             {
                 Name = "Prompt Config Test",

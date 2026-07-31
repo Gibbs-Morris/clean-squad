@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using CleanSquad.Workflow;
-using GitHub.Copilot.SDK;
+using GitHub.Copilot;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -19,9 +19,9 @@ namespace CleanSquad.Core.Workflows;
 /// </summary>
 public sealed partial class CopilotWorkflowAgentRunner : IWorkflowAgentRunner
 {
-    private readonly string workspaceRootPath;
-    private readonly TimeSpan responseTimeout;
     private readonly ILogger<CopilotWorkflowAgentRunner> logger;
+    private readonly TimeSpan responseTimeout;
+    private readonly string workspaceRootPath;
 
     /// <summary>
     ///     Initializes a new instance of the <see cref="CopilotWorkflowAgentRunner" /> class.
@@ -29,11 +29,11 @@ public sealed partial class CopilotWorkflowAgentRunner : IWorkflowAgentRunner
     /// <param name="workspaceRootPath">The workspace root path used as the Copilot CLI working directory.</param>
     public CopilotWorkflowAgentRunner(string workspaceRootPath)
         : this(
-            Options.Create(new CopilotWorkflowAgentRunnerOptions
-            {
-                WorkspaceRootPath = workspaceRootPath,
-            }),
-            null)
+            Options.Create(
+                new CopilotWorkflowAgentRunnerOptions
+                {
+                    WorkspaceRootPath = workspaceRootPath,
+                }))
     {
     }
 
@@ -46,13 +46,17 @@ public sealed partial class CopilotWorkflowAgentRunner : IWorkflowAgentRunner
         IOptions<CopilotWorkflowAgentRunnerOptions>? options,
         ILogger<CopilotWorkflowAgentRunner>? logger = null)
     {
-        CopilotWorkflowAgentRunnerOptions effectiveOptions = (options ?? Options.Create(new CopilotWorkflowAgentRunnerOptions())).Value;
+        CopilotWorkflowAgentRunnerOptions effectiveOptions =
+            (options ?? Options.Create(new CopilotWorkflowAgentRunnerOptions())).Value;
         ArgumentException.ThrowIfNullOrWhiteSpace(effectiveOptions.WorkspaceRootPath);
-        this.workspaceRootPath = Path.GetFullPath(effectiveOptions.WorkspaceRootPath);
-        this.responseTimeout = effectiveOptions.ResponseTimeout ?? TimeSpan.FromMinutes(5);
-        if (this.responseTimeout <= TimeSpan.Zero)
+        workspaceRootPath = Path.GetFullPath(effectiveOptions.WorkspaceRootPath);
+        responseTimeout = effectiveOptions.ResponseTimeout ?? TimeSpan.FromMinutes(5);
+        if (responseTimeout <= TimeSpan.Zero)
         {
-            throw new ArgumentOutOfRangeException(nameof(options), effectiveOptions.ResponseTimeout, "The Copilot workflow response timeout must be greater than zero.");
+            throw new ArgumentOutOfRangeException(
+                nameof(options),
+                effectiveOptions.ResponseTimeout,
+                "The Copilot workflow response timeout must be greater than zero.");
         }
 
         this.logger = logger ?? NullLogger<CopilotWorkflowAgentRunner>.Instance;
@@ -79,9 +83,9 @@ public sealed partial class CopilotWorkflowAgentRunner : IWorkflowAgentRunner
         string attachmentSummary = FormatAttachmentSummary(attachmentFilePaths);
         string reasoningSummary = configuredReasoningEffort ?? "(model default)";
         string promptWithContext = await BuildPromptWithContextAsync(prompt, attachmentFilePaths, cancellationToken);
-        this.LogExecutingRole(
+        LogExecutingRole(
             agentName,
-            this.workspaceRootPath,
+            workspaceRootPath,
             attachmentFilePaths.Count,
             modelSummary,
             reasoningSummary,
@@ -91,14 +95,18 @@ public sealed partial class CopilotWorkflowAgentRunner : IWorkflowAgentRunner
 
         try
         {
-            await using var client = new CopilotClient(new CopilotClientOptions
-            {
-                Cwd = this.workspaceRootPath,
-            });
+            await using CopilotClient client = new(
+                new CopilotClientOptions
+                {
+                    WorkingDirectory = workspaceRootPath,
+                });
 
             await client.StartAsync(cancellationToken);
-            string? resolvedReasoningEffort = await ResolveReasoningEffortAsync(client, modelId, configuredReasoningEffort, cancellationToken);
-            await using var session = await client.CreateSessionAsync(CreateSessionConfig(this.workspaceRootPath, modelId, resolvedReasoningEffort), cancellationToken);
+            string? resolvedReasoningEffort =
+                await ResolveReasoningEffortAsync(client, modelId, configuredReasoningEffort, cancellationToken);
+            await using CopilotSession session = await client.CreateSessionAsync(
+                CreateSessionConfig(workspaceRootPath, modelId, resolvedReasoningEffort),
+                cancellationToken);
 
             AssistantMessageEvent? reply = await session.SendAndWaitAsync(
                 new MessageOptions
@@ -112,12 +120,12 @@ public sealed partial class CopilotWorkflowAgentRunner : IWorkflowAgentRunner
             if (string.IsNullOrWhiteSpace(content))
             {
                 InvalidOperationException exception = new($"The {agentName} agent returned an empty response.");
-                this.LogEmptyResponse(exception, agentName);
+                LogEmptyResponse(exception, agentName);
                 throw exception;
             }
 
             string markdown = content.Trim();
-            this.LogRoleCompleted(
+            LogRoleCompleted(
                 agentName,
                 markdown.Length);
             return markdown;
@@ -132,7 +140,7 @@ public sealed partial class CopilotWorkflowAgentRunner : IWorkflowAgentRunner
                 modelSummary,
                 reasoningSummary);
             TimeoutException diagnosticException = new(diagnosticMessage, exception);
-            this.LogRoleTimedOut(
+            LogRoleTimedOut(
                 diagnosticException,
                 agentName,
                 effectiveResponseTimeout.ToString("c", CultureInfo.InvariantCulture),
@@ -144,7 +152,13 @@ public sealed partial class CopilotWorkflowAgentRunner : IWorkflowAgentRunner
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            this.LogRoleFailed(exception, agentName, promptWithContext.Length, attachmentSummary, modelSummary, reasoningSummary);
+            LogRoleFailed(
+                exception,
+                agentName,
+                promptWithContext.Length,
+                attachmentSummary,
+                modelSummary,
+                reasoningSummary);
             throw;
         }
     }
@@ -183,7 +197,10 @@ public sealed partial class CopilotWorkflowAgentRunner : IWorkflowAgentRunner
     /// <param name="modelId">The preferred model identifier for the current workflow stage.</param>
     /// <param name="reasoningEffort">The resolved reasoning-effort preference for the selected model.</param>
     /// <returns>The configured session settings.</returns>
-    internal static SessionConfig CreateSessionConfig(string workspaceRootPath, string? modelId, string? reasoningEffort)
+    internal static SessionConfig CreateSessionConfig(
+        string workspaceRootPath,
+        string? modelId,
+        string? reasoningEffort)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(workspaceRootPath);
 
@@ -224,7 +241,7 @@ public sealed partial class CopilotWorkflowAgentRunner : IWorkflowAgentRunner
             return normalizedReasoningEffort;
         }
 
-        IReadOnlyList<ModelInfo> availableModels = await client.ListModelsAsync(cancellationToken);
+        IList<ModelInfo> availableModels = await client.ListModelsAsync(cancellationToken);
         ModelInfo? selectedModel = availableModels.FirstOrDefault(availableModel =>
             string.Equals(availableModel.Id, modelId, StringComparison.OrdinalIgnoreCase));
         if (selectedModel is null)
@@ -232,8 +249,8 @@ public sealed partial class CopilotWorkflowAgentRunner : IWorkflowAgentRunner
             return null;
         }
 
-        return ResolveHighestSupportedReasoningEffort(selectedModel.SupportedReasoningEfforts)
-            ?? selectedModel.DefaultReasoningEffort;
+        return ResolveHighestSupportedReasoningEffort(selectedModel.SupportedReasoningEfforts?.ToArray())
+               ?? selectedModel.DefaultReasoningEffort;
     }
 
     /// <summary>
@@ -278,21 +295,61 @@ public sealed partial class CopilotWorkflowAgentRunner : IWorkflowAgentRunner
         string modelSummary,
         string reasoningEffort)
     {
-        return $"Agent '{agentName}' timed out after waiting {responseTimeout.ToString("c", CultureInfo.InvariantCulture)} for a Copilot response. Prompt length: {promptLength.ToString(CultureInfo.InvariantCulture)} characters. Attachments: {attachmentSummary}. Models: {modelSummary}. Reasoning effort: {reasoningEffort}. This usually means the stage needed more time to edit, build, or test, or the requested increment was too large for one pass.";
+        return
+            $"Agent '{agentName}' timed out after waiting {responseTimeout.ToString("c", CultureInfo.InvariantCulture)} for a Copilot response. Prompt length: {promptLength.ToString(CultureInfo.InvariantCulture)} characters. Attachments: {attachmentSummary}. Models: {modelSummary}. Reasoning effort: {reasoningEffort}. This usually means the stage needed more time to edit, build, or test, or the requested increment was too large for one pass.";
     }
 
-    [LoggerMessage(EventId = 100, Level = LogLevel.Debug, Message = "Executing Copilot workflow role {RoleName} from workspace {WorkspaceRootPath} with {AttachmentCount} attachments, models {Models}, reasoning effort {ReasoningEffort}, timeout {ResponseTimeout}, prompt length {PromptLength}, and attachments {AttachmentSummary}.")]
-    private partial void LogExecutingRole(string roleName, string workspaceRootPath, int attachmentCount, string models, string reasoningEffort, string responseTimeout, int promptLength, string attachmentSummary);
+    [LoggerMessage(
+        EventId = 100,
+        Level = LogLevel.Debug,
+        Message =
+            "Executing Copilot workflow role {RoleName} from workspace {WorkspaceRootPath} with {AttachmentCount} attachments, models {Models}, reasoning effort {ReasoningEffort}, timeout {ResponseTimeout}, prompt length {PromptLength}, and attachments {AttachmentSummary}.")]
+    private partial void LogExecutingRole(
+        string roleName,
+        string workspaceRootPath,
+        int attachmentCount,
+        string models,
+        string reasoningEffort,
+        string responseTimeout,
+        int promptLength,
+        string attachmentSummary);
 
-    [LoggerMessage(EventId = 101, Level = LogLevel.Error, Message = "Copilot workflow role {RoleName} returned an empty response.")]
+    [LoggerMessage(
+        EventId = 101,
+        Level = LogLevel.Error,
+        Message = "Copilot workflow role {RoleName} returned an empty response.")]
     private partial void LogEmptyResponse(Exception exception, string roleName);
 
-    [LoggerMessage(EventId = 102, Level = LogLevel.Debug, Message = "Copilot workflow role {RoleName} completed successfully with {CharacterCount} characters.")]
+    [LoggerMessage(
+        EventId = 102,
+        Level = LogLevel.Debug,
+        Message = "Copilot workflow role {RoleName} completed successfully with {CharacterCount} characters.")]
     private partial void LogRoleCompleted(string roleName, int characterCount);
 
-    [LoggerMessage(EventId = 103, Level = LogLevel.Error, Message = "Copilot workflow role {RoleName} failed after preparing {PromptLength} characters with attachments {AttachmentSummary}, models {Models}, and reasoning effort {ReasoningEffort}.")]
-    private partial void LogRoleFailed(Exception exception, string roleName, int promptLength, string attachmentSummary, string models, string reasoningEffort);
+    [LoggerMessage(
+        EventId = 103,
+        Level = LogLevel.Error,
+        Message =
+            "Copilot workflow role {RoleName} failed after preparing {PromptLength} characters with attachments {AttachmentSummary}, models {Models}, and reasoning effort {ReasoningEffort}.")]
+    private partial void LogRoleFailed(
+        Exception exception,
+        string roleName,
+        int promptLength,
+        string attachmentSummary,
+        string models,
+        string reasoningEffort);
 
-    [LoggerMessage(EventId = 104, Level = LogLevel.Error, Message = "Copilot workflow role {RoleName} timed out after {ResponseTimeout} with prompt length {PromptLength}, attachments {AttachmentSummary}, models {Models}, and reasoning effort {ReasoningEffort}.")]
-    private partial void LogRoleTimedOut(Exception exception, string roleName, string responseTimeout, int promptLength, string attachmentSummary, string models, string reasoningEffort);
+    [LoggerMessage(
+        EventId = 104,
+        Level = LogLevel.Error,
+        Message =
+            "Copilot workflow role {RoleName} timed out after {ResponseTimeout} with prompt length {PromptLength}, attachments {AttachmentSummary}, models {Models}, and reasoning effort {ReasoningEffort}.")]
+    private partial void LogRoleTimedOut(
+        Exception exception,
+        string roleName,
+        string responseTimeout,
+        int promptLength,
+        string attachmentSummary,
+        string models,
+        string reasoningEffort);
 }

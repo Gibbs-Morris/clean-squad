@@ -15,7 +15,9 @@ public static class CleanupChecklistService
     /// <param name="squadName">The squad name to normalize.</param>
     /// <param name="options">The optional checklist configuration.</param>
     /// <returns>A deterministic starter checklist.</returns>
-    public static IReadOnlyList<CleanTask> CreateStarterChecklist(string? squadName, CleanupChecklistOptions? options = null)
+    public static IReadOnlyList<CleanTask> CreateStarterChecklist(
+        string? squadName,
+        CleanupChecklistOptions? options = null)
     {
         CleanupChecklistOptions effectiveOptions = NormalizeOptions(options);
         return CreateStarterChecklistCore(NormalizeSquadName(squadName, effectiveOptions), effectiveOptions);
@@ -36,13 +38,15 @@ public static class CleanupChecklistService
         return FormatSummary(effectiveOptions.SummaryTemplate, normalizedSquadName, checklist.Count);
     }
 
-    private static IReadOnlyList<CleanTask> CreateStarterChecklistCore(string normalizedSquadName, CleanupChecklistOptions options)
+    private static IReadOnlyList<CleanTask> CreateStarterChecklistCore(
+        string normalizedSquadName,
+        CleanupChecklistOptions options)
     {
         return
         [
             new CleanTask(FormatSquadTemplate(options.MissionTaskTemplate, normalizedSquadName), false),
             new CleanTask(options.BuildTaskName, false),
-            new CleanTask(options.ReleaseTaskName, false)
+            new CleanTask(options.ReleaseTaskName, false),
         ];
     }
 

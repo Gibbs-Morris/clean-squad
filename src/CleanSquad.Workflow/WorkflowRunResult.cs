@@ -27,11 +27,12 @@ public sealed record WorkflowRunResult(
     /// <summary>
     ///     Gets a concise user-facing summary of the outcome.
     /// </summary>
-    public string StatusLabel => this.Status switch
+    public string StatusLabel => Status switch
     {
         WorkflowRunStatus.Running => "is still running",
         WorkflowRunStatus.Paused => "paused and is waiting to be resumed",
-        WorkflowRunStatus.Approved when this.RebuildCount > 0 => $"finished with approval after {this.RebuildCount} rebuild{(this.RebuildCount == 1 ? string.Empty : "s")}",
+        WorkflowRunStatus.Approved when RebuildCount > 0 =>
+            $"finished with approval after {RebuildCount} rebuild{(RebuildCount == 1 ? string.Empty : "s")}",
         WorkflowRunStatus.Approved => "finished with reviewer approval",
         WorkflowRunStatus.Failed => "failed before reaching an exit node",
         _ => "stopped without approval",

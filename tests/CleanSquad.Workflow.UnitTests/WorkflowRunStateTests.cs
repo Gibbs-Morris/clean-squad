@@ -1,5 +1,4 @@
 using System;
-using CleanSquad.Workflow;
 using CleanSquad.Workflow.Orchestration;
 using CleanSquad.Workflow.UnitTests.TestFixtures;
 
@@ -21,32 +20,35 @@ public sealed class WorkflowRunStateTests
         state.Status = WorkflowRunStatus.Failed;
         state.CompletedAtUtc = timeProvider.GetUtcNow();
         state.PendingActivations.Clear();
-        state.PendingActivations.Add(new WorkflowPendingActivation
-        {
-            SequenceNumber = 1,
-            NodeId = "builder",
-            ParallelGroupId = "group-1",
-            BranchId = "code",
-        });
+        state.PendingActivations.Add(
+            new WorkflowPendingActivation
+            {
+                SequenceNumber = 1,
+                NodeId = "builder",
+                ParallelGroupId = "group-1",
+                BranchId = "code",
+            });
         state.NextActivationSequenceNumber = 2;
-        state.Steps.Add(new WorkflowStepState
-        {
-            StepNumber = 1,
-            NodeId = "planner",
-            Status = WorkflowStepStatus.InProgress,
-            ActivationSequenceNumber = 2,
-            StartedAtUtc = timeProvider.GetUtcNow(),
-        });
-        state.Steps.Add(new WorkflowStepState
-        {
-            StepNumber = 2,
-            NodeId = "builder",
-            Status = WorkflowStepStatus.Failed,
-            ActivationSequenceNumber = 1,
-            ParallelGroupId = "group-1",
-            BranchId = "code",
-            StartedAtUtc = timeProvider.GetUtcNow(),
-        });
+        state.Steps.Add(
+            new WorkflowStepState
+            {
+                StepNumber = 1,
+                NodeId = "planner",
+                Status = WorkflowStepStatus.InProgress,
+                ActivationSequenceNumber = 2,
+                StartedAtUtc = timeProvider.GetUtcNow(),
+            });
+        state.Steps.Add(
+            new WorkflowStepState
+            {
+                StepNumber = 2,
+                NodeId = "builder",
+                Status = WorkflowStepStatus.Failed,
+                ActivationSequenceNumber = 1,
+                ParallelGroupId = "group-1",
+                BranchId = "code",
+                StartedAtUtc = timeProvider.GetUtcNow(),
+            });
 
         state.PrepareForResume(timeProvider);
 
@@ -68,15 +70,16 @@ public sealed class WorkflowRunStateTests
         WorkflowRunState state = WorkflowRunState.Create("run-1", "Test Workflow", "planner", timeProvider);
         state.Status = WorkflowRunStatus.Paused;
         state.PendingActivations.Clear();
-        state.WaitingNodes.Add(new WorkflowWaitState
-        {
-            NodeId = "wait-for-review",
-            NextNodeId = "builder",
-            WaitDuration = "00:05:00",
-            Reason = "Wait for delayed review comments.",
-            WaitStartedAtUtc = timeProvider.GetUtcNow(),
-            WaitUntilUtc = timeProvider.GetUtcNow().AddMinutes(5),
-        });
+        state.WaitingNodes.Add(
+            new WorkflowWaitState
+            {
+                NodeId = "wait-for-review",
+                NextNodeId = "builder",
+                WaitDuration = "00:05:00",
+                Reason = "Wait for delayed review comments.",
+                WaitStartedAtUtc = timeProvider.GetUtcNow(),
+                WaitUntilUtc = timeProvider.GetUtcNow().AddMinutes(5),
+            });
 
         state.PrepareForResume(timeProvider);
 
@@ -101,33 +104,36 @@ public sealed class WorkflowRunStateTests
     public void GetLatestOutputPathReturnsLatestCompletedStepOutput()
     {
         WorkflowRunState state = WorkflowRunState.Create("run-1", "Test Workflow", "planner", TimeProvider.System);
-        state.Steps.Add(new WorkflowStepState
-        {
-            StepNumber = 1,
-            NodeId = "builder",
-            Status = WorkflowStepStatus.Completed,
-            OutputPath = "first.md",
-            StartedAtUtc = TimeProvider.System.GetUtcNow(),
-            CompletedAtUtc = TimeProvider.System.GetUtcNow(),
-        });
-        state.Steps.Add(new WorkflowStepState
-        {
-            StepNumber = 2,
-            NodeId = "builder",
-            Status = WorkflowStepStatus.Failed,
-            OutputPath = "failed.md",
-            StartedAtUtc = TimeProvider.System.GetUtcNow(),
-            CompletedAtUtc = TimeProvider.System.GetUtcNow(),
-        });
-        state.Steps.Add(new WorkflowStepState
-        {
-            StepNumber = 3,
-            NodeId = "builder",
-            Status = WorkflowStepStatus.Completed,
-            OutputPath = "latest.md",
-            StartedAtUtc = TimeProvider.System.GetUtcNow(),
-            CompletedAtUtc = TimeProvider.System.GetUtcNow(),
-        });
+        state.Steps.Add(
+            new WorkflowStepState
+            {
+                StepNumber = 1,
+                NodeId = "builder",
+                Status = WorkflowStepStatus.Completed,
+                OutputPath = "first.md",
+                StartedAtUtc = TimeProvider.System.GetUtcNow(),
+                CompletedAtUtc = TimeProvider.System.GetUtcNow(),
+            });
+        state.Steps.Add(
+            new WorkflowStepState
+            {
+                StepNumber = 2,
+                NodeId = "builder",
+                Status = WorkflowStepStatus.Failed,
+                OutputPath = "failed.md",
+                StartedAtUtc = TimeProvider.System.GetUtcNow(),
+                CompletedAtUtc = TimeProvider.System.GetUtcNow(),
+            });
+        state.Steps.Add(
+            new WorkflowStepState
+            {
+                StepNumber = 3,
+                NodeId = "builder",
+                Status = WorkflowStepStatus.Completed,
+                OutputPath = "latest.md",
+                StartedAtUtc = TimeProvider.System.GetUtcNow(),
+                CompletedAtUtc = TimeProvider.System.GetUtcNow(),
+            });
 
         string? outputPath = state.GetLatestOutputPath("builder");
 

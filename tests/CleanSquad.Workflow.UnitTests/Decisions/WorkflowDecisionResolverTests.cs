@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using CleanSquad.Workflow;
 using CleanSquad.Workflow.Decisions;
 using CleanSquad.Workflow.Definitions;
 using CleanSquad.Workflow.Orchestration;
@@ -50,14 +49,15 @@ public sealed class WorkflowDecisionResolverTests
             "Approved: no\n## Verdict\nNeeds work.\n",
             state =>
             {
-                state.Steps.Add(new WorkflowStepState
-                {
-                    StepNumber = 1,
-                    NodeId = "rebuilder",
-                    Status = WorkflowStepStatus.Completed,
-                    StartedAtUtc = TimeProvider.System.GetUtcNow(),
-                    CompletedAtUtc = TimeProvider.System.GetUtcNow(),
-                });
+                state.Steps.Add(
+                    new WorkflowStepState
+                    {
+                        StepNumber = 1,
+                        NodeId = "rebuilder",
+                        Status = WorkflowStepStatus.Completed,
+                        StartedAtUtc = TimeProvider.System.GetUtcNow(),
+                        CompletedAtUtc = TimeProvider.System.GetUtcNow(),
+                    });
             });
 
         WorkflowDecision decision = await resolver.ResolveAsync(context);
@@ -74,7 +74,8 @@ public sealed class WorkflowDecisionResolverTests
     [Fact]
     public async Task ResolveAsyncFallsBackToFirstChoiceWhenAgentOutputIsUnsupportedAsync()
     {
-        WorkflowDecisionResolver resolver = new(new FakeWorkflowAgentRunner(["# Decision\nNo explicit choice provided."]));
+        WorkflowDecisionResolver resolver =
+            new(new FakeWorkflowAgentRunner(["# Decision\nNo explicit choice provided."]));
         WorkflowDecisionContext context = CreateContext(WorkflowDecisionMode.Agent, null, string.Empty);
 
         WorkflowDecision decision = await resolver.ResolveAsync(context);
@@ -117,14 +118,15 @@ public sealed class WorkflowDecisionResolverTests
             WorkflowDecisionMode.Rules,
             "clean-agile-review",
             "Approved: no\n## Consolidated Assessment\nArchitecture needs refinement.\n",
-            state => state.Steps.Add(new WorkflowStepState
-            {
-                StepNumber = 1,
-                NodeId = "phase-master-review",
-                Status = WorkflowStepStatus.Completed,
-                StartedAtUtc = TimeProvider.System.GetUtcNow(),
-                CompletedAtUtc = TimeProvider.System.GetUtcNow(),
-            }),
+            state => state.Steps.Add(
+                new WorkflowStepState
+                {
+                    StepNumber = 1,
+                    NodeId = "phase-master-review",
+                    Status = WorkflowStepStatus.Completed,
+                    StartedAtUtc = TimeProvider.System.GetUtcNow(),
+                    CompletedAtUtc = TimeProvider.System.GetUtcNow(),
+                }),
             node =>
             {
                 node.DecisionSourceNodeId = "phase-master-review";
@@ -157,24 +159,26 @@ public sealed class WorkflowDecisionResolverTests
             "Approved: no\n## Consolidated Assessment\nCode still needs work.\n",
             state =>
             {
-                state.Steps.Add(new WorkflowStepState
-                {
-                    StepNumber = 1,
-                    NodeId = "code-master-review",
-                    Status = WorkflowStepStatus.Completed,
-                    StartedAtUtc = TimeProvider.System.GetUtcNow(),
-                    CompletedAtUtc = TimeProvider.System.GetUtcNow(),
-                });
-                state.Steps.Add(new WorkflowStepState
-                {
-                    StepNumber = 2,
-                    NodeId = "rebuilder",
-                    Status = WorkflowStepStatus.Completed,
-                    StartedAtUtc = TimeProvider.System.GetUtcNow(),
-                    CompletedAtUtc = TimeProvider.System.GetUtcNow(),
-                });
+                state.Steps.Add(
+                    new WorkflowStepState
+                    {
+                        StepNumber = 1,
+                        NodeId = "code-master-review",
+                        Status = WorkflowStepStatus.Completed,
+                        StartedAtUtc = TimeProvider.System.GetUtcNow(),
+                        CompletedAtUtc = TimeProvider.System.GetUtcNow(),
+                    });
+                state.Steps.Add(
+                    new WorkflowStepState
+                    {
+                        StepNumber = 2,
+                        NodeId = "rebuilder",
+                        Status = WorkflowStepStatus.Completed,
+                        StartedAtUtc = TimeProvider.System.GetUtcNow(),
+                        CompletedAtUtc = TimeProvider.System.GetUtcNow(),
+                    });
             },
-            configureNode: node => node.DecisionSourceNodeId = "code-master-review");
+            node => node.DecisionSourceNodeId = "code-master-review");
 
         WorkflowDecision decision = await resolver.ResolveAsync(context);
 
@@ -253,7 +257,7 @@ public sealed class WorkflowDecisionResolverTests
             CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            return Task.FromResult(this.responses.Dequeue());
+            return Task.FromResult(responses.Dequeue());
         }
     }
 }

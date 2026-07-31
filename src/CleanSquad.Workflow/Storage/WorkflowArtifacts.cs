@@ -20,6 +20,26 @@ public sealed record WorkflowArtifacts(
     string StateMarkdownPath)
 {
     /// <summary>
+    ///     Gets the persisted JSON state path.
+    /// </summary>
+    public string StateJsonPath => Path.Combine(RunDirectoryPath, "state.json");
+
+    /// <summary>
+    ///     Gets the structured event log path.
+    /// </summary>
+    public string EventLogPath => Path.Combine(RunDirectoryPath, "events.ndjson");
+
+    /// <summary>
+    ///     Gets the step artifact directory path.
+    /// </summary>
+    public string StepsDirectoryPath => Path.Combine(RunDirectoryPath, "steps");
+
+    /// <summary>
+    ///     Gets the plan artifact path.
+    /// </summary>
+    public string PlanMarkdownPath => Path.Combine(RunDirectoryPath, "plan.md");
+
+    /// <summary>
     ///     Creates a new set of workflow artifact paths.
     /// </summary>
     /// <param name="workspaceRootPath">The workspace root path.</param>
@@ -47,7 +67,8 @@ public sealed record WorkflowArtifacts(
         string slug = Slugify(Path.GetFileNameWithoutExtension(normalizedSourceRequestPath));
         string timestamp = timeProvider.GetUtcNow().ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
         string runId = $"{timestamp}-{slug}";
-        string runDirectoryPath = Path.Combine(effectiveStorageOptions.GetWorkflowRunsRootPath(normalizedWorkspaceRoot), runId);
+        string runDirectoryPath =
+            Path.Combine(effectiveStorageOptions.GetWorkflowRunsRootPath(normalizedWorkspaceRoot), runId);
 
         return new WorkflowArtifacts(
             normalizedWorkspaceRoot,
@@ -72,11 +93,15 @@ public sealed record WorkflowArtifacts(
 
         string normalizedPath = Path.GetFullPath(runPathOrStatePath);
         string runDirectoryPath = File.Exists(normalizedPath)
-            ? Path.GetDirectoryName(normalizedPath) ?? throw new InvalidOperationException("The provided state path does not have a directory.")
+            ? Path.GetDirectoryName(normalizedPath) ??
+              throw new InvalidOperationException("The provided state path does not have a directory.")
             : normalizedPath;
         DirectoryInfo runDirectory = new(runDirectoryPath);
         DirectoryInfo? testingDirectory = runDirectory.Parent?.Parent;
-        string workspaceRootPath = testingDirectory is not null && string.Equals(testingDirectory.Name, ".workflow-testing", StringComparison.OrdinalIgnoreCase)
+        string workspaceRootPath = testingDirectory is not null && string.Equals(
+            testingDirectory.Name,
+            ".workflow-testing",
+            StringComparison.OrdinalIgnoreCase)
             ? testingDirectory.Parent?.FullName ?? runDirectory.FullName
             : runDirectory.FullName;
 
@@ -93,21 +118,6 @@ public sealed record WorkflowArtifacts(
     }
 
     /// <summary>
-    ///     Gets the persisted JSON state path.
-    /// </summary>
-    public string StateJsonPath => Path.Combine(this.RunDirectoryPath, "state.json");
-
-    /// <summary>
-    ///     Gets the structured event log path.
-    /// </summary>
-    public string EventLogPath => Path.Combine(this.RunDirectoryPath, "events.ndjson");
-
-    /// <summary>
-    ///     Gets the step artifact directory path.
-    /// </summary>
-    public string StepsDirectoryPath => Path.Combine(this.RunDirectoryPath, "steps");
-
-    /// <summary>
     ///     Gets the markdown artifact path for a deterministic step.
     /// </summary>
     /// <param name="stepNumber">The deterministic step number.</param>
@@ -116,13 +126,8 @@ public sealed record WorkflowArtifacts(
     public string GetStepMarkdownPath(int stepNumber, string nodeId)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(nodeId);
-        return Path.Combine(this.StepsDirectoryPath, $"{stepNumber:0000}-{Slugify(nodeId)}.md");
+        return Path.Combine(StepsDirectoryPath, $"{stepNumber:0000}-{Slugify(nodeId)}.md");
     }
-
-    /// <summary>
-    ///     Gets the plan artifact path.
-    /// </summary>
-    public string PlanMarkdownPath => Path.Combine(this.RunDirectoryPath, "plan.md");
 
     /// <summary>
     ///     Gets the build artifact path for a build cycle.
@@ -131,7 +136,7 @@ public sealed record WorkflowArtifacts(
     /// <returns>The build artifact path.</returns>
     public string GetBuildMarkdownPath(int buildNumber)
     {
-        return Path.Combine(this.RunDirectoryPath, $"build-{buildNumber:00}.md");
+        return Path.Combine(RunDirectoryPath, $"build-{buildNumber:00}.md");
     }
 
     /// <summary>
@@ -141,7 +146,7 @@ public sealed record WorkflowArtifacts(
     /// <returns>The review artifact path.</returns>
     public string GetReviewMarkdownPath(int reviewCycle)
     {
-        return Path.Combine(this.RunDirectoryPath, $"review-{reviewCycle:00}.md");
+        return Path.Combine(RunDirectoryPath, $"review-{reviewCycle:00}.md");
     }
 
     /// <summary>
@@ -151,7 +156,7 @@ public sealed record WorkflowArtifacts(
     /// <returns>The decision artifact path.</returns>
     public string GetDecisionMarkdownPath(int reviewCycle)
     {
-        return Path.Combine(this.RunDirectoryPath, $"decision-{reviewCycle:00}.md");
+        return Path.Combine(RunDirectoryPath, $"decision-{reviewCycle:00}.md");
     }
 
     private static string Slugify(string value)

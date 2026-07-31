@@ -19,7 +19,9 @@ public static class WorkflowAssetLoader
     /// <param name="assets">The assets to load.</param>
     /// <param name="cancellationToken">The cancellation token for the operation.</param>
     /// <returns>The combined asset markdown.</returns>
-    public static async Task<string> LoadMarkdownBlocksAsync(IReadOnlyList<WorkflowAssetReference> assets, CancellationToken cancellationToken = default)
+    public static async Task<string> LoadMarkdownBlocksAsync(
+        IReadOnlyList<WorkflowAssetReference> assets,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(assets);
 
