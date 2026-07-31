@@ -76,7 +76,6 @@ public sealed partial class CopilotWorkflowAgentRunner : IWorkflowAgentRunner
         ArgumentNullException.ThrowIfNull(attachmentFilePaths);
         ArgumentNullException.ThrowIfNull(modelIds);
         cancellationToken.ThrowIfCancellationRequested();
-        string? modelId = SelectPreferredModelId(modelIds);
         string? configuredReasoningEffort = WorkflowReasoningEffort.Normalize(reasoningEffort);
         TimeSpan effectiveResponseTimeout = responseTimeout ?? this.responseTimeout;
         string modelSummary = modelIds.Count == 0 ? "(default)" : string.Join(",", modelIds);
@@ -102,8 +101,43 @@ public sealed partial class CopilotWorkflowAgentRunner : IWorkflowAgentRunner
                 });
 
             await client.StartAsync(cancellationToken);
+            IList<ModelInfo>? availableModels = null;
+            string? firstModelId = modelIds.FirstOrDefault(modelId => !string.IsNullOrWhiteSpace(modelId))?.Trim();
+            string? modelId;
+            if (string.IsNullOrWhiteSpace(firstModelId))
+            {
+                modelId = null;
+            }
+            else if (string.Equals(firstModelId, "auto", StringComparison.OrdinalIgnoreCase))
+            {
+                modelId = "auto";
+            }
+            else
+            {
+                availableModels = await client.ListModelsAsync(cancellationToken);
+                modelId = SelectPreferredAvailableModelId(
+                    modelIds,
+                    availableModels.Select(model => model.Id).ToArray());
+                if (modelId is null)
+                {
+                    string configuredModels = string.Join(", ", modelIds);
+                    string availableModelIds = availableModels.Count == 0
+                        ? "(none reported)"
+                        : string.Join(", ", availableModels.Select(model => model.Id));
+                    throw new InvalidOperationException(
+                        $"None of the configured models are available to the current GitHub Copilot account. " +
+                        $"Configured models: {configuredModels}. Available models: {availableModelIds}. " +
+                        "Update the workflow model preferences or the account model policy.");
+                }
+            }
+
             string? resolvedReasoningEffort =
-                await ResolveReasoningEffortAsync(client, modelId, configuredReasoningEffort, cancellationToken);
+                await ResolveReasoningEffortAsync(
+                    client,
+                    modelId,
+                    configuredReasoningEffort,
+                    cancellationToken,
+                    availableModels);
             await using CopilotSession session = await client.CreateSessionAsync(
                 CreateSessionConfig(workspaceRootPath, modelId, resolvedReasoningEffort),
                 cancellationToken);
@@ -220,12 +254,14 @@ public sealed partial class CopilotWorkflowAgentRunner : IWorkflowAgentRunner
     /// <param name="modelId">The selected model identifier.</param>
     /// <param name="configuredReasoningEffort">The configured reasoning-effort request.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
+    /// <param name="availableModels">The optional model catalogue already fetched during preference selection.</param>
     /// <returns>The resolved reasoning-effort value to send to the SDK, or <see langword="null" />.</returns>
     internal static async Task<string?> ResolveReasoningEffortAsync(
         CopilotClient client,
         string? modelId,
         string? configuredReasoningEffort,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        IList<ModelInfo>? availableModels = null)
     {
         ArgumentNullException.ThrowIfNull(client);
 
@@ -241,8 +277,9 @@ public sealed partial class CopilotWorkflowAgentRunner : IWorkflowAgentRunner
             return normalizedReasoningEffort;
         }
 
-        IList<ModelInfo> availableModels = await client.ListModelsAsync(cancellationToken);
-        ModelInfo? selectedModel = availableModels.FirstOrDefault(availableModel =>
+        IList<ModelInfo> effectiveAvailableModels =
+            availableModels ?? await client.ListModelsAsync(cancellationToken);
+        ModelInfo? selectedModel = effectiveAvailableModels.FirstOrDefault(availableModel =>
             string.Equals(availableModel.Id, modelId, StringComparison.OrdinalIgnoreCase));
         if (selectedModel is null)
         {
@@ -263,11 +300,36 @@ public sealed partial class CopilotWorkflowAgentRunner : IWorkflowAgentRunner
         return WorkflowReasoningEffort.SelectHighestSupported(supportedReasoningEfforts);
     }
 
-    private static string? SelectPreferredModelId(IReadOnlyList<string> modelIds)
+    /// <summary>
+    ///     Selects the first configured model that is available to the current Copilot account.
+    /// </summary>
+    /// <param name="modelIds">The ordered configured model preferences.</param>
+    /// <param name="availableModelIds">The model identifiers reported by the Copilot account.</param>
+    /// <returns>The selected configured identifier, <c>auto</c>, or <see langword="null" /> when no match exists.</returns>
+    internal static string? SelectPreferredAvailableModelId(
+        IReadOnlyList<string> modelIds,
+        IReadOnlyList<string> availableModelIds)
     {
         ArgumentNullException.ThrowIfNull(modelIds);
+        ArgumentNullException.ThrowIfNull(availableModelIds);
 
-        return modelIds.FirstOrDefault(modelId => !string.IsNullOrWhiteSpace(modelId))?.Trim();
+        foreach (string configuredModelId in modelIds)
+        {
+            if (string.IsNullOrWhiteSpace(configuredModelId))
+            {
+                continue;
+            }
+
+            string normalizedModelId = configuredModelId.Trim();
+            if (string.Equals(normalizedModelId, "auto", StringComparison.OrdinalIgnoreCase)
+                || availableModelIds.Any(availableModelId =>
+                    string.Equals(availableModelId, normalizedModelId, StringComparison.OrdinalIgnoreCase)))
+            {
+                return normalizedModelId;
+            }
+        }
+
+        return null;
     }
 
     private static string FormatAttachmentSummary(IReadOnlyList<string> attachmentFilePaths)

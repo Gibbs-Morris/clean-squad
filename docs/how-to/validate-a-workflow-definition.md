@@ -62,8 +62,13 @@ The validator inspects the definition for structural integrity:
 - All `Fork` nodes have a matching `Join` node
 - All `Decision` nodes declare at least one `choice`
 - The `defaultEntryPoint` ID is declared in the `entryPoints` list
+- Agent default and node model lists do not contain blank identifiers
+- Agent default and node reasoning effort and response timeout values use supported formats
+- `highest-supported` reasoning has an effective model after inheritance is applied
 
-The validator does **not** run any agents or execute any workflow logic.
+The validator does **not** run any agents, contact GitHub, or check the models enabled for the current Copilot account.
+Account and organisation policies are checked at execution time, when the runner compares the ordered configured
+preferences with the model catalogue reported by Copilot.
 
 ---
 

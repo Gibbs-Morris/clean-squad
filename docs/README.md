@@ -43,6 +43,8 @@ Information-oriented. Look up exact command syntax, options, and configuration.
   — Every command, argument, option, exit code, and example.
 - [Branding configuration](reference/branding-configuration.md)
   — The `clean-squad.cli.json` file schema and field descriptions.
+- [Workflow definition](reference/workflow-definition.md)
+  — Agent defaults, per-node model overrides, inheritance, and runtime model selection.
 
 ---
 

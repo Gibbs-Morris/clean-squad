@@ -44,6 +44,30 @@ The agent runner receives that assembled context and executes it.
 
 This separation means the same agent runtime can serve different stages with different roles simply by loading different assets — without the engine needing to know anything about the agent implementation.
 
+### Effective agent settings
+
+Model execution settings use a two-level cascade so a package can express a consistent default without repeating it
+on every stage:
+
+```text
+workflow agentDefaults
+        ↓ omitted properties inherit
+stage or agent-backed decision
+        ↓
+effective settings recorded in the run step and sent to the runner
+```
+
+The cascade resolves `models`, `reasoningEffort`, and `responseTimeout` independently. A node model override does not
+discard an inherited timeout. A node can set `inheritAgentDefaults` to `false` when it intentionally needs the
+provider and runner defaults instead.
+
+The workflow definition saved with a run remains in its authored form. Inherited values are not copied into every
+node; instead, the effective settings are calculated at execution time and recorded on the step in `state.json`.
+This keeps definitions maintainable while making completed and resumed runs auditable.
+
+Only nodes that execute agents participate in the cascade: `Stage` nodes and `Decision` nodes whose
+`decisionMode` is `Agent`. Rules decisions and control nodes do not receive model settings.
+
 ---
 
 ## How the engine runs a workflow

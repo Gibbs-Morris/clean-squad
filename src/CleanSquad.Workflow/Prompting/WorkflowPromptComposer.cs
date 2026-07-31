@@ -41,10 +41,13 @@ public static class WorkflowPromptComposer
         string displayName = string.IsNullOrWhiteSpace(node.DisplayName) ? node.Id : node.DisplayName;
         string roleName = string.IsNullOrWhiteSpace(node.Role) ? node.Id : node.Role;
         string agentName = ResolveAgentName(node);
-        string modelList = node.Models.Count == 0
+        WorkflowAgentExecutionSettings agentSettings =
+            WorkflowAgentExecutionSettingsResolver.Resolve(definition, node);
+        string modelList = agentSettings.Models.Count == 0
             ? "- (default)"
-            : string.Join(Environment.NewLine, node.Models.Select(model => $"- {model}"));
-        string reasoningEffort = WorkflowReasoningEffort.Normalize(node.ReasoningEffort) ?? "(model default)";
+            : string.Join(Environment.NewLine, agentSettings.Models.Select(model => $"- {model}"));
+        string reasoningEffort =
+            WorkflowReasoningEffort.Normalize(agentSettings.ReasoningEffort) ?? "(model default)";
         string inputList = node.Inputs.Count == 0
             ? "- request"
             : string.Join(Environment.NewLine, node.Inputs.Select(input => $"- {input}"));
@@ -158,12 +161,17 @@ public static class WorkflowPromptComposer
             DisplayName = stageDefinition.DisplayName ?? stage.ToString(),
             Role = stageDefinition.Role ?? stage.ToString(),
             Agent = stageDefinition.Agent,
+            InheritAgentDefaults = stageDefinition.InheritAgentDefaults,
             Models = stageDefinition.Models,
             ReasoningEffort = WorkflowReasoningEffort.Normalize(stageDefinition.ReasoningEffort),
+            ResponseTimeout = WorkflowResponseTimeout.Normalize(stageDefinition.ResponseTimeout),
             Inputs = stageDefinition.Inputs,
             Outputs = stageDefinition.Outputs,
             CustomMessage = stageDefinition.CustomMessage,
             Assets = stageDefinition.Assets,
+            DecisionMode = stage == WorkflowStage.Decision
+                ? definition.Policy.DecisionMode
+                : WorkflowDecisionMode.Rules,
         };
     }
 
