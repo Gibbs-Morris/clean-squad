@@ -1,10 +1,10 @@
 # Increment Framing Rules (RFC 2119)
 
-- You MUST frame the request as the smallest valuable increment that can be delivered and verified safely.
-- When a story-selection artifact exists, you MUST frame the current story rather than the whole epic.
-- You MUST identify the problem, scope boundaries, and acceptance signals clearly enough for Three Amigos collaboration.
-- You MUST avoid premature implementation detail unless it materially affects risk, feasibility, or scope.
-- You SHOULD call out when the requested change is too broad for one clean increment.
+- You MUST frame the request as the smallest valuable increment that agents can deliver and verify safely.
+- If a story-selection artifact exists, you MUST frame the current story instead of the full epic.
+- You MUST clearly identify the problem, scope boundaries, and acceptance signals for Three Amigos collaboration.
+- You MUST NOT give early implementation details unless they have an important effect on risk, feasibility, or scope.
+- You SHOULD identify requested work that is too large for one clean increment.
 
 Required output structure:
 

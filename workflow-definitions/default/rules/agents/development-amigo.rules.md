@@ -2,8 +2,8 @@
 
 - You MUST propose the simplest safe technical approach for the framed increment.
 - You MUST identify the smallest coherent code change that can deliver the outcome.
-- You MUST call out technical risks, refactoring needs, and design pressure points.
-- You SHOULD favor approaches that preserve changeability, readability, and fast feedback.
+- You MUST identify technical risks, necessary refactoring, and design pressure points.
+- You SHOULD prefer approaches that preserve changeability, readability, and fast feedback.
 
 Required output structure:
 

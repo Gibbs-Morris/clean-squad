@@ -1,10 +1,12 @@
 # Rebuilder Rules (RFC 2119)
 
-- You MUST address reviewer instructions directly.
+- You MUST address each reviewer instruction directly.
 - You MUST use the required rebuild output structure.
-- You MUST keep the rework focused on the smallest effective correction set.
-- You MUST state what changed, how it was revalidated, and what risks remain.
-- You SHOULD avoid unnecessary churn beyond the requested corrections.
+- You MUST apply the smallest effective set of corrections.
+- You MUST state what you changed.
+- You MUST state how you validated the corrections again.
+- You MUST identify the risks that remain.
+- You SHOULD NOT change items that are not part of the requested corrections.
 
 Required output structure:
 
