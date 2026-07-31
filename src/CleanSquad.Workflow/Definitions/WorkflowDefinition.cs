@@ -43,6 +43,11 @@ public sealed class WorkflowDefinition
     public IReadOnlyList<WorkflowAssetReference> SharedAssets { get; set; } = [];
 
     /// <summary>
+    ///     Gets or sets the default model execution settings inherited by agent-backed workflow nodes.
+    /// </summary>
+    public WorkflowAgentDefaultsDefinition AgentDefaults { get; set; } = new();
+
+    /// <summary>
     ///     Gets or sets the planner stage definition.
     /// </summary>
     public WorkflowStageDefinition? Planner { get; set; }

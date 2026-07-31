@@ -119,6 +119,35 @@ public sealed class WorkflowPromptComposerTests
         }
     }
 
+    /// <summary>
+    ///     Verifies the prompt describes effective inherited agent settings instead of only authored node overrides.
+    /// </summary>
+    /// <returns>A task that represents the asynchronous test.</returns>
+    [Fact]
+    public async Task CreatePromptAsyncIncludesInheritedAgentSettingsAsync()
+    {
+        WorkflowDefinition definition = new()
+        {
+            Name = "Inherited Prompt Config Test",
+            AgentDefaults = new WorkflowAgentDefaultsDefinition
+            {
+                Models = ["model-workflow-default", "model-workflow-fallback"],
+                ReasoningEffort = WorkflowReasoningEffort.Medium,
+            },
+        };
+        WorkflowNodeDefinition node = new()
+        {
+            Id = "planner",
+            Kind = WorkflowNodeKind.Stage,
+        };
+
+        string prompt = await WorkflowPromptComposer.ComposeAsync(definition, node, []);
+
+        Assert.Contains("- model-workflow-default", prompt, StringComparison.Ordinal);
+        Assert.Contains("- model-workflow-fallback", prompt, StringComparison.Ordinal);
+        Assert.Contains("- medium", prompt, StringComparison.Ordinal);
+    }
+
     private static string CreateTempDirectory()
     {
         string tempDirectoryPath = Path.Combine(Path.GetTempPath(), $"clean-squad-prompt-{Guid.NewGuid():N}");

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using CleanSquad.Workflow.Decisions;
@@ -83,6 +84,31 @@ public sealed class WorkflowDecisionResolverTests
         Assert.Equal(WorkflowDecisionAction.Branch, decision.Action);
         Assert.Equal("approve", decision.ChoiceId);
         Assert.Equal("approved", decision.NextNodeId);
+    }
+
+    /// <summary>
+    ///     Verifies agent-mode decisions receive inherited workflow model execution settings.
+    /// </summary>
+    /// <returns>A task that represents the asynchronous test.</returns>
+    [Fact]
+    public async Task ResolveAsyncUsesInheritedAgentSettingsAsync()
+    {
+        FakeWorkflowAgentRunner runner = new(["Choice: approve"]);
+        WorkflowDecisionResolver resolver = new(runner);
+        WorkflowDecisionContext context = CreateContext(WorkflowDecisionMode.Agent, null, string.Empty);
+        context.Definition.AgentDefaults = new WorkflowAgentDefaultsDefinition
+        {
+            Models = ["model-decision-default"],
+            ReasoningEffort = WorkflowReasoningEffort.High,
+            ResponseTimeout = "00:09:00",
+        };
+
+        await resolver.ResolveAsync(context);
+
+        AgentCall call = Assert.Single(runner.Calls);
+        Assert.Equal(["model-decision-default"], call.ModelIds);
+        Assert.Equal(WorkflowReasoningEffort.High, call.ReasoningEffort);
+        Assert.Equal(TimeSpan.FromMinutes(9), call.ResponseTimeout);
     }
 
     /// <summary>
@@ -247,6 +273,8 @@ public sealed class WorkflowDecisionResolverTests
             this.responses = new Queue<string>(responses);
         }
 
+        public List<AgentCall> Calls { get; } = [];
+
         public Task<string> RunAsync(
             string agentName,
             string prompt,
@@ -257,7 +285,13 @@ public sealed class WorkflowDecisionResolverTests
             CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            Calls.Add(new AgentCall(modelIds.ToArray(), reasoningEffort, responseTimeout));
             return Task.FromResult(responses.Dequeue());
         }
     }
+
+    private sealed record AgentCall(
+        IReadOnlyList<string> ModelIds,
+        string? ReasoningEffort,
+        TimeSpan? ResponseTimeout);
 }

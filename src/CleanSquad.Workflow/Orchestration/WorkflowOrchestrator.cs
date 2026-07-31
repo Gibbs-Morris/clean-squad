@@ -569,6 +569,8 @@ public sealed partial class WorkflowOrchestrator : IWorkflowOrchestrator
         }
 
         int stepNumber = runContext.State.NextStepNumber++;
+        WorkflowAgentExecutionSettings agentSettings =
+            WorkflowAgentExecutionSettingsResolver.Resolve(runContext.Definition, node);
         WorkflowStepState step = new()
         {
             StepNumber = stepNumber,
@@ -576,9 +578,9 @@ public sealed partial class WorkflowOrchestrator : IWorkflowOrchestrator
             NodeKind = node.Kind,
             RoleName = node.Role ?? node.Id,
             AgentName = ResolveAgentName(node),
-            Models = node.Models,
-            ReasoningEffort = WorkflowReasoningEffort.Normalize(node.ReasoningEffort),
-            ResponseTimeout = WorkflowResponseTimeout.Normalize(node.ResponseTimeout),
+            Models = agentSettings.Models,
+            ReasoningEffort = WorkflowReasoningEffort.Normalize(agentSettings.ReasoningEffort),
+            ResponseTimeout = WorkflowResponseTimeout.Normalize(agentSettings.ResponseTimeout),
             InputReferences = node.Inputs,
             OutputNames = node.Outputs,
             CustomMessage = node.CustomMessage,

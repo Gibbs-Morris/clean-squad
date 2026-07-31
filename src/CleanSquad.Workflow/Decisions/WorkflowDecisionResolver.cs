@@ -49,8 +49,10 @@ public sealed partial class WorkflowDecisionResolver : IWorkflowDecisionResolver
                 context.Node,
                 context.AttachmentFilePaths,
                 cancellationToken);
+            WorkflowAgentExecutionSettings agentSettings =
+                WorkflowAgentExecutionSettingsResolver.Resolve(context.Definition, context.Node);
             TimeSpan? responseTimeout = WorkflowResponseTimeout.TryParse(
-                context.Node.ResponseTimeout,
+                agentSettings.ResponseTimeout,
                 out TimeSpan parsedResponseTimeout)
                 ? parsedResponseTimeout
                 : null;
@@ -58,8 +60,8 @@ public sealed partial class WorkflowDecisionResolver : IWorkflowDecisionResolver
                 ResolveAgentName(context.Node),
                 prompt,
                 context.AttachmentFilePaths,
-                context.Node.Models,
-                context.Node.ReasoningEffort,
+                agentSettings.Models,
+                agentSettings.ReasoningEffort,
                 responseTimeout,
                 cancellationToken);
 

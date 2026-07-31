@@ -33,6 +33,11 @@ public sealed class WorkflowNodeDefinition
     public string? Agent { get; set; }
 
     /// <summary>
+    ///     Gets or sets a value indicating whether omitted agent execution settings inherit the workflow defaults.
+    /// </summary>
+    public bool InheritAgentDefaults { get; set; } = true;
+
+    /// <summary>
     ///     Gets or sets the preferred backend model identifiers for the node.
     /// </summary>
     public IReadOnlyList<string> Models { get; set; } = [];

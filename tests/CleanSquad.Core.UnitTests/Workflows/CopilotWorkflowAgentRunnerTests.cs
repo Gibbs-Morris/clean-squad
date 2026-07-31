@@ -55,4 +55,56 @@ public sealed class CopilotWorkflowAgentRunnerTests
 
         Assert.Equal(WorkflowReasoningEffort.ExtraHigh, resolvedReasoningEffort);
     }
+
+    /// <summary>
+    ///     Verifies model preferences select the first configured model available to the current Copilot account.
+    /// </summary>
+    [Fact]
+    public void SelectPreferredAvailableModelUsesOrderedFallback()
+    {
+        string? selectedModel = CopilotWorkflowAgentRunner.SelectPreferredAvailableModelId(
+            ["model-unavailable", "model-fallback", "model-last"],
+            ["model-last", "model-fallback"]);
+
+        Assert.Equal("model-fallback", selectedModel);
+    }
+
+    /// <summary>
+    ///     Verifies an explicit auto preference remains a valid provider-selected model choice.
+    /// </summary>
+    [Fact]
+    public void SelectPreferredAvailableModelSupportsAuto()
+    {
+        string? selectedModel = CopilotWorkflowAgentRunner.SelectPreferredAvailableModelId(
+            ["model-unavailable", "auto"],
+            []);
+
+        Assert.Equal("auto", selectedModel);
+    }
+
+    /// <summary>
+    ///     Verifies model matching ignores identifier casing while retaining the configured identifier.
+    /// </summary>
+    [Fact]
+    public void SelectPreferredAvailableModelMatchesCaseInsensitively()
+    {
+        string? selectedModel = CopilotWorkflowAgentRunner.SelectPreferredAvailableModelId(
+            ["MODEL-PRIMARY"],
+            ["model-primary"]);
+
+        Assert.Equal("MODEL-PRIMARY", selectedModel);
+    }
+
+    /// <summary>
+    ///     Verifies unavailable configured models do not silently fall back to an unrelated provider default.
+    /// </summary>
+    [Fact]
+    public void SelectPreferredAvailableModelReturnsNullWhenNoPreferenceIsAvailable()
+    {
+        string? selectedModel = CopilotWorkflowAgentRunner.SelectPreferredAvailableModelId(
+            ["model-unavailable"],
+            ["model-other"]);
+
+        Assert.Null(selectedModel);
+    }
 }
