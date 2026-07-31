@@ -193,6 +193,53 @@ public sealed class WorkflowDefinitionLoaderTests
     }
 
     /// <summary>
+    ///     Verifies the loader normalizes workflow agent defaults without expanding them into authored nodes.
+    /// </summary>
+    [Fact]
+    public void LoadNormalizesAgentDefaultsWithoutMutatingNodeOverrides()
+    {
+        string tempDirectoryPath = CreateTempDirectory();
+
+        try
+        {
+            string definitionPath = Path.Combine(tempDirectoryPath, "workflow.json");
+            string definitionJson = string.Join(
+                Environment.NewLine,
+                "{",
+                "  \"name\": \"Agent Defaults Loader Test\",",
+                "  \"agentDefaults\": {",
+                "    \"models\": [\" model-primary \", \"model-primary\", \"model-fallback\"],",
+                "    \"reasoningEffort\": \" HIGH \",",
+                "    \"responseTimeout\": \" 00:12:00 \"",
+                "  },",
+                "  \"defaultEntryPoint\": \"default\",",
+                "  \"entryPoints\": [{ \"id\": \"default\", \"nodeId\": \"research\" }],",
+                "  \"nodes\": [",
+                "    { \"id\": \"research\", \"kind\": \"Stage\", \"next\": \"approved\" },",
+                "    { \"id\": \"approved\", \"kind\": \"Exit\", \"exitStatus\": \"Approved\" }",
+                "  ],",
+                "  \"policy\": { \"decisionMode\": \"Rules\", \"maxReviewCycles\": 2, \"maxRebuilds\": 1 }",
+                "}");
+            File.WriteAllText(definitionPath, definitionJson, Encoding.UTF8);
+
+            WorkflowDefinition definition = WorkflowDefinitionLoader.LoadFromFile(definitionPath);
+
+            Assert.Equal(["model-primary", "model-fallback"], definition.AgentDefaults.Models);
+            Assert.Equal(WorkflowReasoningEffort.High, definition.AgentDefaults.ReasoningEffort);
+            Assert.Equal("00:12:00", definition.AgentDefaults.ResponseTimeout);
+            Assert.Empty(definition.Nodes[0].Models);
+
+            WorkflowAgentExecutionSettings effectiveSettings =
+                WorkflowAgentExecutionSettingsResolver.Resolve(definition, definition.Nodes[0]);
+            Assert.Equal(["model-primary", "model-fallback"], effectiveSettings.Models);
+        }
+        finally
+        {
+            Directory.Delete(tempDirectoryPath, true);
+        }
+    }
+
+    /// <summary>
     ///     Verifies the loader normalizes configured response-timeout overrides.
     /// </summary>
     [Fact]
@@ -580,6 +627,47 @@ public sealed class WorkflowDefinitionLoaderTests
     }
 
     /// <summary>
+    ///     Verifies inherited models satisfy a node-level highest-supported reasoning-effort requirement.
+    /// </summary>
+    [Fact]
+    public void ValidateFileAcceptsHighestSupportedReasoningEffortWithInheritedModels()
+    {
+        string tempDirectoryPath = CreateTempDirectory();
+
+        try
+        {
+            string definitionPath = Path.Combine(tempDirectoryPath, "workflow.json");
+            string definitionJson = string.Join(
+                Environment.NewLine,
+                "{",
+                "  \"name\": \"Inherited Reasoning Validation Test\",",
+                "  \"agentDefaults\": { \"models\": [\"model-default\"] },",
+                "  \"defaultEntryPoint\": \"default\",",
+                "  \"entryPoints\": [{ \"id\": \"default\", \"nodeId\": \"research\" }],",
+                "  \"nodes\": [",
+                "    {",
+                "      \"id\": \"research\",",
+                "      \"kind\": \"Stage\",",
+                "      \"reasoningEffort\": \"highest-supported\",",
+                "      \"next\": \"approved\"",
+                "    },",
+                "    { \"id\": \"approved\", \"kind\": \"Exit\", \"exitStatus\": \"Approved\" }",
+                "  ],",
+                "  \"policy\": { \"decisionMode\": \"Rules\", \"maxReviewCycles\": 2, \"maxRebuilds\": 1 }",
+                "}");
+            File.WriteAllText(definitionPath, definitionJson, Encoding.UTF8);
+
+            WorkflowDefinitionValidationResult result = WorkflowDefinitionLoader.ValidateFile(definitionPath);
+
+            Assert.True(result.IsValid, string.Join(Environment.NewLine, result.Errors));
+        }
+        finally
+        {
+            Directory.Delete(tempDirectoryPath, true);
+        }
+    }
+
+    /// <summary>
     ///     Verifies validation rejects invalid response-timeout overrides.
     /// </summary>
     [Fact]
@@ -641,6 +729,8 @@ public sealed class WorkflowDefinitionLoaderTests
                     .. result.Errors,
                     .. result.Warnings,
                 ]));
+        Assert.NotNull(result.Definition);
+        Assert.Equal(["gpt-5.6-sol"], result.Definition.AgentDefaults.Models);
     }
 
     /// <summary>

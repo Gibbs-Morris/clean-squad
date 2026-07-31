@@ -249,12 +249,24 @@ public sealed class WorkflowOrchestratorTests
             AgentCall call = Assert.Single(
                 runner.Calls,
                 call => string.Equals(call.AgentName, "builder-agent", StringComparison.Ordinal));
+            AgentCall plannerCall = Assert.Single(
+                runner.Calls,
+                call => string.Equals(call.AgentName, "Planner", StringComparison.Ordinal));
             WorkflowStepState step = Assert.Single(
                 state.Steps,
                 step => string.Equals(step.NodeId, "builder", StringComparison.OrdinalIgnoreCase));
+            WorkflowStepState plannerStep = Assert.Single(
+                state.Steps,
+                step => string.Equals(step.NodeId, "planner", StringComparison.OrdinalIgnoreCase));
 
             Assert.Equal(WorkflowRunStatus.Approved, result.Status);
             Assert.Equal(2, runner.Calls.Count);
+            Assert.Equal(["model-workflow-default", "model-workflow-fallback"], plannerCall.ModelIds);
+            Assert.Equal(WorkflowReasoningEffort.Medium, plannerCall.ReasoningEffort);
+            Assert.Equal(TimeSpan.FromMinutes(8), plannerCall.ResponseTimeout);
+            Assert.Equal(["model-workflow-default", "model-workflow-fallback"], plannerStep.Models);
+            Assert.Equal(WorkflowReasoningEffort.Medium, plannerStep.ReasoningEffort);
+            Assert.Equal("00:08:00", plannerStep.ResponseTimeout);
             Assert.Equal("builder-agent", call.AgentName);
             Assert.Contains("Focus on the requested file only.", call.Prompt, StringComparison.Ordinal);
             Assert.Contains("- node:planner", call.Prompt, StringComparison.Ordinal);
@@ -551,6 +563,11 @@ public sealed class WorkflowOrchestratorTests
         string definitionJson = """
                                 {
                                   "name": "Agent Config Workflow",
+                                  "agentDefaults": {
+                                    "models": ["model-workflow-default", "model-workflow-fallback"],
+                                    "reasoningEffort": "medium",
+                                    "responseTimeout": "00:08:00"
+                                  },
                                   "defaultEntryPoint": "default",
                                   "entryPoints": [
                                     { "id": "default", "nodeId": "planner" }

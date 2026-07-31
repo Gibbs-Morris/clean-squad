@@ -87,6 +87,10 @@ When the run finishes, the CLI prints a summary and exits with code `0`.
 - **"File not found" for the definition** — check that the path is relative to the directory you ran the command from, and that the file ends in `.json`.
 - **"File not found" for the request** — same check; also confirm the file ends in `.md`.
 - **"Specify either a markdown (.md) request document path or --request-text, but not both."** — remove one of the two request inputs.
+- **"None of the configured models are available"** — check `agentDefaults.models` and any node-level `models`
+  override. The error lists both the configured preferences and the models reported for the current Copilot account.
+  Select an enabled model, ask an organisation administrator to allow it, or include `"auto"` as an intentional
+  fallback.
 - **Exit code `1` with an error message** — read the error message in the terminal output; it will describe which validation step failed.
 
 ---

@@ -1,6 +1,9 @@
 {
   "version": "2.4",
   "name": "Clean Agile Default Workflow",
+  "agentDefaults": {
+    "models": ["gpt-5.6-sol"]
+  },
   "defaultEntryPoint": "default",
   "entryPoints": [
     { "id": "default", "nodeId": "work-item-triage" },

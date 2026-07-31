@@ -14,12 +14,46 @@ This folder contains reusable workflow-definition packages.
 ## Conventions
 
 - Keep workflow orchestration concerns in `workflow.json`.
+- Set shared agent execution preferences under top-level `agentDefaults`; use node properties only when a stage or
+  agent-backed decision needs an override.
 - Keep agent persona separate from rules.
 - Keep reusable theory or reasoning guidance separate from repository guidance.
 - Express enforceable constraints as RFC 2119 rules using MUST, SHOULD, and MUST NOT.
 - Prefer shared assets for cross-cutting guidance and node assets for role-specific behavior.
 - Use ASD-STE100 Simplified Technical English for natural-language workflow instructions and outputs.
 - Preserve literal code, commands, paths, identifiers, schemas, logs, quoted text, and required output tokens.
+
+## Agent model inheritance
+
+Agent-backed `Stage` nodes and `Decision` nodes with `decisionMode: "Agent"` inherit omitted `models`,
+`reasoningEffort`, and `responseTimeout` values from top-level `agentDefaults`.
+
+```json
+{
+  "agentDefaults": {
+    "models": ["gpt-5.6-sol"],
+    "reasoningEffort": "high",
+    "responseTimeout": "00:10:00"
+  },
+  "nodes": [
+    {
+      "id": "fast-stage",
+      "kind": "Stage",
+      "models": ["gpt-5.6-luna"]
+    },
+    {
+      "id": "provider-default-stage",
+      "kind": "Stage",
+      "inheritAgentDefaults": false
+    }
+  ]
+}
+```
+
+Overrides are resolved per property: the `fast-stage` model list replaces the inherited list while its reasoning
+effort and timeout still inherit. Setting `inheritAgentDefaults` to `false` disables all inheritance for that node.
+Model lists are ordered preferences; the runner selects the first model available to the current Copilot account.
+A one-item list therefore requires that model rather than silently choosing another one.
 
 ## Default package model
 

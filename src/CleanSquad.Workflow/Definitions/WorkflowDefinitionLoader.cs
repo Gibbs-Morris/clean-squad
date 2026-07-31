@@ -147,10 +147,17 @@ public static class WorkflowDefinitionLoader
         ValidatePackage(definition.Package, errors);
 
         ValidateStageAssets(definition.SharedAssets, "sharedAssets", errors);
+        ValidateModels(definition.AgentDefaults.Models, "agentDefaults.models", errors);
+        ValidateReasoningEffort(
+            definition.AgentDefaults.Models,
+            definition.AgentDefaults.ReasoningEffort,
+            "agentDefaults.reasoningEffort",
+            errors);
+        ValidateResponseTimeout(definition.AgentDefaults.ResponseTimeout, "agentDefaults.responseTimeout", errors);
         ValidateOptionalIdentifier(definition.Planner?.Agent, "planner.agent", errors);
         ValidateModels(definition.Planner?.Models, "planner.models", errors);
         ValidateReasoningEffort(
-            definition.Planner?.Models,
+            ResolveLegacyModels(definition, definition.Planner),
             definition.Planner?.ReasoningEffort,
             "planner.reasoningEffort",
             errors);
@@ -160,7 +167,7 @@ public static class WorkflowDefinitionLoader
         ValidateOptionalIdentifier(definition.Builder?.Agent, "builder.agent", errors);
         ValidateModels(definition.Builder?.Models, "builder.models", errors);
         ValidateReasoningEffort(
-            definition.Builder?.Models,
+            ResolveLegacyModels(definition, definition.Builder),
             definition.Builder?.ReasoningEffort,
             "builder.reasoningEffort",
             errors);
@@ -170,7 +177,7 @@ public static class WorkflowDefinitionLoader
         ValidateOptionalIdentifier(definition.Reviewer?.Agent, "reviewer.agent", errors);
         ValidateModels(definition.Reviewer?.Models, "reviewer.models", errors);
         ValidateReasoningEffort(
-            definition.Reviewer?.Models,
+            ResolveLegacyModels(definition, definition.Reviewer),
             definition.Reviewer?.ReasoningEffort,
             "reviewer.reasoningEffort",
             errors);
@@ -180,7 +187,7 @@ public static class WorkflowDefinitionLoader
         ValidateOptionalIdentifier(definition.Decision?.Agent, "decision.agent", errors);
         ValidateModels(definition.Decision?.Models, "decision.models", errors);
         ValidateReasoningEffort(
-            definition.Decision?.Models,
+            ResolveLegacyModels(definition, definition.Decision),
             definition.Decision?.ReasoningEffort,
             "decision.reasoningEffort",
             errors);
@@ -190,7 +197,7 @@ public static class WorkflowDefinitionLoader
         ValidateOptionalIdentifier(definition.Rebuilder?.Agent, "rebuilder.agent", errors);
         ValidateModels(definition.Rebuilder?.Models, "rebuilder.models", errors);
         ValidateReasoningEffort(
-            definition.Rebuilder?.Models,
+            ResolveLegacyModels(definition, definition.Rebuilder),
             definition.Rebuilder?.ReasoningEffort,
             "rebuilder.reasoningEffort",
             errors);
@@ -199,7 +206,7 @@ public static class WorkflowDefinitionLoader
         ValidateStageAssets(definition.Rebuilder?.Assets, "rebuilder.assets", errors);
         ValidateStageAssetsForNodes(definition.Nodes, errors);
         ValidateModelsForNodes(definition.Nodes, errors);
-        ValidateReasoningEffortForNodes(definition.Nodes, errors);
+        ValidateReasoningEffortForNodes(definition, errors);
         ValidateResponseTimeoutForNodes(definition.Nodes, errors);
         ValidateOutputsForNodes(definition.Nodes, errors);
         ValidateAgentsForNodes(definition.Nodes, errors);
@@ -562,14 +569,30 @@ public static class WorkflowDefinitionLoader
         }
     }
 
-    private static void ValidateReasoningEffortForNodes(
-        IReadOnlyList<WorkflowNodeDefinition> nodes,
-        List<string> errors)
+    private static void ValidateReasoningEffortForNodes(WorkflowDefinition definition, List<string> errors)
     {
-        foreach (WorkflowNodeDefinition node in nodes)
+        foreach (WorkflowNodeDefinition node in definition.Nodes)
         {
-            ValidateReasoningEffort(node.Models, node.ReasoningEffort, $"nodes[{node.Id}].reasoningEffort", errors);
+            WorkflowAgentExecutionSettings settings =
+                WorkflowAgentExecutionSettingsResolver.Resolve(definition, node);
+            ValidateReasoningEffort(
+                settings.Models,
+                node.ReasoningEffort,
+                $"nodes[{node.Id}].reasoningEffort",
+                errors);
         }
+    }
+
+    private static IReadOnlyList<string>? ResolveLegacyModels(
+        WorkflowDefinition definition,
+        WorkflowStageDefinition? stage)
+    {
+        if (stage is null || stage.Models.Count > 0 || !stage.InheritAgentDefaults)
+        {
+            return stage?.Models;
+        }
+
+        return definition.AgentDefaults.Models;
     }
 
     private static void ValidateResponseTimeoutForNodes(
@@ -979,6 +1002,13 @@ public static class WorkflowDefinitionLoader
         string baseDirectoryPath,
         List<string> errors)
     {
+        definition.AgentDefaults ??= new WorkflowAgentDefaultsDefinition();
+        definition.AgentDefaults.Models = NormalizeModels(definition.AgentDefaults.Models);
+        definition.AgentDefaults.ReasoningEffort =
+            WorkflowReasoningEffort.Normalize(definition.AgentDefaults.ReasoningEffort);
+        definition.AgentDefaults.ResponseTimeout =
+            WorkflowResponseTimeout.Normalize(definition.AgentDefaults.ResponseTimeout);
+
         if (definition.Planner is not null)
         {
             definition.Planner.Agent = NormalizeOptionalText(definition.Planner.Agent);
@@ -1342,6 +1372,7 @@ public static class WorkflowDefinitionLoader
             DisplayName = definition.Decision?.DisplayName ?? "Review Decision",
             Role = definition.Decision?.Role ?? WorkflowStage.Decision.ToString(),
             Agent = definition.Decision?.Agent,
+            InheritAgentDefaults = definition.Decision?.InheritAgentDefaults ?? true,
             Models = definition.Decision?.Models ?? [],
             ReasoningEffort = definition.Decision?.ReasoningEffort,
             ResponseTimeout = definition.Decision?.ResponseTimeout,
@@ -1405,6 +1436,7 @@ public static class WorkflowDefinitionLoader
             DisplayName = stage.DisplayName,
             Role = string.IsNullOrWhiteSpace(stage.Role) ? fallbackRole : stage.Role,
             Agent = stage.Agent,
+            InheritAgentDefaults = stage.InheritAgentDefaults,
             Models = stage.Models,
             ReasoningEffort = stage.ReasoningEffort,
             ResponseTimeout = stage.ResponseTimeout,
