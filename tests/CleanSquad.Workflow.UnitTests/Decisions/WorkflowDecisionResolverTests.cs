@@ -49,14 +49,15 @@ public sealed class WorkflowDecisionResolverTests
             "Approved: no\n## Verdict\nNeeds work.\n",
             state =>
             {
-                state.Steps.Add(new WorkflowStepState
-                {
-                    StepNumber = 1,
-                    NodeId = "rebuilder",
-                    Status = WorkflowStepStatus.Completed,
-                    StartedAtUtc = TimeProvider.System.GetUtcNow(),
-                    CompletedAtUtc = TimeProvider.System.GetUtcNow()
-                });
+                state.Steps.Add(
+                    new WorkflowStepState
+                    {
+                        StepNumber = 1,
+                        NodeId = "rebuilder",
+                        Status = WorkflowStepStatus.Completed,
+                        StartedAtUtc = TimeProvider.System.GetUtcNow(),
+                        CompletedAtUtc = TimeProvider.System.GetUtcNow(),
+                    });
             });
 
         WorkflowDecision decision = await resolver.ResolveAsync(context);
@@ -117,14 +118,15 @@ public sealed class WorkflowDecisionResolverTests
             WorkflowDecisionMode.Rules,
             "clean-agile-review",
             "Approved: no\n## Consolidated Assessment\nArchitecture needs refinement.\n",
-            state => state.Steps.Add(new WorkflowStepState
-            {
-                StepNumber = 1,
-                NodeId = "phase-master-review",
-                Status = WorkflowStepStatus.Completed,
-                StartedAtUtc = TimeProvider.System.GetUtcNow(),
-                CompletedAtUtc = TimeProvider.System.GetUtcNow()
-            }),
+            state => state.Steps.Add(
+                new WorkflowStepState
+                {
+                    StepNumber = 1,
+                    NodeId = "phase-master-review",
+                    Status = WorkflowStepStatus.Completed,
+                    StartedAtUtc = TimeProvider.System.GetUtcNow(),
+                    CompletedAtUtc = TimeProvider.System.GetUtcNow(),
+                }),
             node =>
             {
                 node.DecisionSourceNodeId = "phase-master-review";
@@ -132,7 +134,7 @@ public sealed class WorkflowDecisionResolverTests
                 [
                     new WorkflowDecisionOptionDefinition { Id = "approve", NextNodeId = "approved" },
                     new WorkflowDecisionOptionDefinition { Id = "rework", NextNodeId = "three-amigos-fork" },
-                    new WorkflowDecisionOptionDefinition { Id = "stop", NextNodeId = "stopped" }
+                    new WorkflowDecisionOptionDefinition { Id = "stop", NextNodeId = "stopped" },
                 ];
             });
 
@@ -157,22 +159,24 @@ public sealed class WorkflowDecisionResolverTests
             "Approved: no\n## Consolidated Assessment\nCode still needs work.\n",
             state =>
             {
-                state.Steps.Add(new WorkflowStepState
-                {
-                    StepNumber = 1,
-                    NodeId = "code-master-review",
-                    Status = WorkflowStepStatus.Completed,
-                    StartedAtUtc = TimeProvider.System.GetUtcNow(),
-                    CompletedAtUtc = TimeProvider.System.GetUtcNow()
-                });
-                state.Steps.Add(new WorkflowStepState
-                {
-                    StepNumber = 2,
-                    NodeId = "rebuilder",
-                    Status = WorkflowStepStatus.Completed,
-                    StartedAtUtc = TimeProvider.System.GetUtcNow(),
-                    CompletedAtUtc = TimeProvider.System.GetUtcNow()
-                });
+                state.Steps.Add(
+                    new WorkflowStepState
+                    {
+                        StepNumber = 1,
+                        NodeId = "code-master-review",
+                        Status = WorkflowStepStatus.Completed,
+                        StartedAtUtc = TimeProvider.System.GetUtcNow(),
+                        CompletedAtUtc = TimeProvider.System.GetUtcNow(),
+                    });
+                state.Steps.Add(
+                    new WorkflowStepState
+                    {
+                        StepNumber = 2,
+                        NodeId = "rebuilder",
+                        Status = WorkflowStepStatus.Completed,
+                        StartedAtUtc = TimeProvider.System.GetUtcNow(),
+                        CompletedAtUtc = TimeProvider.System.GetUtcNow(),
+                    });
             },
             node => node.DecisionSourceNodeId = "code-master-review");
 
@@ -198,8 +202,8 @@ public sealed class WorkflowDecisionResolverTests
             {
                 DecisionMode = decisionMode,
                 MaxRebuilds = 1,
-                MaxReviewCycles = 2
-            }
+                MaxReviewCycles = 2,
+            },
         };
         WorkflowNodeDefinition node = new()
         {
@@ -212,8 +216,8 @@ public sealed class WorkflowDecisionResolverTests
             [
                 new WorkflowDecisionOptionDefinition { Id = "approve", NextNodeId = "approved" },
                 new WorkflowDecisionOptionDefinition { Id = "rebuild", NextNodeId = "rebuilder" },
-                new WorkflowDecisionOptionDefinition { Id = "stop", NextNodeId = "stopped" }
-            ]
+                new WorkflowDecisionOptionDefinition { Id = "stop", NextNodeId = "stopped" },
+            ],
         };
         configureNode?.Invoke(node);
         WorkflowArtifacts artifacts = WorkflowArtifacts.Create(

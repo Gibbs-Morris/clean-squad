@@ -91,7 +91,7 @@ public sealed class WorkflowCliTests
             int exitCode = await CliApplication.InvokeAsync(
                 [
                     "workflow", "run", "--definition", workflowDefinitionPath, "--request-text", inlineRequest,
-                    "--entry-point", "review"
+                    "--entry-point", "review",
                 ],
                 orchestrator,
                 tempDirectoryPath,
@@ -102,7 +102,9 @@ public sealed class WorkflowCliTests
             Assert.Contains("Workflow finished with reviewer approval.", output, StringComparison.Ordinal);
             Assert.Equal(tempDirectoryPath, orchestrator.LastRequest?.WorkspaceRootPath);
             Assert.Equal(Path.GetFullPath(workflowDefinitionPath), orchestrator.LastRequest?.WorkflowDefinitionPath);
-            Assert.EndsWith("inline-request.md", orchestrator.LastRequest?.RequestDocumentPath,
+            Assert.EndsWith(
+                "inline-request.md",
+                orchestrator.LastRequest?.RequestDocumentPath,
                 StringComparison.OrdinalIgnoreCase);
             Assert.Equal("# Inline request\n\nDo the thing.\n", orchestrator.LastRequestMarkdown);
             Assert.False(File.Exists(orchestrator.LastRequest?.RequestDocumentPath));
@@ -283,14 +285,15 @@ public sealed class WorkflowCliTests
             int exitCode = await CliApplication.InvokeAsync(
                 [
                     "workflow", "run", "--definition", workflowDefinitionPath, requestPath, "--request-text",
-                    "# Inline request"
+                    "# Inline request",
                 ],
                 currentDirectory: tempDirectoryPath,
                 outputWriter: outputWriter);
             string output = outputWriter.ToString().Trim();
 
             Assert.Equal(1, exitCode);
-            Assert.Equal("Specify either a markdown (.md) request document path or --request-text, but not both.",
+            Assert.Equal(
+                "Specify either a markdown (.md) request document path or --request-text, but not both.",
                 output);
         }
         finally
@@ -529,7 +532,8 @@ public sealed class WorkflowCliTests
 
         public string? LastRequestMarkdown { get; private set; }
 
-        public async Task<WorkflowRunResult> ExecuteAsync(WorkflowExecutionRequest request,
+        public async Task<WorkflowRunResult> ExecuteAsync(
+            WorkflowExecutionRequest request,
             CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();

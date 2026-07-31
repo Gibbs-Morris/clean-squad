@@ -108,7 +108,11 @@ public static class WorkflowDiagramRenderer
                 case WorkflowNodeKind.Decision:
                     foreach (WorkflowDecisionOptionDefinition choice in node.Choices)
                     {
-                        AppendEdge(builder, sourceMermaidId, choice.NextNodeId, mermaidIdsByNodeId,
+                        AppendEdge(
+                            builder,
+                            sourceMermaidId,
+                            choice.NextNodeId,
+                            mermaidIdsByNodeId,
                             choice.DisplayName ?? choice.Id);
                     }
 
@@ -141,7 +145,7 @@ public static class WorkflowDiagramRenderer
         {
             WorkflowNodeKind.Decision => $"{{\"{label}\"}}",
             WorkflowNodeKind.Exit => $"([\"{label}\"])",
-            _ => $"[\"{label}\"]"
+            _ => $"[\"{label}\"]",
         };
     }
 

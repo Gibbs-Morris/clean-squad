@@ -35,6 +35,6 @@ public sealed record WorkflowRunResult(
             $"finished with approval after {RebuildCount} rebuild{(RebuildCount == 1 ? string.Empty : "s")}",
         WorkflowRunStatus.Approved => "finished with reviewer approval",
         WorkflowRunStatus.Failed => "failed before reaching an exit node",
-        _ => "stopped without approval"
+        _ => "stopped without approval",
     };
 }

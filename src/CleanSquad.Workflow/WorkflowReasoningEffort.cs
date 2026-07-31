@@ -39,7 +39,7 @@ public static class WorkflowReasoningEffort
         [Low] = 0,
         [Medium] = 1,
         [High] = 2,
-        [ExtraHigh] = 3
+        [ExtraHigh] = 3,
     };
 
     /// <summary>

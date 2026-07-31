@@ -28,5 +28,5 @@ public enum WorkflowRunStatus
     /// <summary>
     ///     The workflow failed before reaching an exit node.
     /// </summary>
-    Failed
+    Failed,
 }

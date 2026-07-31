@@ -31,7 +31,7 @@ public sealed class WorkflowAssetLoaderTests
             string markdown = await WorkflowAssetLoader.LoadMarkdownBlocksAsync(
             [
                 new WorkflowAssetReference("instruction", instructionPath),
-                new WorkflowAssetReference("agent", agentPath)
+                new WorkflowAssetReference("agent", agentPath),
             ]);
 
             Assert.Contains("### instruction: instruction.md", markdown, StringComparison.OrdinalIgnoreCase);

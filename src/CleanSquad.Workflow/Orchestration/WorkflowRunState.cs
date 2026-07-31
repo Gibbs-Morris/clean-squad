@@ -112,7 +112,10 @@ public sealed class WorkflowRunState
     /// <param name="entryNodeId">The first node identifier to enqueue for execution.</param>
     /// <param name="timeProvider">The time provider used to capture deterministic timestamps.</param>
     /// <returns>A new initialized workflow state ready for execution.</returns>
-    public static WorkflowRunState Create(string runId, string workflowName, string entryNodeId,
+    public static WorkflowRunState Create(
+        string runId,
+        string workflowName,
+        string entryNodeId,
         TimeProvider timeProvider)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(runId);
@@ -127,7 +130,7 @@ public sealed class WorkflowRunState
             WorkflowName = workflowName,
             EntryNodeId = entryNodeId,
             StartedAtUtc = now,
-            UpdatedAtUtc = now
+            UpdatedAtUtc = now,
         };
         state.Enqueue(entryNodeId);
         return state;
@@ -143,13 +146,14 @@ public sealed class WorkflowRunState
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(nodeId);
 
-        PendingActivations.Add(new WorkflowPendingActivation
-        {
-            SequenceNumber = NextActivationSequenceNumber++,
-            NodeId = nodeId,
-            ParallelGroupId = parallelGroupId,
-            BranchId = branchId
-        });
+        PendingActivations.Add(
+            new WorkflowPendingActivation
+            {
+                SequenceNumber = NextActivationSequenceNumber++,
+                NodeId = nodeId,
+                ParallelGroupId = parallelGroupId,
+                BranchId = branchId,
+            });
     }
 
     /// <summary>
@@ -172,13 +176,14 @@ public sealed class WorkflowRunState
                 && string.Equals(activation.BranchId, step.BranchId, StringComparison.OrdinalIgnoreCase));
             if (!alreadyQueued)
             {
-                PendingActivations.Add(new WorkflowPendingActivation
-                {
-                    SequenceNumber = NextActivationSequenceNumber++,
-                    NodeId = step.NodeId,
-                    ParallelGroupId = step.ParallelGroupId,
-                    BranchId = step.BranchId
-                });
+                PendingActivations.Add(
+                    new WorkflowPendingActivation
+                    {
+                        SequenceNumber = NextActivationSequenceNumber++,
+                        NodeId = step.NodeId,
+                        ParallelGroupId = step.ParallelGroupId,
+                        BranchId = step.BranchId,
+                    });
             }
 
             step.Status = WorkflowStepStatus.Failed;
@@ -200,13 +205,14 @@ public sealed class WorkflowRunState
                 && string.Equals(activation.BranchId, wait.BranchId, StringComparison.OrdinalIgnoreCase));
             if (!alreadyQueued)
             {
-                PendingActivations.Add(new WorkflowPendingActivation
-                {
-                    SequenceNumber = NextActivationSequenceNumber++,
-                    NodeId = wait.NextNodeId,
-                    ParallelGroupId = wait.ParallelGroupId,
-                    BranchId = wait.BranchId
-                });
+                PendingActivations.Add(
+                    new WorkflowPendingActivation
+                    {
+                        SequenceNumber = NextActivationSequenceNumber++,
+                        NodeId = wait.NextNodeId,
+                        ParallelGroupId = wait.ParallelGroupId,
+                        BranchId = wait.BranchId,
+                    });
             }
 
             WaitingNodes.Remove(wait);

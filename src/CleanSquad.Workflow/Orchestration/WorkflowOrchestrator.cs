@@ -67,7 +67,8 @@ public sealed partial class WorkflowOrchestrator : IWorkflowOrchestrator
     }
 
     /// <inheritdoc />
-    public async Task<WorkflowRunResult> ExecuteAsync(WorkflowExecutionRequest request,
+    public async Task<WorkflowRunResult> ExecuteAsync(
+        WorkflowExecutionRequest request,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -78,7 +79,12 @@ public sealed partial class WorkflowOrchestrator : IWorkflowOrchestrator
         runActivity?.SetTag("workflow.name", runContext.Definition.Name);
         runActivity?.SetTag("workflow.run_id", runContext.Artifacts.RunId);
         WorkflowTelemetry.RunCounter.Add(1);
-        Log(runContext.Artifacts, LogLevel.Information, 1000, "workflow.run.started", null,
+        Log(
+            runContext.Artifacts,
+            LogLevel.Information,
+            1000,
+            "workflow.run.started",
+            null,
             $"Workflow run '{runContext.Artifacts.RunId}' started.");
         LogWorkflowRunStarting(runContext.Definition.Name, runContext.Artifacts.RunId);
         workflowArtifactService.WriteState(runContext.Artifacts, runContext.State);
@@ -122,9 +128,16 @@ public sealed partial class WorkflowOrchestrator : IWorkflowOrchestrator
             workflowArtifactService.WriteMarkdown(runContext.Artifacts.FinalMarkdownPath, finalMarkdown);
             workflowArtifactService.WriteState(runContext.Artifacts, runContext.State);
             runActivity?.SetTag("workflow.status", runContext.State.Status.ToString());
-            Log(runContext.Artifacts, LogLevel.Information, 1001, "workflow.run.completed", runContext.State.ExitNodeId,
+            Log(
+                runContext.Artifacts,
+                LogLevel.Information,
+                1001,
+                "workflow.run.completed",
+                runContext.State.ExitNodeId,
                 $"Workflow run '{runContext.Artifacts.RunId}' completed with status '{runContext.State.Status}'.");
-            LogWorkflowRunCompleted(runContext.Definition.Name, runContext.Artifacts.RunId,
+            LogWorkflowRunCompleted(
+                runContext.Definition.Name,
+                runContext.Artifacts.RunId,
                 runContext.State.Status.ToString());
 
             return CreateResult(runContext);
@@ -133,7 +146,12 @@ public sealed partial class WorkflowOrchestrator : IWorkflowOrchestrator
         {
             runContext.State.UpdatedAtUtc = timeProvider.GetUtcNow();
             workflowArtifactService.WriteState(runContext.Artifacts, runContext.State);
-            Log(runContext.Artifacts, LogLevel.Warning, 1002, "workflow.run.cancelled", null,
+            Log(
+                runContext.Artifacts,
+                LogLevel.Warning,
+                1002,
+                "workflow.run.cancelled",
+                null,
                 $"Workflow run '{runContext.Artifacts.RunId}' was cancelled and can be resumed.");
             throw;
         }
@@ -265,14 +283,20 @@ public sealed partial class WorkflowOrchestrator : IWorkflowOrchestrator
             WorkflowStepState step = StartStep(runContext, activation, node);
             IReadOnlyList<string> attachments = ResolveAttachmentFilePaths(runContext, node);
             preparedExecutions.Add(new PreparedStageExecution(activation, node, step, attachments));
-            Log(runContext.Artifacts, LogLevel.Information, 2000, "workflow.step.started", node.Id,
+            Log(
+                runContext.Artifacts,
+                LogLevel.Information,
+                2000,
+                "workflow.step.started",
+                node.Id,
                 $"Started node '{node.Id}' step {step.StepNumber:0000}.");
         }
 
         workflowArtifactService.WriteState(runContext.Artifacts, runContext.State);
 
-        StageExecutionOutcome[] outcomes = await Task.WhenAll(preparedExecutions.Select(execution =>
-            ExecuteStageAsync(runContext.Definition, execution, cancellationToken)));
+        StageExecutionOutcome[] outcomes = await Task.WhenAll(
+            preparedExecutions.Select(execution =>
+                ExecuteStageAsync(runContext.Definition, execution, cancellationToken)));
         Exception? firstFailure = null;
         foreach (StageExecutionOutcome outcome in outcomes.OrderBy(outcome => outcome.Step.StepNumber))
         {
@@ -304,7 +328,12 @@ public sealed partial class WorkflowOrchestrator : IWorkflowOrchestrator
         List<string> attachments = ResolveAttachmentFilePaths(runContext, node);
         string sourceMarkdown = ResolveSourceMarkdown(runContext, node, attachments);
         workflowArtifactService.WriteState(runContext.Artifacts, runContext.State);
-        Log(runContext.Artifacts, LogLevel.Information, 3000, "workflow.decision.started", node.Id,
+        Log(
+            runContext.Artifacts,
+            LogLevel.Information,
+            3000,
+            "workflow.decision.started",
+            node.Id,
             $"Started decision node '{node.Id}'.");
 
         LogDecisionEvaluating(node.Id, step.StepNumber, attachments.Count);
@@ -336,7 +365,12 @@ public sealed partial class WorkflowOrchestrator : IWorkflowOrchestrator
 
             runContext.State.UpdatedAtUtc = timeProvider.GetUtcNow();
             workflowArtifactService.WriteState(runContext.Artifacts, runContext.State);
-            Log(runContext.Artifacts, LogLevel.Information, 3001, "workflow.decision.completed", node.Id,
+            Log(
+                runContext.Artifacts,
+                LogLevel.Information,
+                3001,
+                "workflow.decision.completed",
+                node.Id,
                 $"Decision node '{node.Id}' selected '{decision.ChoiceId ?? decision.Action.ToString()}'.");
             LogDecisionResolved(
                 node.Id,
@@ -353,26 +387,30 @@ public sealed partial class WorkflowOrchestrator : IWorkflowOrchestrator
         }
     }
 
-    private void ProcessFork(WorkflowRunContext runContext, WorkflowPendingActivation activation,
+    private void ProcessFork(
+        WorkflowRunContext runContext,
+        WorkflowPendingActivation activation,
         WorkflowNodeDefinition node)
     {
         CreateCompletedControlStep(runContext, activation, node, $"Forked {node.Branches.Count} branches.");
         string groupId = $"{node.Id}-{runContext.State.NextParallelGroupSequenceNumber:0000}";
         runContext.State.NextParallelGroupSequenceNumber++;
-        runContext.State.ParallelGroups.Add(new WorkflowParallelGroupState
-        {
-            GroupId = groupId,
-            ForkNodeId = node.Id,
-            JoinNodeId = node.JoinNodeId ??
-                         throw new InvalidOperationException($"Fork node '{node.Id}' must define joinNodeId.")
-        });
+        runContext.State.ParallelGroups.Add(
+            new WorkflowParallelGroupState
+            {
+                GroupId = groupId,
+                ForkNodeId = node.Id,
+                JoinNodeId = node.JoinNodeId ??
+                             throw new InvalidOperationException($"Fork node '{node.Id}' must define joinNodeId."),
+            });
         WorkflowParallelGroupState parallelGroup = runContext.State.ParallelGroups[^1];
         foreach (string branchId in node.Branches.Select(branch => branch.Id))
         {
             parallelGroup.ExpectedBranchIds.Add(branchId);
         }
 
-        foreach (WorkflowForkBranchDefinition branch in node.Branches.OrderBy(branch => branch.Id,
+        foreach (WorkflowForkBranchDefinition branch in node.Branches.OrderBy(
+                     branch => branch.Id,
                      StringComparer.OrdinalIgnoreCase))
         {
             runContext.State.Enqueue(branch.NextNodeId, groupId, branch.Id);
@@ -380,12 +418,19 @@ public sealed partial class WorkflowOrchestrator : IWorkflowOrchestrator
 
         runContext.State.UpdatedAtUtc = timeProvider.GetUtcNow();
         workflowArtifactService.WriteState(runContext.Artifacts, runContext.State);
-        Log(runContext.Artifacts, LogLevel.Information, 4000, "workflow.fork.completed", node.Id,
+        Log(
+            runContext.Artifacts,
+            LogLevel.Information,
+            4000,
+            "workflow.fork.completed",
+            node.Id,
             $"Fork node '{node.Id}' created group '{groupId}'.");
         LogForkProcessed(node.Id, node.Branches.Count);
     }
 
-    private void ProcessJoin(WorkflowRunContext runContext, WorkflowPendingActivation activation,
+    private void ProcessJoin(
+        WorkflowRunContext runContext,
+        WorkflowPendingActivation activation,
         WorkflowNodeDefinition node)
     {
         if (string.IsNullOrWhiteSpace(activation.ParallelGroupId))
@@ -399,7 +444,9 @@ public sealed partial class WorkflowOrchestrator : IWorkflowOrchestrator
         }
 
         WorkflowParallelGroupState group = runContext.State.ParallelGroups.FirstOrDefault(group =>
-                                               string.Equals(group.GroupId, activation.ParallelGroupId,
+                                               string.Equals(
+                                                   group.GroupId,
+                                                   activation.ParallelGroupId,
                                                    StringComparison.OrdinalIgnoreCase))
                                            ?? throw new InvalidOperationException(
                                                $"The parallel group '{activation.ParallelGroupId}' could not be found for join node '{node.Id}'.");
@@ -412,14 +459,22 @@ public sealed partial class WorkflowOrchestrator : IWorkflowOrchestrator
         {
             runContext.State.UpdatedAtUtc = timeProvider.GetUtcNow();
             workflowArtifactService.WriteState(runContext.Artifacts, runContext.State);
-            Log(runContext.Artifacts, LogLevel.Information, 4001, "workflow.join.waiting", node.Id,
+            Log(
+                runContext.Artifacts,
+                LogLevel.Information,
+                4001,
+                "workflow.join.waiting",
+                node.Id,
                 $"Join node '{node.Id}' is waiting for remaining branches.");
             LogJoinProgress(node.Id, group.CompletedBranchIds.Count, group.ExpectedBranchIds.Count);
             return;
         }
 
         group.JoinReleased = true;
-        WorkflowStepState step = CreateCompletedControlStep(runContext, activation, node,
+        WorkflowStepState step = CreateCompletedControlStep(
+            runContext,
+            activation,
+            node,
             $"Joined {group.CompletedBranchIds.Count} branches.");
         if (!string.IsNullOrWhiteSpace(node.Next))
         {
@@ -429,12 +484,19 @@ public sealed partial class WorkflowOrchestrator : IWorkflowOrchestrator
 
         runContext.State.UpdatedAtUtc = timeProvider.GetUtcNow();
         workflowArtifactService.WriteState(runContext.Artifacts, runContext.State);
-        Log(runContext.Artifacts, LogLevel.Information, 4002, "workflow.join.completed", node.Id,
+        Log(
+            runContext.Artifacts,
+            LogLevel.Information,
+            4002,
+            "workflow.join.completed",
+            node.Id,
             $"Join node '{node.Id}' released group '{group.GroupId}'.");
         LogJoinReleased(node.Id, group.CompletedBranchIds.Count);
     }
 
-    private void ProcessExit(WorkflowRunContext runContext, WorkflowPendingActivation activation,
+    private void ProcessExit(
+        WorkflowRunContext runContext,
+        WorkflowPendingActivation activation,
         WorkflowNodeDefinition node)
     {
         CreateCompletedControlStep(runContext, activation, node, $"Exited workflow with status '{node.ExitStatus}'.");
@@ -443,12 +505,19 @@ public sealed partial class WorkflowOrchestrator : IWorkflowOrchestrator
         runContext.State.CompletedAtUtc = timeProvider.GetUtcNow();
         runContext.State.UpdatedAtUtc = runContext.State.CompletedAtUtc.Value;
         workflowArtifactService.WriteState(runContext.Artifacts, runContext.State);
-        Log(runContext.Artifacts, LogLevel.Information, 4003, "workflow.exit.reached", node.Id,
+        Log(
+            runContext.Artifacts,
+            LogLevel.Information,
+            4003,
+            "workflow.exit.reached",
+            node.Id,
             $"Exit node '{node.Id}' set status '{node.ExitStatus}'.");
         LogExitReached(node.Id, node.ExitStatus.ToString());
     }
 
-    private void ProcessWait(WorkflowRunContext runContext, WorkflowPendingActivation activation,
+    private void ProcessWait(
+        WorkflowRunContext runContext,
+        WorkflowPendingActivation activation,
         WorkflowNodeDefinition node)
     {
         TimeSpan waitDuration = ParseWaitDuration(node);
@@ -463,26 +532,34 @@ public sealed partial class WorkflowOrchestrator : IWorkflowOrchestrator
 
         WorkflowStepState step = CreateCompletedControlStep(runContext, activation, node, message);
         step.NextNodeId = nextNodeId;
-        runContext.State.WaitingNodes.Add(new WorkflowWaitState
-        {
-            NodeId = node.Id,
-            NextNodeId = nextNodeId,
-            ParallelGroupId = activation.ParallelGroupId,
-            BranchId = activation.BranchId,
-            WaitDuration = node.WaitDuration!,
-            Reason = waitReason,
-            WaitStartedAtUtc = waitStartedAtUtc,
-            WaitUntilUtc = waitUntilUtc
-        });
+        runContext.State.WaitingNodes.Add(
+            new WorkflowWaitState
+            {
+                NodeId = node.Id,
+                NextNodeId = nextNodeId,
+                ParallelGroupId = activation.ParallelGroupId,
+                BranchId = activation.BranchId,
+                WaitDuration = node.WaitDuration!,
+                Reason = waitReason,
+                WaitStartedAtUtc = waitStartedAtUtc,
+                WaitUntilUtc = waitUntilUtc,
+            });
         runContext.State.Status = WorkflowRunStatus.Paused;
         runContext.State.UpdatedAtUtc = waitStartedAtUtc;
         workflowArtifactService.WriteState(runContext.Artifacts, runContext.State);
-        Log(runContext.Artifacts, LogLevel.Information, 4004, "workflow.wait.started", node.Id,
+        Log(
+            runContext.Artifacts,
+            LogLevel.Information,
+            4004,
+            "workflow.wait.started",
+            node.Id,
             $"Wait node '{node.Id}' paused the workflow until {waitUntilUtc:O}.");
         LogWaitStarted(node.Id, waitUntilUtc.ToString("O", CultureInfo.InvariantCulture));
     }
 
-    private WorkflowStepState StartStep(WorkflowRunContext runContext, WorkflowPendingActivation activation,
+    private WorkflowStepState StartStep(
+        WorkflowRunContext runContext,
+        WorkflowPendingActivation activation,
         WorkflowNodeDefinition node)
     {
         int visitCount = runContext.State.IncrementNodeVisit(node.Id);
@@ -511,7 +588,7 @@ public sealed partial class WorkflowOrchestrator : IWorkflowOrchestrator
             ParallelGroupId = activation.ParallelGroupId,
             BranchId = activation.BranchId,
             Status = WorkflowStepStatus.InProgress,
-            StartedAtUtc = timeProvider.GetUtcNow()
+            StartedAtUtc = timeProvider.GetUtcNow(),
         };
         runContext.State.Steps.Add(step);
         runContext.State.UpdatedAtUtc = step.StartedAtUtc;
@@ -573,16 +650,26 @@ public sealed partial class WorkflowOrchestrator : IWorkflowOrchestrator
         if (!string.IsNullOrWhiteSpace(outcome.Node.Next))
         {
             outcome.Step.NextNodeId = outcome.Node.Next;
-            runContext.State.Enqueue(outcome.Node.Next, outcome.Activation.ParallelGroupId,
+            runContext.State.Enqueue(
+                outcome.Node.Next,
+                outcome.Activation.ParallelGroupId,
                 outcome.Activation.BranchId);
         }
 
         runContext.State.UpdatedAtUtc = timeProvider.GetUtcNow();
-        Log(runContext.Artifacts, LogLevel.Information, 2001, "workflow.step.completed", outcome.Node.Id,
+        Log(
+            runContext.Artifacts,
+            LogLevel.Information,
+            2001,
+            "workflow.step.completed",
+            outcome.Node.Id,
             $"Completed node '{outcome.Node.Id}' step {outcome.Step.StepNumber:0000}.");
     }
 
-    private void FailStep(WorkflowRunContext runContext, WorkflowStepState step, string message,
+    private void FailStep(
+        WorkflowRunContext runContext,
+        WorkflowStepState step,
+        string message,
         Exception? exception = null)
     {
         step.Status = WorkflowStepStatus.Failed;
@@ -665,8 +752,11 @@ public sealed partial class WorkflowOrchestrator : IWorkflowOrchestrator
                 activity?.SetTag("workflow.response_timeout", execution.Step.ResponseTimeout);
             }
 
-            string prompt = await WorkflowPromptComposer.ComposeAsync(definition, execution.Node,
-                execution.AttachmentFilePaths, cancellationToken);
+            string prompt = await WorkflowPromptComposer.ComposeAsync(
+                definition,
+                execution.Node,
+                execution.AttachmentFilePaths,
+                cancellationToken);
             string agentName = ResolveAgentName(execution.Node);
             LogAgentInvoking(
                 agentName,
@@ -675,15 +765,18 @@ public sealed partial class WorkflowOrchestrator : IWorkflowOrchestrator
                 execution.AttachmentFilePaths.Count,
                 FormatAttachmentNames(execution.AttachmentFilePaths),
                 execution.Step.ResponseTimeout ?? "(runner default)");
+            TimeSpan? responseTimeout = WorkflowResponseTimeout.TryParse(
+                execution.Step.ResponseTimeout,
+                out TimeSpan parsedResponseTimeout)
+                ? parsedResponseTimeout
+                : null;
             string markdown = await workflowAgentRunner.RunAsync(
                 agentName,
                 prompt,
                 execution.AttachmentFilePaths,
                 execution.Step.Models,
                 execution.Step.ReasoningEffort,
-                WorkflowResponseTimeout.TryParse(execution.Step.ResponseTimeout, out TimeSpan responseTimeout)
-                    ? responseTimeout
-                    : null,
+                responseTimeout,
                 cancellationToken);
             LogAgentFinished(agentName, execution.Node.Id, execution.Step.StepNumber, markdown.Length);
             workflowArtifactService.WriteMarkdown(execution.Step.OutputPath!, markdown);
@@ -799,7 +892,9 @@ public sealed partial class WorkflowOrchestrator : IWorkflowOrchestrator
                 """;
     }
 
-    private static string BuildFinalMarkdown(WorkflowDefinition definition, WorkflowArtifacts artifacts,
+    private static string BuildFinalMarkdown(
+        WorkflowDefinition definition,
+        WorkflowArtifacts artifacts,
         WorkflowRunState state)
     {
         WorkflowStepState? lastCompletedOutput = state.Steps
@@ -812,13 +907,17 @@ public sealed partial class WorkflowOrchestrator : IWorkflowOrchestrator
             : MarkdownArtifactService.ReadMarkdown(lastCompletedOutput.OutputPath!);
         string decisionList = state.Decisions.Count == 0
             ? "- none"
-            : string.Join(Environment.NewLine, state.Decisions.Select((decision, index) =>
-                $"- {index + 1:00}: {decision.ChoiceId ?? decision.Action.ToString()} -> {decision.NextNodeId ?? "(none)"} ({decision.Source})"));
+            : string.Join(
+                Environment.NewLine,
+                state.Decisions.Select((decision, index) =>
+                    $"- {index + 1:00}: {decision.ChoiceId ?? decision.Action.ToString()} -> {decision.NextNodeId ?? "(none)"} ({decision.Source})"));
         string stepList = state.Steps.Count == 0
             ? "- none"
-            : string.Join(Environment.NewLine, state.Steps.OrderBy(step => step.StepNumber).Select(step =>
-                $"- {step.StepNumber:0000}: {step.NodeId} [{step.Status}]" +
-                FormatExecutionSettingsSuffix(step.Models, step.ReasoningEffort, step.ResponseTimeout)));
+            : string.Join(
+                Environment.NewLine,
+                state.Steps.OrderBy(step => step.StepNumber).Select(step =>
+                    $"- {step.StepNumber:0000}: {step.NodeId} [{step.Status}]" +
+                    FormatExecutionSettingsSuffix(step.Models, step.ReasoningEffort, step.ResponseTimeout)));
 
         return $"""
                 # Final Workflow Output
@@ -868,7 +967,9 @@ public sealed partial class WorkflowOrchestrator : IWorkflowOrchestrator
             && roleNames.Any(roleName => string.Equals(step.RoleName, roleName, StringComparison.OrdinalIgnoreCase)));
     }
 
-    private static string FormatExecutionSettingsSuffix(IReadOnlyList<string> models, string? reasoningEffort,
+    private static string FormatExecutionSettingsSuffix(
+        IReadOnlyList<string> models,
+        string? reasoningEffort,
         string? responseTimeout)
     {
         List<string> segments = [];
@@ -918,7 +1019,7 @@ public sealed partial class WorkflowOrchestrator : IWorkflowOrchestrator
         Dictionary<string, string> properties = new(StringComparer.OrdinalIgnoreCase)
         {
             ["runId"] = artifacts.RunId,
-            ["eventId"] = eventId.ToString(CultureInfo.InvariantCulture)
+            ["eventId"] = eventId.ToString(CultureInfo.InvariantCulture),
         };
         if (!string.IsNullOrWhiteSpace(nodeId))
         {
@@ -945,7 +1046,7 @@ public sealed partial class WorkflowOrchestrator : IWorkflowOrchestrator
             Level = level.ToString(),
             EventName = eventName,
             NodeId = nodeId,
-            Message = message
+            Message = message,
         };
         foreach (KeyValuePair<string, string> property in properties)
         {
@@ -960,7 +1061,7 @@ public sealed partial class WorkflowOrchestrator : IWorkflowOrchestrator
         Dictionary<string, string> properties = new(StringComparer.OrdinalIgnoreCase)
         {
             ["stepNumber"] = step.StepNumber.ToString(CultureInfo.InvariantCulture),
-            ["agentName"] = step.AgentName
+            ["agentName"] = step.AgentName,
         };
 
         if (!string.IsNullOrWhiteSpace(step.ResponseTimeout))
@@ -974,53 +1075,82 @@ public sealed partial class WorkflowOrchestrator : IWorkflowOrchestrator
     [LoggerMessage(EventId = 400, Level = LogLevel.Error, Message = "Decision node {NodeId} failed for run {RunId}.")]
     private partial void LogDecisionNodeFailed(Exception exception, string nodeId, string runId);
 
-    [LoggerMessage(EventId = 401, Level = LogLevel.Information,
+    [LoggerMessage(
+        EventId = 401,
+        Level = LogLevel.Information,
         Message = "Workflow '{WorkflowName}' (run {RunId}) starting.")]
     private partial void LogWorkflowRunStarting(string workflowName, string runId);
 
-    [LoggerMessage(EventId = 402, Level = LogLevel.Information,
+    [LoggerMessage(
+        EventId = 402,
+        Level = LogLevel.Information,
         Message = "Workflow '{WorkflowName}' (run {RunId}) completed with status '{Status}'.")]
     private partial void LogWorkflowRunCompleted(string workflowName, string runId, string status);
 
-    [LoggerMessage(EventId = 410, Level = LogLevel.Information,
+    [LoggerMessage(
+        EventId = 410,
+        Level = LogLevel.Information,
         Message =
             "Invoking agent '{AgentName}' for node '{NodeId}' (step {StepNumber}) with {AttachmentCount} file(s): {AttachmentNames}. Timeout: {ResponseTimeout}")]
-    private partial void LogAgentInvoking(string agentName, string nodeId, int stepNumber, int attachmentCount,
-        string attachmentNames, string responseTimeout);
+    private partial void LogAgentInvoking(
+        string agentName,
+        string nodeId,
+        int stepNumber,
+        int attachmentCount,
+        string attachmentNames,
+        string responseTimeout);
 
-    [LoggerMessage(EventId = 411, Level = LogLevel.Information,
+    [LoggerMessage(
+        EventId = 411,
+        Level = LogLevel.Information,
         Message = "Agent '{AgentName}' for node '{NodeId}' (step {StepNumber}) finished ({ResponseLength} chars).")]
     private partial void LogAgentFinished(string agentName, string nodeId, int stepNumber, int responseLength);
 
-    [LoggerMessage(EventId = 412, Level = LogLevel.Error,
+    [LoggerMessage(
+        EventId = 412,
+        Level = LogLevel.Error,
         Message = "Agent '{AgentName}' for node '{NodeId}' (step {StepNumber}) failed: {FailureMessage}")]
     private partial void LogAgentFailed(string agentName, string nodeId, int stepNumber, string failureMessage);
 
-    [LoggerMessage(EventId = 413, Level = LogLevel.Information,
+    [LoggerMessage(
+        EventId = 413,
+        Level = LogLevel.Information,
         Message = "Evaluating decision '{NodeId}' (step {StepNumber}) from {AttachmentCount} source(s).")]
     private partial void LogDecisionEvaluating(string nodeId, int stepNumber, int attachmentCount);
 
-    [LoggerMessage(EventId = 414, Level = LogLevel.Information,
+    [LoggerMessage(
+        EventId = 414,
+        Level = LogLevel.Information,
         Message = "Decision '{NodeId}' (step {StepNumber}): choice='{Choice}', next='{NextNode}'.")]
     private partial void LogDecisionResolved(string nodeId, int stepNumber, string choice, string nextNode);
 
-    [LoggerMessage(EventId = 420, Level = LogLevel.Information,
+    [LoggerMessage(
+        EventId = 420,
+        Level = LogLevel.Information,
         Message = "Fork '{NodeId}' started {BranchCount} branch(es).")]
     private partial void LogForkProcessed(string nodeId, int branchCount);
 
-    [LoggerMessage(EventId = 421, Level = LogLevel.Information,
+    [LoggerMessage(
+        EventId = 421,
+        Level = LogLevel.Information,
         Message = "Join '{NodeId}': {CompletedCount}/{ExpectedCount} branch(es) completed, waiting for more.")]
     private partial void LogJoinProgress(string nodeId, int completedCount, int expectedCount);
 
-    [LoggerMessage(EventId = 422, Level = LogLevel.Information,
+    [LoggerMessage(
+        EventId = 422,
+        Level = LogLevel.Information,
         Message = "Join '{NodeId}' released all {CompletedCount} branch(es).")]
     private partial void LogJoinReleased(string nodeId, int completedCount);
 
-    [LoggerMessage(EventId = 423, Level = LogLevel.Information,
+    [LoggerMessage(
+        EventId = 423,
+        Level = LogLevel.Information,
         Message = "Exit '{NodeId}' reached with status '{ExitStatus}'.")]
     private partial void LogExitReached(string nodeId, string exitStatus);
 
-    [LoggerMessage(EventId = 424, Level = LogLevel.Information,
+    [LoggerMessage(
+        EventId = 424,
+        Level = LogLevel.Information,
         Message = "Wait '{NodeId}' paused the workflow until '{ResumeAfterUtc}'.")]
     private partial void LogWaitStarted(string nodeId, string resumeAfterUtc);
 

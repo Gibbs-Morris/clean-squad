@@ -18,5 +18,5 @@ public enum WorkflowStepStatus
     /// <summary>
     ///     The step failed.
     /// </summary>
-    Failed
+    Failed,
 }

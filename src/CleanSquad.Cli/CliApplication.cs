@@ -128,10 +128,11 @@ internal static partial class CliApplication
         Argument<string?> squadNameArgument = new("squad-name")
         {
             Description = $"Optional squad name for the {brandingOptions.ApplicationName} starter summary output.",
-            Arity = ArgumentArity.ZeroOrOne
+            Arity = ArgumentArity.ZeroOrOne,
         };
-        RootCommand rootCommand = new(brandingOptions.ApplicationDescription ??
-                                      $"{brandingOptions.ApplicationName} command-line interface.");
+        RootCommand rootCommand = new(
+            brandingOptions.ApplicationDescription ??
+            $"{brandingOptions.ApplicationName} command-line interface.");
         rootCommand.Arguments.Add(squadNameArgument);
         rootCommand.SetAction(parseResult =>
         {
@@ -143,30 +144,32 @@ internal static partial class CliApplication
         Argument<string?> requestDocumentArgument = new("request-document")
         {
             Description = "Optional path to the markdown request document.",
-            Arity = ArgumentArity.ZeroOrOne
+            Arity = ArgumentArity.ZeroOrOne,
         };
         Option<string> workflowDefinitionOption = new("--definition", "-d")
         {
             Description = "Path to the workflow definition JSON file.",
-            Required = true
+            Required = true,
         };
         Option<string?> workspaceRootOption = new("--workspace-root", "-w")
         {
-            Description = "Optional workspace root used for workflow artifacts and the agent runtime working directory."
+            Description =
+                "Optional workspace root used for workflow artifacts and the agent runtime working directory.",
         };
         Option<string?> outputPathOption = new("--output", "-o")
         {
-            Description = "Optional markdown output path for generated artifacts."
+            Description = "Optional markdown output path for generated artifacts.",
         };
         Option<string?> entryPointOption = new("--entry-point", "-e")
         {
-            Description = "Optional workflow entry point id or node id to start from."
+            Description = "Optional workflow entry point id or node id to start from.",
         };
         Option<string?> requestTextOption = new("--request-text", "-t")
         {
-            Description = "Optional inline markdown request text. Specify this or the request-document argument."
+            Description = "Optional inline markdown request text. Specify this or the request-document argument.",
         };
-        Command runWorkflowCommand = new("run",
+        Command runWorkflowCommand = new(
+            "run",
             "Run a JSON-defined workflow for a markdown request file or inline request text.");
         runWorkflowCommand.Arguments.Add(requestDocumentArgument);
         runWorkflowCommand.Options.Add(workflowDefinitionOption);
@@ -206,7 +209,8 @@ internal static partial class CliApplication
             await outputWriter.WriteLineAsync(result.Message);
             return result.ExitCode;
         });
-        Command diagramWorkflowCommand = new("diagram",
+        Command diagramWorkflowCommand = new(
+            "diagram",
             "Generate a markdown file containing a Mermaid diagram for a workflow definition.");
         diagramWorkflowCommand.Options.Add(workflowDefinitionOption);
         diagramWorkflowCommand.Options.Add(outputPathOption);
@@ -224,7 +228,7 @@ internal static partial class CliApplication
         });
         Argument<string> resumeTargetArgument = new("run-path")
         {
-            Description = "Path to the workflow run folder or state.json file to resume."
+            Description = "Path to the workflow run folder or state.json file to resume.",
         };
         Command resumeWorkflowCommand = new("resume", "Resume a persisted workflow run.");
         resumeWorkflowCommand.Arguments.Add(resumeTargetArgument);
@@ -281,16 +285,19 @@ internal static partial class CliApplication
 
         if (!hasRequestDocumentPath && !hasRequestText)
         {
-            LogWarningMessage(logger,
+            LogWarningMessage(
+                logger,
                 "Workflow run rejected because neither a request document path nor inline request text was supplied.");
             return new CliCommandResult(1, WorkflowRunUsage);
         }
 
         if (hasRequestDocumentPath && hasRequestText)
         {
-            LogWarningMessage(logger,
+            LogWarningMessage(
+                logger,
                 "Workflow run rejected because both a request document path and inline request text were supplied.");
-            return new CliCommandResult(1,
+            return new CliCommandResult(
+                1,
                 "Specify either a markdown (.md) request document path or --request-text, but not both.");
         }
 
@@ -298,14 +305,16 @@ internal static partial class CliApplication
         string workflowDefinitionPath = Path.GetFullPath(workflowDefinitionArgument, workingDirectory);
         if (!File.Exists(workflowDefinitionPath))
         {
-            LogWarningMessage(logger,
+            LogWarningMessage(
+                logger,
                 $"Workflow run rejected because the definition file {workflowDefinitionPath} was not found.");
             return new CliCommandResult(1, $"Workflow definition file not found: {workflowDefinitionPath}");
         }
 
         if (!string.Equals(Path.GetExtension(workflowDefinitionPath), ".json", StringComparison.OrdinalIgnoreCase))
         {
-            LogWarningMessage(logger,
+            LogWarningMessage(
+                logger,
                 $"Workflow run rejected because the definition file {workflowDefinitionPath} was not JSON.");
             return new CliCommandResult(1, "The workflow command requires a JSON workflow definition path.");
         }
@@ -315,15 +324,19 @@ internal static partial class CliApplication
             string providedRequestDocumentPath = Path.GetFullPath(requestDocumentArgument!, workingDirectory);
             if (!File.Exists(providedRequestDocumentPath))
             {
-                LogWarningMessage(logger,
+                LogWarningMessage(
+                    logger,
                     $"Workflow run rejected because the request file {providedRequestDocumentPath} was not found.");
                 return new CliCommandResult(1, $"Request markdown file not found: {providedRequestDocumentPath}");
             }
 
-            if (!string.Equals(Path.GetExtension(providedRequestDocumentPath), ".md",
+            if (!string.Equals(
+                    Path.GetExtension(providedRequestDocumentPath),
+                    ".md",
                     StringComparison.OrdinalIgnoreCase))
             {
-                LogWarningMessage(logger,
+                LogWarningMessage(
+                    logger,
                     $"Workflow run rejected because the request file {providedRequestDocumentPath} was not markdown.");
                 return new CliCommandResult(1, "The workflow command requires a markdown (.md) request document path.");
             }
@@ -365,7 +378,9 @@ internal static partial class CliApplication
         }
         catch (InvalidOperationException invalidOperationException)
         {
-            LogErrorMessage(logger, invalidOperationException,
+            LogErrorMessage(
+                logger,
+                invalidOperationException,
                 "Workflow run failed because the runtime entered an invalid state.");
             return new CliCommandResult(1, $"Workflow failed: {invalidOperationException.Message}");
         }
@@ -391,7 +406,8 @@ internal static partial class CliApplication
         string resumeTargetPath = Path.GetFullPath(resumeTargetArgument, workingDirectory);
         if (!Directory.Exists(resumeTargetPath) && !File.Exists(resumeTargetPath))
         {
-            LogWarningMessage(logger,
+            LogWarningMessage(
+                logger,
                 $"Workflow resume rejected because the run path {resumeTargetPath} was not found.");
             return new CliCommandResult(1, $"Workflow run path not found: {resumeTargetPath}");
         }
@@ -428,7 +444,9 @@ internal static partial class CliApplication
         }
         catch (InvalidOperationException invalidOperationException)
         {
-            LogErrorMessage(logger, invalidOperationException,
+            LogErrorMessage(
+                logger,
+                invalidOperationException,
                 "Workflow resume failed because the runtime entered an invalid state.");
             return new CliCommandResult(1, $"Workflow failed: {invalidOperationException.Message}");
         }
@@ -449,14 +467,16 @@ internal static partial class CliApplication
         string workflowDefinitionPath = Path.GetFullPath(workflowDefinitionArgument, workingDirectory);
         if (!File.Exists(workflowDefinitionPath))
         {
-            LogWarningMessage(logger,
+            LogWarningMessage(
+                logger,
                 $"Workflow validation rejected because the definition file {workflowDefinitionPath} was not found.");
             return new CliCommandResult(1, $"Workflow definition file not found: {workflowDefinitionPath}");
         }
 
         if (!string.Equals(Path.GetExtension(workflowDefinitionPath), ".json", StringComparison.OrdinalIgnoreCase))
         {
-            LogWarningMessage(logger,
+            LogWarningMessage(
+                logger,
                 $"Workflow validation rejected because the definition file {workflowDefinitionPath} was not JSON.");
             return new CliCommandResult(1, "The workflow validate command requires a JSON workflow definition path.");
         }
@@ -477,7 +497,8 @@ internal static partial class CliApplication
     {
         if (string.IsNullOrWhiteSpace(workflowDefinitionArgument))
         {
-            LogWarningMessage(logger,
+            LogWarningMessage(
+                logger,
                 "Workflow diagram generation rejected because the definition path argument was missing.");
             return new CliCommandResult(1, WorkflowDiagramUsage);
         }
@@ -486,14 +507,16 @@ internal static partial class CliApplication
         string workflowDefinitionPath = Path.GetFullPath(workflowDefinitionArgument, workingDirectory);
         if (!File.Exists(workflowDefinitionPath))
         {
-            LogWarningMessage(logger,
+            LogWarningMessage(
+                logger,
                 $"Workflow diagram generation rejected because the definition file {workflowDefinitionPath} was not found.");
             return new CliCommandResult(1, $"Workflow definition file not found: {workflowDefinitionPath}");
         }
 
         if (!string.Equals(Path.GetExtension(workflowDefinitionPath), ".json", StringComparison.OrdinalIgnoreCase))
         {
-            LogWarningMessage(logger,
+            LogWarningMessage(
+                logger,
                 $"Workflow diagram generation rejected because the definition file {workflowDefinitionPath} was not JSON.");
             return new CliCommandResult(1, "The workflow diagram command requires a JSON workflow definition path.");
         }
@@ -504,9 +527,11 @@ internal static partial class CliApplication
         if (!string.Equals(extension, ".md", StringComparison.OrdinalIgnoreCase)
             && !string.Equals(extension, ".markdown", StringComparison.OrdinalIgnoreCase))
         {
-            LogWarningMessage(logger,
+            LogWarningMessage(
+                logger,
                 $"Workflow diagram generation rejected because the output file {outputPath} was not markdown.");
-            return new CliCommandResult(1,
+            return new CliCommandResult(
+                1,
                 "The workflow diagram command requires a markdown output path ending in .md or .markdown.");
         }
 
@@ -533,7 +558,9 @@ internal static partial class CliApplication
         }
         catch (InvalidOperationException invalidOperationException)
         {
-            LogErrorMessage(logger, invalidOperationException,
+            LogErrorMessage(
+                logger,
+                invalidOperationException,
                 "Workflow diagram generation failed because the workflow definition was invalid.");
             return new CliCommandResult(1, $"Workflow diagram generation failed: {invalidOperationException.Message}");
         }
@@ -551,9 +578,10 @@ internal static partial class CliApplication
         ArgumentNullException.ThrowIfNull(validationResult);
 
         StringBuilder builder = new();
-        builder.AppendLine(validationResult.IsValid
-            ? "Workflow definition is valid."
-            : "Workflow definition is invalid.");
+        builder.AppendLine(
+            validationResult.IsValid
+                ? "Workflow definition is valid."
+                : "Workflow definition is invalid.");
         builder.Append("Definition: ").AppendLine(validationResult.WorkflowDefinitionPath);
 
         if (validationResult.Definition is not null)
@@ -588,7 +616,9 @@ internal static partial class CliApplication
         return builder.ToString().TrimEnd();
     }
 
-    private static string ResolveWorkflowDiagramOutputPath(string workflowDefinitionPath, string? outputPathArgument,
+    private static string ResolveWorkflowDiagramOutputPath(
+        string workflowDefinitionPath,
+        string? outputPathArgument,
         string workingDirectory)
     {
         if (!string.IsNullOrWhiteSpace(outputPathArgument))
@@ -620,7 +650,8 @@ internal static partial class CliApplication
         });
     }
 
-    private static IWorkflowOrchestrator CreateWorkflowOrchestrator(string workspaceRootPath,
+    private static IWorkflowOrchestrator CreateWorkflowOrchestrator(
+        string workspaceRootPath,
         ILoggerFactory loggerFactory)
     {
         return WorkflowOrchestratorFactory.Create(workspaceRootPath, TimeProvider.System, loggerFactory);

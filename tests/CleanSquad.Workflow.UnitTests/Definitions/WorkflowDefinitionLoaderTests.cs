@@ -314,7 +314,8 @@ public sealed class WorkflowDefinitionLoaderTests
             File.WriteAllText(definitionPath, definitionJson, Encoding.UTF8);
 
             WorkflowDefinition definition = WorkflowDefinitionLoader.LoadFromFile(definitionPath);
-            WorkflowNodeDefinition planner = Assert.Single(definition.Nodes,
+            WorkflowNodeDefinition planner = Assert.Single(
+                definition.Nodes,
                 node => string.Equals(node.Id, "planner", StringComparison.OrdinalIgnoreCase));
 
             Assert.Equal("planner-agent", planner.Agent);
@@ -366,7 +367,8 @@ public sealed class WorkflowDefinitionLoaderTests
             WorkflowDefinitionValidationResult result = WorkflowDefinitionLoader.ValidateFile(definitionPath);
 
             Assert.False(result.IsValid);
-            Assert.Contains(result.Errors,
+            Assert.Contains(
+                result.Errors,
                 error => error.Contains("hash does not match", StringComparison.OrdinalIgnoreCase));
         }
         finally
@@ -394,6 +396,10 @@ public sealed class WorkflowDefinitionLoaderTests
             string plannerHash = ComputeSha256(plannerAssetPath);
             string reviewerHash = ComputeSha256(reviewerAssetPath);
             string definitionPath = Path.Combine(tempDirectoryPath, "workflow.json");
+            string plannerAsset =
+                $"      \"assets\": [{{ \"kind\": \"agent\", \"path\": \"assets/planner.md\", \"hash\": \"sha256:{plannerHash}\" }}],";
+            string reviewerAsset =
+                $"      \"assets\": [{{ \"kind\": \"agent\", \"path\": \"assets/reviewer.md\", \"hash\": \"sha256:{reviewerHash}\" }}],";
             string definitionJson = string.Join(
                 Environment.NewLine,
                 "{",
@@ -405,16 +411,14 @@ public sealed class WorkflowDefinitionLoaderTests
                 "      \"id\": \"planner\",",
                 "      \"kind\": \"Stage\",",
                 "      \"role\": \"Planner\",",
-                "      \"assets\": [{ \"kind\": \"agent\", \"path\": \"assets/planner.md\", \"hash\": \"sha256:" +
-                plannerHash + "\" }],",
+                plannerAsset,
                 "      \"next\": \"reviewer\"",
                 "    },",
                 "    {",
                 "      \"id\": \"reviewer\",",
                 "      \"kind\": \"Stage\",",
                 "      \"role\": \"Reviewer\",",
-                "      \"assets\": [{ \"kind\": \"agent\", \"path\": \"assets/reviewer.md\", \"hash\": \"sha256:" +
-                reviewerHash + "\" }],",
+                reviewerAsset,
                 "      \"next\": \"planner\"",
                 "    },",
                 "    { \"id\": \"approved\", \"kind\": \"Exit\", \"exitStatus\": \"Approved\" }",
@@ -426,9 +430,11 @@ public sealed class WorkflowDefinitionLoaderTests
             WorkflowDefinitionValidationResult result = WorkflowDefinitionLoader.ValidateFile(definitionPath);
 
             Assert.False(result.IsValid);
-            Assert.Contains(result.Errors,
+            Assert.Contains(
+                result.Errors,
                 error => error.Contains("circular reference", StringComparison.OrdinalIgnoreCase));
-            Assert.Contains(result.Errors,
+            Assert.Contains(
+                result.Errors,
                 error => error.Contains("cannot reach any exit node", StringComparison.OrdinalIgnoreCase));
         }
         finally
@@ -475,7 +481,8 @@ public sealed class WorkflowDefinitionLoaderTests
             WorkflowDefinitionValidationResult result = WorkflowDefinitionLoader.ValidateFile(definitionPath);
 
             Assert.True(result.IsValid);
-            Assert.Contains(result.Warnings,
+            Assert.Contains(
+                result.Warnings,
                 warning => warning.Contains("not reachable", StringComparison.OrdinalIgnoreCase));
         }
         finally
@@ -559,9 +566,11 @@ public sealed class WorkflowDefinitionLoaderTests
             WorkflowDefinitionValidationResult result = WorkflowDefinitionLoader.ValidateFile(definitionPath);
 
             Assert.False(result.IsValid);
-            Assert.Contains(result.Errors,
+            Assert.Contains(
+                result.Errors,
                 error => error.Contains("reasoningEffort", StringComparison.OrdinalIgnoreCase));
-            Assert.Contains(result.Errors,
+            Assert.Contains(
+                result.Errors,
                 error => error.Contains("configured model", StringComparison.OrdinalIgnoreCase));
         }
         finally
@@ -604,7 +613,8 @@ public sealed class WorkflowDefinitionLoaderTests
             WorkflowDefinitionValidationResult result = WorkflowDefinitionLoader.ValidateFile(definitionPath);
 
             Assert.False(result.IsValid);
-            Assert.Contains(result.Errors,
+            Assert.Contains(
+                result.Errors,
                 error => error.Contains("responseTimeout", StringComparison.OrdinalIgnoreCase));
         }
         finally
@@ -639,7 +649,7 @@ public sealed class WorkflowDefinitionLoaderTests
                 Environment.NewLine,
                 [
                     .. result.Errors,
-                    .. result.Warnings
+                    .. result.Warnings,
                 ]));
     }
 

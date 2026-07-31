@@ -98,8 +98,10 @@ public sealed record WorkflowArtifacts(
             : normalizedPath;
         DirectoryInfo runDirectory = new(runDirectoryPath);
         DirectoryInfo? testingDirectory = runDirectory.Parent?.Parent;
-        string workspaceRootPath = testingDirectory is not null && string.Equals(testingDirectory.Name,
-            ".workflow-testing", StringComparison.OrdinalIgnoreCase)
+        string workspaceRootPath = testingDirectory is not null && string.Equals(
+            testingDirectory.Name,
+            ".workflow-testing",
+            StringComparison.OrdinalIgnoreCase)
             ? testingDirectory.Parent?.FullName ?? runDirectory.FullName
             : runDirectory.FullName;
 

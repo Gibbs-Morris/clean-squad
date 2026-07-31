@@ -73,7 +73,10 @@ internal sealed class WorkflowRequestInput : IDisposable
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(requestMarkdown);
 
-        string temporaryDirectoryPath = Path.Combine(Path.GetTempPath(), "clean-squad", "inline-requests",
+        string temporaryDirectoryPath = Path.Combine(
+            Path.GetTempPath(),
+            "clean-squad",
+            "inline-requests",
             Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture));
         Directory.CreateDirectory(temporaryDirectoryPath);
 

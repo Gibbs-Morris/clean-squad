@@ -26,7 +26,10 @@ public static class WorkflowOrchestratorFactory
         ILoggerFactory? loggerFactory = null,
         IOptions<WorkflowStorageOptions>? storageOptions = null)
     {
-        return CopilotWorkflowOrchestratorFactory.Create(workspaceRootPath, timeProvider, loggerFactory,
+        return CopilotWorkflowOrchestratorFactory.Create(
+            workspaceRootPath,
+            timeProvider,
+            loggerFactory,
             storageOptions);
     }
 }

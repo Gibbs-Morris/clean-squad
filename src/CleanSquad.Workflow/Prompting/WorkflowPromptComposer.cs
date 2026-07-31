@@ -35,7 +35,8 @@ public static class WorkflowPromptComposer
         assets.AddRange(definition.SharedAssets);
         assets.AddRange(node.Assets);
         string assetMarkdown = await WorkflowAssetLoader.LoadMarkdownBlocksAsync(assets, cancellationToken);
-        string attachmentList = string.Join(Environment.NewLine,
+        string attachmentList = string.Join(
+            Environment.NewLine,
             attachmentFilePaths.Select(path => $"- {Path.GetFileName(path)}"));
         string displayName = string.IsNullOrWhiteSpace(node.DisplayName) ? node.Id : node.DisplayName;
         string roleName = string.IsNullOrWhiteSpace(node.Role) ? node.Id : node.Role;
@@ -114,7 +115,7 @@ public static class WorkflowPromptComposer
                 WorkflowStage.Reviewer => GetNodeDefinition(definition, "reviewer"),
                 WorkflowStage.Decision => GetNodeDefinition(definition, "review-decision"),
                 WorkflowStage.Rebuilder => GetNodeDefinition(definition, "rebuilder"),
-                _ => throw new ArgumentOutOfRangeException(nameof(stage), stage, "Unsupported workflow stage.")
+                _ => throw new ArgumentOutOfRangeException(nameof(stage), stage, "Unsupported workflow stage."),
             }
             : CreateLegacyNodeDefinition(definition, stage);
 
@@ -147,7 +148,7 @@ public static class WorkflowPromptComposer
             WorkflowStage.Reviewer => definition.Reviewer ?? throw MissingStage(stage),
             WorkflowStage.Decision => definition.Decision ?? throw MissingStage(stage),
             WorkflowStage.Rebuilder => definition.Rebuilder ?? throw MissingStage(stage),
-            _ => throw new ArgumentOutOfRangeException(nameof(stage), stage, "Unsupported workflow stage.")
+            _ => throw new ArgumentOutOfRangeException(nameof(stage), stage, "Unsupported workflow stage."),
         };
 
         return new WorkflowNodeDefinition
@@ -162,7 +163,7 @@ public static class WorkflowPromptComposer
             Inputs = stageDefinition.Inputs,
             Outputs = stageDefinition.Outputs,
             CustomMessage = stageDefinition.CustomMessage,
-            Assets = stageDefinition.Assets
+            Assets = stageDefinition.Assets,
         };
     }
 
@@ -180,7 +181,8 @@ public static class WorkflowPromptComposer
     {
         string choiceList = node.Choices.Count == 0
             ? "- none configured"
-            : string.Join(Environment.NewLine,
+            : string.Join(
+                Environment.NewLine,
                 node.Choices.Select(choice => $"- {choice.Id}: {choice.DisplayName ?? choice.Id}"));
         return $"""
                 Choose exactly one decision option and write `Choice: <option-id>` on its own line.

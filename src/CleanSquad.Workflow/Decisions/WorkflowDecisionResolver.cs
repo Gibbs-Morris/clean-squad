@@ -32,7 +32,8 @@ public sealed partial class WorkflowDecisionResolver : IWorkflowDecisionResolver
     }
 
     /// <inheritdoc />
-    public async Task<WorkflowDecision> ResolveAsync(WorkflowDecisionContext context,
+    public async Task<WorkflowDecision> ResolveAsync(
+        WorkflowDecisionContext context,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -48,15 +49,18 @@ public sealed partial class WorkflowDecisionResolver : IWorkflowDecisionResolver
                 context.Node,
                 context.AttachmentFilePaths,
                 cancellationToken);
+            TimeSpan? responseTimeout = WorkflowResponseTimeout.TryParse(
+                context.Node.ResponseTimeout,
+                out TimeSpan parsedResponseTimeout)
+                ? parsedResponseTimeout
+                : null;
             string decisionMarkdown = await workflowAgentRunner.RunAsync(
                 ResolveAgentName(context.Node),
                 prompt,
                 context.AttachmentFilePaths,
                 context.Node.Models,
                 context.Node.ReasoningEffort,
-                WorkflowResponseTimeout.TryParse(context.Node.ResponseTimeout, out TimeSpan responseTimeout)
-                    ? responseTimeout
-                    : null,
+                responseTimeout,
                 cancellationToken);
 
             WorkflowDecision agentDecision = ParseDecision(context.Node, decisionMarkdown);
@@ -109,11 +113,10 @@ public sealed partial class WorkflowDecisionResolver : IWorkflowDecisionResolver
                 approveChoice.NextNodeId);
         }
 
-        int reviewCount = CountCompletedSteps(
-            context.State,
-            string.IsNullOrWhiteSpace(context.Node.DecisionSourceNodeId)
-                ? context.Node.Id
-                : context.Node.DecisionSourceNodeId);
+        string decisionSourceNodeId = string.IsNullOrWhiteSpace(context.Node.DecisionSourceNodeId)
+            ? context.Node.Id
+            : context.Node.DecisionSourceNodeId;
+        int reviewCount = CountCompletedSteps(context.State, decisionSourceNodeId);
 
         if (reviewCount >= context.Definition.Policy.MaxReviewCycles || HasReachedRebuildLimit(context))
         {
@@ -182,8 +185,13 @@ public sealed partial class WorkflowDecisionResolver : IWorkflowDecisionResolver
         if (approved)
         {
             WorkflowDecisionOptionDefinition choice = FindChoice(context.Node, "approve");
-            return new WorkflowDecision(WorkflowDecisionAction.Approve, "The reviewer approved the current build.",
-                "review-rules", context.SourceMarkdown.Trim(), choice.Id, choice.NextNodeId);
+            return new WorkflowDecision(
+                WorkflowDecisionAction.Approve,
+                "The reviewer approved the current build.",
+                "review-rules",
+                context.SourceMarkdown.Trim(),
+                choice.Id,
+                choice.NextNodeId);
         }
 
         int rebuildCount = CountCompletedSteps(context.State, "rebuilder");
@@ -192,14 +200,23 @@ public sealed partial class WorkflowDecisionResolver : IWorkflowDecisionResolver
             reviewCount >= context.Definition.Policy.MaxReviewCycles)
         {
             WorkflowDecisionOptionDefinition stopChoice = FindChoice(context.Node, "stop");
-            return new WorkflowDecision(WorkflowDecisionAction.Stop,
-                "The configured review or rebuild policy limit was reached.", "review-rules",
-                context.SourceMarkdown.Trim(), stopChoice.Id, stopChoice.NextNodeId);
+            return new WorkflowDecision(
+                WorkflowDecisionAction.Stop,
+                "The configured review or rebuild policy limit was reached.",
+                "review-rules",
+                context.SourceMarkdown.Trim(),
+                stopChoice.Id,
+                stopChoice.NextNodeId);
         }
 
         WorkflowDecisionOptionDefinition rebuildChoice = FindChoice(context.Node, "rebuild");
-        return new WorkflowDecision(WorkflowDecisionAction.Rebuild, "The reviewer requested another build iteration.",
-            "review-rules", context.SourceMarkdown.Trim(), rebuildChoice.Id, rebuildChoice.NextNodeId);
+        return new WorkflowDecision(
+            WorkflowDecisionAction.Rebuild,
+            "The reviewer requested another build iteration.",
+            "review-rules",
+            context.SourceMarkdown.Trim(),
+            rebuildChoice.Id,
+            rebuildChoice.NextNodeId);
     }
 
     private WorkflowDecision ParseDecision(WorkflowNodeDefinition node, string decisionMarkdown)
@@ -221,12 +238,17 @@ public sealed partial class WorkflowDecisionResolver : IWorkflowDecisionResolver
                 "APPROVE" => WorkflowDecisionAction.Approve,
                 "REBUILD" => WorkflowDecisionAction.Rebuild,
                 "STOP" => WorkflowDecisionAction.Stop,
-                _ => WorkflowDecisionAction.Branch
+                _ => WorkflowDecisionAction.Branch,
             };
 
             string decisionSource = isChoiceLine ? "decision-choice" : "decision-agent";
-            return new WorkflowDecision(action, $"Decision selected '{choice.Id}'.", decisionSource,
-                decisionMarkdown.Trim(), choice.Id, choice.NextNodeId);
+            return new WorkflowDecision(
+                action,
+                $"Decision selected '{choice.Id}'.",
+                decisionSource,
+                decisionMarkdown.Trim(),
+                choice.Id,
+                choice.NextNodeId);
         }
 
         WorkflowDecisionOptionDefinition fallbackChoice = node.Choices[0];
@@ -235,8 +257,13 @@ public sealed partial class WorkflowDecisionResolver : IWorkflowDecisionResolver
                 ? WorkflowDecisionAction.Stop
                 : WorkflowDecisionAction.Branch;
         LogDecisionFallback(node.Id, fallbackChoice.Id);
-        return new WorkflowDecision(fallbackAction, "The decision node did not emit a supported Choice or Action line.",
-            "decision-agent", decisionMarkdown.Trim(), fallbackChoice.Id, fallbackChoice.NextNodeId);
+        return new WorkflowDecision(
+            fallbackAction,
+            "The decision node did not emit a supported Choice or Action line.",
+            "decision-agent",
+            decisionMarkdown.Trim(),
+            fallbackChoice.Id,
+            fallbackChoice.NextNodeId);
     }
 
     private static string[] SplitLines(string content)
@@ -310,15 +337,21 @@ public sealed partial class WorkflowDecisionResolver : IWorkflowDecisionResolver
         return rebuildCount >= context.Definition.Policy.MaxRebuilds;
     }
 
-    [LoggerMessage(EventId = 300, Level = LogLevel.Debug,
+    [LoggerMessage(
+        EventId = 300,
+        Level = LogLevel.Debug,
         Message = "Resolving decision for node {NodeId} using agent mode with {AttachmentCount} attachments.")]
     private partial void LogResolvingAgentDecision(string nodeId, int attachmentCount);
 
-    [LoggerMessage(EventId = 301, Level = LogLevel.Information,
+    [LoggerMessage(
+        EventId = 301,
+        Level = LogLevel.Information,
         Message = "Decision node {NodeId} resolved choice {ChoiceId} -> {NextNodeId}.")]
     private partial void LogDecisionResolved(string nodeId, string? choiceId, string? nextNodeId);
 
-    [LoggerMessage(EventId = 302, Level = LogLevel.Warning,
+    [LoggerMessage(
+        EventId = 302,
+        Level = LogLevel.Warning,
         Message = "Decision node {NodeId} did not emit a supported Choice or Action line. Falling back to {ChoiceId}.")]
     private partial void LogDecisionFallback(string nodeId, string choiceId);
 }

@@ -14,7 +14,9 @@ public interface IWorkflowArtifactService
     /// <param name="workflowDefinitionPath">The source workflow definition file.</param>
     /// <param name="sourceRequestPath">The source request markdown path.</param>
     /// <returns>The created workflow artifact set.</returns>
-    WorkflowArtifacts CreateRunArtifacts(string workspaceRootPath, string workflowDefinitionPath,
+    WorkflowArtifacts CreateRunArtifacts(
+        string workspaceRootPath,
+        string workflowDefinitionPath,
         string sourceRequestPath);
 
     /// <summary>

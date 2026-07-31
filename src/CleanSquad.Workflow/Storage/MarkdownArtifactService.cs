@@ -21,7 +21,7 @@ public sealed partial class MarkdownArtifactService : IWorkflowArtifactService
 
     private static readonly JsonSerializerOptions JsonSerializerOptions = new()
     {
-        WriteIndented = true
+        WriteIndented = true,
     };
 
     private readonly ILogger<MarkdownArtifactService> logger;
@@ -55,7 +55,9 @@ public sealed partial class MarkdownArtifactService : IWorkflowArtifactService
     }
 
     /// <inheritdoc />
-    public WorkflowArtifacts CreateRunArtifacts(string workspaceRootPath, string workflowDefinitionPath,
+    public WorkflowArtifacts CreateRunArtifacts(
+        string workspaceRootPath,
+        string workflowDefinitionPath,
         string sourceRequestPath)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(workspaceRootPath);
@@ -72,8 +74,12 @@ public sealed partial class MarkdownArtifactService : IWorkflowArtifactService
             throw new FileNotFoundException("The request markdown file could not be found.", sourceRequestPath);
         }
 
-        WorkflowArtifacts artifacts = WorkflowArtifacts.Create(workspaceRootPath, workflowDefinitionPath,
-            sourceRequestPath, timeProvider, storageOptions);
+        WorkflowArtifacts artifacts = WorkflowArtifacts.Create(
+            workspaceRootPath,
+            workflowDefinitionPath,
+            sourceRequestPath,
+            timeProvider,
+            storageOptions);
         Directory.CreateDirectory(artifacts.RunDirectoryPath);
         Directory.CreateDirectory(artifacts.StepsDirectoryPath);
 
@@ -246,11 +252,15 @@ public sealed partial class MarkdownArtifactService : IWorkflowArtifactService
         return string.IsNullOrWhiteSpace(branchId) ? string.Empty : $" (branch={branchId})";
     }
 
-    [LoggerMessage(EventId = 200, Level = LogLevel.Information,
+    [LoggerMessage(
+        EventId = 200,
+        Level = LogLevel.Information,
         Message = "Created workflow artifacts at {RunDirectoryPath} for request {RequestPath}.")]
     private partial void LogCreatedArtifacts(string runDirectoryPath, string requestPath);
 
-    [LoggerMessage(EventId = 201, Level = LogLevel.Information,
+    [LoggerMessage(
+        EventId = 201,
+        Level = LogLevel.Information,
         Message = "Loaded existing workflow artifacts from {RunDirectoryPath}.")]
     private partial void LogLoadedArtifacts(string runDirectoryPath);
 
@@ -263,7 +273,9 @@ public sealed partial class MarkdownArtifactService : IWorkflowArtifactService
     [LoggerMessage(EventId = 204, Level = LogLevel.Debug, Message = "Persisted workflow state for run {RunId}.")]
     private partial void LogPersistedState(string runId);
 
-    [LoggerMessage(EventId = 205, Level = LogLevel.Debug,
+    [LoggerMessage(
+        EventId = 205,
+        Level = LogLevel.Debug,
         Message = "Appended workflow log event {EventName} for run {RunId}.")]
     private partial void LogAppendedEvent(string eventName, string runId);
 }

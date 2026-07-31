@@ -67,8 +67,14 @@ public sealed class MarkdownArtifactServiceTests
             state.Status = WorkflowRunStatus.Stopped;
             state.ExitNodeId = "stopped";
             state.CompletedAtUtc = state.StartedAtUtc;
-            state.Decisions.Add(new WorkflowDecision(WorkflowDecisionAction.Stop, "Limit reached.", "review-rules",
-                "# Review", "stop", "stopped"));
+            state.Decisions.Add(
+                new WorkflowDecision(
+                    WorkflowDecisionAction.Stop,
+                    "Limit reached.",
+                    "review-rules",
+                    "# Review",
+                    "stop",
+                    "stopped"));
 
             service.WriteState(artifacts, state);
 
@@ -104,15 +110,16 @@ public sealed class MarkdownArtifactServiceTests
             WorkflowRunState state = WorkflowRunState.Create(artifacts.RunId, "Test Workflow", "builder", timeProvider);
             state.Status = WorkflowRunStatus.Paused;
             state.PendingActivations.Clear();
-            state.WaitingNodes.Add(new WorkflowWaitState
-            {
-                NodeId = "wait-for-ci",
-                NextNodeId = "github-poll",
-                WaitDuration = "00:05:00",
-                Reason = "Wait for CI checks to finish.",
-                WaitStartedAtUtc = timeProvider.GetUtcNow(),
-                WaitUntilUtc = timeProvider.GetUtcNow().AddMinutes(5)
-            });
+            state.WaitingNodes.Add(
+                new WorkflowWaitState
+                {
+                    NodeId = "wait-for-ci",
+                    NextNodeId = "github-poll",
+                    WaitDuration = "00:05:00",
+                    Reason = "Wait for CI checks to finish.",
+                    WaitStartedAtUtc = timeProvider.GetUtcNow(),
+                    WaitUntilUtc = timeProvider.GetUtcNow().AddMinutes(5),
+                });
 
             service.WriteState(artifacts, state);
 

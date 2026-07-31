@@ -34,11 +34,11 @@ public sealed class WorkflowPromptComposerTests
                 Planner = new WorkflowStageDefinition
                 {
                     DisplayName = "Planner",
-                    Assets = [new WorkflowAssetReference("agent", plannerAssetPath)]
+                    Assets = [new WorkflowAssetReference("agent", plannerAssetPath)],
                 },
                 Builder = new WorkflowStageDefinition(),
                 Reviewer = new WorkflowStageDefinition(),
-                Rebuilder = new WorkflowStageDefinition()
+                Rebuilder = new WorkflowStageDefinition(),
             };
 
             string prompt =
@@ -88,17 +88,17 @@ public sealed class WorkflowPromptComposerTests
                         Outputs = ["planMarkdown", "riskSummary"],
                         CustomMessage = "Focus on delivery risks and keep the plan lean.",
                         Assets = [new WorkflowAssetReference("agent", plannerAssetPath)],
-                        Next = "done"
+                        Next = "done",
                     },
                     new WorkflowNodeDefinition
                     {
                         Id = "done",
                         Kind = WorkflowNodeKind.Exit,
-                        ExitStatus = WorkflowRunStatus.Approved
-                    }
+                        ExitStatus = WorkflowRunStatus.Approved,
+                    },
                 ],
                 EntryPoints = [new WorkflowEntryPointDefinition { Id = "default", NodeId = "planner" }],
-                DefaultEntryPoint = "default"
+                DefaultEntryPoint = "default",
             };
 
             string prompt = await WorkflowPromptComposer.ComposeAsync(definition, definition.Nodes[0], ["request.md"]);

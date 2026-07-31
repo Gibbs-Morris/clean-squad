@@ -21,7 +21,7 @@ public sealed class WorkflowDiagramRendererTests
             DefaultEntryPoint = "default",
             EntryPoints =
             [
-                new WorkflowEntryPointDefinition { Id = "default", NodeId = "planner" }
+                new WorkflowEntryPointDefinition { Id = "default", NodeId = "planner" },
             ],
             Nodes =
             [
@@ -37,15 +37,15 @@ public sealed class WorkflowDiagramRendererTests
                         new WorkflowDecisionOptionDefinition
                             { Id = "approve", DisplayName = "Approve", NextNodeId = "approved" },
                         new WorkflowDecisionOptionDefinition
-                            { Id = "rebuild", DisplayName = "Rebuild", NextNodeId = "planner" }
-                    ]
+                            { Id = "rebuild", DisplayName = "Rebuild", NextNodeId = "planner" },
+                    ],
                 },
                 new WorkflowNodeDefinition
                 {
                     Id = "approved", Kind = WorkflowNodeKind.Exit, DisplayName = "Approved",
-                    ExitStatus = WorkflowRunStatus.Approved
-                }
-            ]
+                    ExitStatus = WorkflowRunStatus.Approved,
+                },
+            ],
         };
 
         string markdown = WorkflowDiagramRenderer.RenderMarkdown(definition, Path.Combine("C:\\temp", "workflow.json"));
@@ -77,16 +77,16 @@ public sealed class WorkflowDiagramRendererTests
                     Branches =
                     [
                         new WorkflowForkBranchDefinition { Id = "code", NextNodeId = "code-stage" },
-                        new WorkflowForkBranchDefinition { Id = "tests", NextNodeId = "test-stage" }
-                    ]
+                        new WorkflowForkBranchDefinition { Id = "tests", NextNodeId = "test-stage" },
+                    ],
                 },
                 new WorkflowNodeDefinition { Id = "code-stage", Kind = WorkflowNodeKind.Stage, Next = "join" },
                 new WorkflowNodeDefinition { Id = "test-stage", Kind = WorkflowNodeKind.Stage, Next = "join" },
                 new WorkflowNodeDefinition
                     { Id = "join", Kind = WorkflowNodeKind.Join, ForkId = "fork", Next = "done" },
                 new WorkflowNodeDefinition
-                    { Id = "done", Kind = WorkflowNodeKind.Exit, ExitStatus = WorkflowRunStatus.Approved }
-            ]
+                    { Id = "done", Kind = WorkflowNodeKind.Exit, ExitStatus = WorkflowRunStatus.Approved },
+            ],
         };
 
         string mermaid = WorkflowDiagramRenderer.RenderMermaid(definition);

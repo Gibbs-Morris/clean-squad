@@ -34,10 +34,11 @@ public sealed class WorkflowOrchestratorTests
             string requestPath = Path.Combine(tempDirectoryPath, "request.md");
             await File.WriteAllTextAsync(requestPath, "# Request\n", Encoding.UTF8);
 
-            FakeWorkflowAgentRunner runner = new([
+            FakeWorkflowAgentRunner runner = new(
+            [
                 "# Plan\n## Goal\nShip it\n",
                 "# Build\n## Summary\nBuild summary\n",
-                "# Review\nApproved: yes\n## Verdict\nLooks good.\n## Findings\n- None.\n## Builder Instructions\n- None.\n"
+                "# Review\nApproved: yes\n## Verdict\nLooks good.\n## Findings\n- None.\n## Builder Instructions\n- None.\n",
             ]);
             MarkdownArtifactService artifactService =
                 new(new FixedTimeProvider(new DateTimeOffset(2026, 4, 11, 14, 0, 0, TimeSpan.Zero)));
@@ -76,11 +77,12 @@ public sealed class WorkflowOrchestratorTests
             string requestPath = Path.Combine(tempDirectoryPath, "request.md");
             await File.WriteAllTextAsync(requestPath, "# Request\n", Encoding.UTF8);
 
-            FakeWorkflowAgentRunner runner = new([
+            FakeWorkflowAgentRunner runner = new(
+            [
                 "# Research\n## Code Insights\n- Code path\n",
                 "# Research\n## Test Insights\n- Test path\n",
                 "# Build\n## Summary\nBuild summary\n",
-                "# Review\nApproved: yes\n## Verdict\nLooks good.\n## Findings\n- None.\n## Builder Instructions\n- None.\n"
+                "# Review\nApproved: yes\n## Verdict\nLooks good.\n## Findings\n- None.\n## Builder Instructions\n- None.\n",
             ]);
             MarkdownArtifactService artifactService =
                 new(new FixedTimeProvider(new DateTimeOffset(2026, 4, 11, 15, 0, 0, TimeSpan.Zero)));
@@ -100,20 +102,25 @@ public sealed class WorkflowOrchestratorTests
             WorkflowRunState state = artifactService.ReadState(artifacts);
 
             Assert.Equal(WorkflowRunStatus.Approved, result.Status);
-            Assert.Equal(2,
+            Assert.Equal(
+                2,
                 runner.Calls.Count(call => string.Equals(call.AgentName, "Research", StringComparison.Ordinal)));
-            Assert.Contains(runner.Calls,
+            Assert.Contains(
+                runner.Calls,
                 call => string.Equals(call.AgentName, "Research", StringComparison.Ordinal) &&
                         call.ModelIds.SequenceEqual(["model-code-fast"]));
-            Assert.Contains(runner.Calls,
+            Assert.Contains(
+                runner.Calls,
                 call => string.Equals(call.AgentName, "Research", StringComparison.Ordinal) &&
                         call.ModelIds.SequenceEqual(["model-test-deep"]));
             Assert.Equal(4, runner.Calls.Count);
             Assert.True(File.Exists(Path.Combine(result.RunDirectoryPath, "events.ndjson")));
-            Assert.Contains(state.Steps,
+            Assert.Contains(
+                state.Steps,
                 step => string.Equals(step.NodeId, "code-research", StringComparison.Ordinal) &&
                         step.Models.SequenceEqual(["model-code-fast"]));
-            Assert.Contains(state.Steps,
+            Assert.Contains(
+                state.Steps,
                 step => string.Equals(step.NodeId, "test-research", StringComparison.Ordinal) &&
                         step.Models.SequenceEqual(["model-test-deep"]));
         }
@@ -140,7 +147,7 @@ public sealed class WorkflowOrchestratorTests
 
             FakeWorkflowAgentRunner failingRunner = new(
                 [
-                    "# Research\n## Code Insights\n- Code path\n"
+                    "# Research\n## Code Insights\n- Code path\n",
                 ],
                 2,
                 static (_, _) => new TimeoutException("SendAndWaitAsync timed out after 00:01:00"));
@@ -158,9 +165,11 @@ public sealed class WorkflowOrchestratorTests
                 .GetDirectories(Path.Combine(tempDirectoryPath, ".workflow-testing", "workflow-runs")).Single();
             WorkflowArtifacts artifacts = artifactService.LoadRunArtifacts(runDirectoryPath);
             WorkflowRunState failedState = artifactService.ReadState(artifacts);
-            WorkflowStepState codeResearchStep = Assert.Single(failedState.Steps,
+            WorkflowStepState codeResearchStep = Assert.Single(
+                failedState.Steps,
                 step => string.Equals(step.NodeId, "code-research", StringComparison.Ordinal));
-            WorkflowStepState testResearchStep = Assert.Single(failedState.Steps,
+            WorkflowStepState testResearchStep = Assert.Single(
+                failedState.Steps,
                 step => string.Equals(step.NodeId, "test-research", StringComparison.Ordinal));
             WorkflowStepState failedResearchStep = Assert.Single(
                 [codeResearchStep, testResearchStep],
@@ -175,13 +184,16 @@ public sealed class WorkflowOrchestratorTests
             Assert.Equal("SendAndWaitAsync timed out after 00:01:00", failedResearchStep.Message);
             Assert.NotNull(completedResearchStep.CompletedAtUtc);
             Assert.True(File.Exists(failedResearchStep.OutputPath));
-            Assert.Contains("# Stage Failure", await File.ReadAllTextAsync(failedResearchStep.OutputPath),
+            Assert.Contains(
+                "# Stage Failure",
+                await File.ReadAllTextAsync(failedResearchStep.OutputPath),
                 StringComparison.Ordinal);
 
-            FakeWorkflowAgentRunner resumeRunner = new([
+            FakeWorkflowAgentRunner resumeRunner = new(
+            [
                 "# Research\n## Test Insights\n- Recovered test path\n",
                 "# Build\n## Summary\nRecovered build\n",
-                "# Review\nApproved: yes\n## Verdict\nLooks good.\n## Findings\n- None.\n## Builder Instructions\n- None.\n"
+                "# Review\nApproved: yes\n## Verdict\nLooks good.\n## Findings\n- None.\n## Builder Instructions\n- None.\n",
             ]);
             WorkflowOrchestrator resumeOrchestrator = new(
                 artifactService,
@@ -219,9 +231,10 @@ public sealed class WorkflowOrchestratorTests
             string requestPath = Path.Combine(tempDirectoryPath, "request.md");
             await File.WriteAllTextAsync(requestPath, "# Request\n", Encoding.UTF8);
 
-            FakeWorkflowAgentRunner runner = new([
+            FakeWorkflowAgentRunner runner = new(
+            [
                 "# Plan\n## Goal\nPlan the change\n",
-                "# Build\n## Summary\nCompleted\n"
+                "# Build\n## Summary\nCompleted\n",
             ]);
             MarkdownArtifactService artifactService =
                 new(new FixedTimeProvider(new DateTimeOffset(2026, 4, 11, 17, 0, 0, TimeSpan.Zero)));
@@ -233,9 +246,11 @@ public sealed class WorkflowOrchestratorTests
             WorkflowRunResult result = await orchestrator.ExecuteAsync(tempDirectoryPath, definitionPath, requestPath);
             WorkflowArtifacts artifacts = artifactService.LoadRunArtifacts(result.RunDirectoryPath);
             WorkflowRunState state = artifactService.ReadState(artifacts);
-            AgentCall call = Assert.Single(runner.Calls,
+            AgentCall call = Assert.Single(
+                runner.Calls,
                 call => string.Equals(call.AgentName, "builder-agent", StringComparison.Ordinal));
-            WorkflowStepState step = Assert.Single(state.Steps,
+            WorkflowStepState step = Assert.Single(
+                state.Steps,
                 step => string.Equals(step.NodeId, "builder", StringComparison.OrdinalIgnoreCase));
 
             Assert.Equal(WorkflowRunStatus.Approved, result.Status);
@@ -277,8 +292,9 @@ public sealed class WorkflowOrchestratorTests
             string requestPath = Path.Combine(tempDirectoryPath, "request.md");
             await File.WriteAllTextAsync(requestPath, "# Request\n", Encoding.UTF8);
 
-            FakeWorkflowAgentRunner runner = new([
-                "# Build\n## Summary\nBuilt the change\n"
+            FakeWorkflowAgentRunner runner = new(
+            [
+                "# Build\n## Summary\nBuilt the change\n",
             ]);
             MarkdownArtifactService artifactService = new(timeProvider);
             WorkflowOrchestrator orchestrator = new(
@@ -296,7 +312,8 @@ public sealed class WorkflowOrchestratorTests
             Assert.Single(runner.Calls);
             WorkflowWaitState waitState = Assert.Single(pausedState.WaitingNodes);
             Assert.Equal("approved", waitState.NextNodeId);
-            Assert.Contains(pausedState.Steps,
+            Assert.Contains(
+                pausedState.Steps,
                 step => string.Equals(step.NodeId, "wait-for-review-lag", StringComparison.OrdinalIgnoreCase));
 
             timeProvider.Advance(TimeSpan.FromMinutes(5));
@@ -338,7 +355,7 @@ public sealed class WorkflowOrchestratorTests
 
             FakeWorkflowAgentRunner failingRunner = new(
                 [
-                    "# Plan\n## Goal\nShip it\n"
+                    "# Plan\n## Goal\nShip it\n",
                 ],
                 2);
             MarkdownArtifactService artifactService =
@@ -354,9 +371,10 @@ public sealed class WorkflowOrchestratorTests
             string runDirectoryPath = Directory
                 .GetDirectories(Path.Combine(tempDirectoryPath, ".workflow-testing", "workflow-runs")).Single();
 
-            FakeWorkflowAgentRunner resumeRunner = new([
+            FakeWorkflowAgentRunner resumeRunner = new(
+            [
                 "# Build\n## Summary\nRecovered build\n",
-                "# Review\nApproved: yes\n## Verdict\nLooks good.\n## Findings\n- None.\n## Builder Instructions\n- None.\n"
+                "# Review\nApproved: yes\n## Verdict\nLooks good.\n## Findings\n- None.\n## Builder Instructions\n- None.\n",
             ]);
             WorkflowOrchestrator resumeOrchestrator = new(
                 artifactService,
@@ -380,7 +398,8 @@ public sealed class WorkflowOrchestratorTests
         }
     }
 
-    private static async Task<string> CreateLegacyWorkflowDefinitionAsync(string tempDirectoryPath,
+    private static async Task<string> CreateLegacyWorkflowDefinitionAsync(
+        string tempDirectoryPath,
         WorkflowDecisionMode decisionMode)
     {
         string assetsDirectoryPath = Path.Combine(tempDirectoryPath, "assets");
@@ -673,8 +692,14 @@ public sealed class WorkflowOrchestratorTests
             lock (syncLock)
             {
                 callNumber = ++callCount;
-                Calls.Add(new AgentCall(agentName, prompt, attachmentFilePaths, modelIds.ToArray(), reasoningEffort,
-                    responseTimeout));
+                Calls.Add(
+                    new AgentCall(
+                        agentName,
+                        prompt,
+                        attachmentFilePaths,
+                        modelIds.ToArray(),
+                        reasoningEffort,
+                        responseTimeout));
                 if (exceptionAtCall.HasValue && callNumber == exceptionAtCall.Value)
                 {
                     throw exceptionFactory?.Invoke(callNumber, agentName) ??

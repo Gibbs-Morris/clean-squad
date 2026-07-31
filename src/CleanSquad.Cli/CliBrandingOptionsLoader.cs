@@ -18,7 +18,7 @@ internal static class CliBrandingOptionsLoader
     {
         PropertyNameCaseInsensitive = true,
         ReadCommentHandling = JsonCommentHandling.Skip,
-        AllowTrailingCommas = true
+        AllowTrailingCommas = true,
     };
 
     /// <summary>
@@ -45,7 +45,8 @@ internal static class CliBrandingOptionsLoader
         }
         catch (JsonException exception)
         {
-            throw new InvalidOperationException($"The CLI branding configuration '{configFilePath}' is invalid.",
+            throw new InvalidOperationException(
+                $"The CLI branding configuration '{configFilePath}' is invalid.",
                 exception);
         }
     }
@@ -61,7 +62,7 @@ internal static class CliBrandingOptionsLoader
                 NormalizeText(source.ApplicationDescription, $"{applicationName} command-line interface."),
             WorkflowCommandDescription =
                 NormalizeText(source.WorkflowCommandDescription, DefaultWorkflowCommandDescription),
-            Checklist = source.Checklist ?? new CleanupChecklistOptions { DefaultSquadName = applicationName }
+            Checklist = source.Checklist ?? new CleanupChecklistOptions { DefaultSquadName = applicationName },
         };
     }
 

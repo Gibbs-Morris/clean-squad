@@ -13,5 +13,5 @@ public enum WorkflowDecisionMode
     /// <summary>
     ///     Use a configured decision agent stage.
     /// </summary>
-    Agent
+    Agent,
 }

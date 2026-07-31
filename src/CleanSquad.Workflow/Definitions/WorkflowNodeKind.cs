@@ -33,5 +33,5 @@ public enum WorkflowNodeKind
     /// <summary>
     ///     Terminates the workflow with a final status.
     /// </summary>
-    Exit
+    Exit,
 }
