@@ -117,7 +117,8 @@ public static class WorkflowReasoningEffort
 
         List<string> normalizedValues = supportedReasoningEfforts
             .Select(Normalize)
-            .Where(static value => value is not null && !string.Equals(value, HighestSupported, StringComparison.Ordinal))
+            .Where(static value =>
+                value is not null && !string.Equals(value, HighestSupported, StringComparison.Ordinal))
             .Select(static value => value!)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();

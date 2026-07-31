@@ -1,7 +1,6 @@
-using System.Threading.Tasks;
 using CleanSquad.Core.Workflows;
 using CleanSquad.Workflow;
-using GitHub.Copilot.SDK;
+using GitHub.Copilot;
 
 namespace CleanSquad.Core.UnitTests.Workflows;
 
@@ -14,67 +13,35 @@ public sealed class CopilotWorkflowAgentRunnerTests
     ///     Verifies the workflow runner creates a session configuration that honors the first requested model
     ///     and approves file-write permissions needed for implementation stages.
     /// </summary>
-    /// <returns>A task that represents the asynchronous test.</returns>
     [Fact]
-    public async Task CreateSessionConfigUsesFirstModelAndApprovesWritePermissionsAsync()
+    public void CreateSessionConfigUsesFirstModelAndApprovesWritePermissions()
     {
         SessionConfig config = CopilotWorkflowAgentRunner.CreateSessionConfig(
             @"c:\repo",
             "gpt-5.4",
             WorkflowReasoningEffort.High);
 
-        PermissionRequestResult result = await config.OnPermissionRequest!(
-            new PermissionRequestWrite
-            {
-                ToolCallId = "tool-1",
-                Intention = "Update the README",
-                FileName = "README.md",
-                Diff = "@@ -1 +1 @@",
-            },
-            new PermissionInvocation
-            {
-                SessionId = "session-1",
-            });
-
         Assert.Equal(@"c:\repo", config.WorkingDirectory);
         Assert.Equal("gpt-5.4", config.Model);
         Assert.Equal(WorkflowReasoningEffort.High, config.ReasoningEffort);
-        Assert.Equal(PermissionRequestResultKind.Approved, result.Kind);
+        Assert.Same(PermissionHandler.ApproveAll, config.OnPermissionRequest);
     }
 
     /// <summary>
     ///     Verifies the workflow runner also approves shell commands so the builder can run validation commands
     ///     like build and test during implementation.
     /// </summary>
-    /// <returns>A task that represents the asynchronous test.</returns>
     [Fact]
-    public async Task CreateSessionConfigApprovesShellPermissionsAsync()
+    public void CreateSessionConfigApprovesShellPermissions()
     {
         SessionConfig config = CopilotWorkflowAgentRunner.CreateSessionConfig(
             @"c:\repo",
             null,
             null);
 
-        PermissionRequestResult result = await config.OnPermissionRequest!(
-            new PermissionRequestShell
-            {
-                ToolCallId = "tool-2",
-                Intention = "Run the solution tests",
-                FullCommandText = "dotnet test .\\CleanSquad.slnx",
-                Commands = [],
-                PossiblePaths = [],
-                PossibleUrls = [],
-                HasWriteFileRedirection = false,
-                CanOfferSessionApproval = true,
-            },
-            new PermissionInvocation
-            {
-                SessionId = "session-2",
-            });
-
         Assert.Null(config.Model);
         Assert.Null(config.ReasoningEffort);
-        Assert.Equal(PermissionRequestResultKind.Approved, result.Kind);
+        Assert.Same(PermissionHandler.ApproveAll, config.OnPermissionRequest);
     }
 
     /// <summary>

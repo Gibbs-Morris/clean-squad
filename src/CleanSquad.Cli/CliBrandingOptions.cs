@@ -1,4 +1,3 @@
-using System;
 using CleanSquad.Core;
 
 namespace CleanSquad.Cli;

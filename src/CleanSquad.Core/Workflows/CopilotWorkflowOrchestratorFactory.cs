@@ -30,17 +30,20 @@ public static class CopilotWorkflowOrchestratorFactory
         IOptions<WorkflowStorageOptions>? storageOptions = null)
     {
         ILoggerFactory effectiveLoggerFactory = loggerFactory ?? NullLoggerFactory.Instance;
-        IOptions<WorkflowStorageOptions> effectiveStorageOptions = storageOptions ?? Options.Create(new WorkflowStorageOptions());
+        IOptions<WorkflowStorageOptions> effectiveStorageOptions =
+            storageOptions ?? Options.Create(new WorkflowStorageOptions());
         MarkdownArtifactService artifactService = new(
             effectiveStorageOptions,
             effectiveLoggerFactory.CreateLogger<MarkdownArtifactService>(),
             timeProvider);
         CopilotWorkflowAgentRunner workflowAgentRunner = new(
-            Options.Create(new CopilotWorkflowAgentRunnerOptions
-            {
-                WorkspaceRootPath = workspaceRootPath,
-                KnowledgeRootPath = effectiveStorageOptions.Value.GetKnowledgeRootPath(Path.GetFullPath(workspaceRootPath)),
-            }),
+            Options.Create(
+                new CopilotWorkflowAgentRunnerOptions
+                {
+                    WorkspaceRootPath = workspaceRootPath,
+                    KnowledgeRootPath =
+                        effectiveStorageOptions.Value.GetKnowledgeRootPath(Path.GetFullPath(workspaceRootPath)),
+                }),
             effectiveLoggerFactory.CreateLogger<CopilotWorkflowAgentRunner>());
         WorkflowDecisionResolver decisionResolver = new(
             workflowAgentRunner,

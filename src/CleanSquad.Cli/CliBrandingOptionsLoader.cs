@@ -39,12 +39,15 @@ internal static class CliBrandingOptionsLoader
 
         try
         {
-            CliBrandingOptions? configuration = JsonSerializer.Deserialize<CliBrandingOptions>(File.ReadAllText(configFilePath), SerializerOptions);
+            CliBrandingOptions? configuration =
+                JsonSerializer.Deserialize<CliBrandingOptions>(File.ReadAllText(configFilePath), SerializerOptions);
             return Normalize(configuration);
         }
         catch (JsonException exception)
         {
-            throw new InvalidOperationException($"The CLI branding configuration '{configFilePath}' is invalid.", exception);
+            throw new InvalidOperationException(
+                $"The CLI branding configuration '{configFilePath}' is invalid.",
+                exception);
         }
     }
 
@@ -55,8 +58,10 @@ internal static class CliBrandingOptionsLoader
         return new CliBrandingOptions
         {
             ApplicationName = applicationName,
-            ApplicationDescription = NormalizeText(source.ApplicationDescription, $"{applicationName} command-line interface."),
-            WorkflowCommandDescription = NormalizeText(source.WorkflowCommandDescription, DefaultWorkflowCommandDescription),
+            ApplicationDescription =
+                NormalizeText(source.ApplicationDescription, $"{applicationName} command-line interface."),
+            WorkflowCommandDescription =
+                NormalizeText(source.WorkflowCommandDescription, DefaultWorkflowCommandDescription),
             Checklist = source.Checklist ?? new CleanupChecklistOptions { DefaultSquadName = applicationName },
         };
     }

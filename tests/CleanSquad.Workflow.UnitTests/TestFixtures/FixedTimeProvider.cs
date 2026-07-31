@@ -21,7 +21,7 @@ internal sealed class FixedTimeProvider : TimeProvider
     /// <inheritdoc />
     public override DateTimeOffset GetUtcNow()
     {
-        return this.utcNow;
+        return utcNow;
     }
 
     /// <summary>
@@ -30,6 +30,6 @@ internal sealed class FixedTimeProvider : TimeProvider
     /// <param name="duration">The duration to add to the current UTC timestamp.</param>
     public void Advance(TimeSpan duration)
     {
-        this.utcNow = this.utcNow.Add(duration);
+        utcNow = utcNow.Add(duration);
     }
 }

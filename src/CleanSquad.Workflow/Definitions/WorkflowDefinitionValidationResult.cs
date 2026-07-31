@@ -23,14 +23,15 @@ public sealed class WorkflowDefinitionValidationResult
         WorkflowDefinition? definition,
         IReadOnlyList<WorkflowDefinitionValidationIssue> issues)
     {
-        this.WorkflowDefinitionPath = workflowDefinitionPath ?? throw new ArgumentNullException(nameof(workflowDefinitionPath));
-        this.Definition = definition;
-        this.Issues = issues ?? throw new ArgumentNullException(nameof(issues));
-        this.errors = this.Issues
+        WorkflowDefinitionPath =
+            workflowDefinitionPath ?? throw new ArgumentNullException(nameof(workflowDefinitionPath));
+        Definition = definition;
+        Issues = issues ?? throw new ArgumentNullException(nameof(issues));
+        errors = Issues
             .Where(issue => issue.Severity == WorkflowDefinitionValidationSeverity.Error)
             .Select(issue => issue.Message)
             .ToArray();
-        this.warnings = this.Issues
+        warnings = Issues
             .Where(issue => issue.Severity == WorkflowDefinitionValidationSeverity.Warning)
             .Select(issue => issue.Message)
             .ToArray();
@@ -54,32 +55,32 @@ public sealed class WorkflowDefinitionValidationResult
     /// <summary>
     ///     Gets a value indicating whether the workflow definition is valid.
     /// </summary>
-    public bool IsValid => this.errors.Length == 0;
+    public bool IsValid => errors.Length == 0;
 
     /// <summary>
     ///     Gets the validation errors.
     /// </summary>
-    public IReadOnlyList<string> Errors => this.errors;
+    public IReadOnlyList<string> Errors => errors;
 
     /// <summary>
     ///     Gets the validation warnings.
     /// </summary>
-    public IReadOnlyList<string> Warnings => this.warnings;
+    public IReadOnlyList<string> Warnings => warnings;
 
     /// <summary>
     ///     Gets the number of graph nodes in the normalized definition.
     /// </summary>
-    public int NodeCount => this.Definition?.Nodes.Count ?? 0;
+    public int NodeCount => Definition?.Nodes.Count ?? 0;
 
     /// <summary>
     ///     Gets the number of entry points in the normalized definition.
     /// </summary>
-    public int EntryPointCount => this.Definition?.EntryPoints.Count ?? 0;
+    public int EntryPointCount => Definition?.EntryPoints.Count ?? 0;
 
     /// <summary>
     ///     Gets the number of referenced workflow assets in the normalized definition.
     /// </summary>
-    public int AssetCount => this.Definition is null
+    public int AssetCount => Definition is null
         ? 0
-        : this.Definition.SharedAssets.Count + this.Definition.Nodes.Sum(node => node.Assets.Count);
+        : Definition.SharedAssets.Count + Definition.Nodes.Sum(node => node.Assets.Count);
 }

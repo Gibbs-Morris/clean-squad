@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net.Mail;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using CleanSquad.Workflow;
 
 namespace CleanSquad.Workflow.Definitions;
 
@@ -34,7 +34,10 @@ public static class WorkflowDefinitionLoader
         WorkflowDefinitionValidationResult validationResult = ValidateFile(workflowDefinitionPath);
         if (!validationResult.IsValid || validationResult.Definition is null)
         {
-            throw new InvalidOperationException(FormatValidationMessage(validationResult.WorkflowDefinitionPath, validationResult.Errors));
+            throw new InvalidOperationException(
+                FormatValidationMessage(
+                    validationResult.WorkflowDefinitionPath,
+                    validationResult.Errors));
         }
 
         return validationResult.Definition;
@@ -82,7 +85,10 @@ public static class WorkflowDefinitionLoader
         }
 
         NormalizePackageMetadata(definition);
-        NormalizeAssetPaths(definition, Path.GetDirectoryName(normalizedPath) ?? Directory.GetCurrentDirectory(), errors);
+        NormalizeAssetPaths(
+            definition,
+            Path.GetDirectoryName(normalizedPath) ?? Directory.GetCurrentDirectory(),
+            errors);
         SynthesizeGraphIfNeeded(definition);
         ValidateDefinition(definition, errors, warnings);
         return CreateValidationResult(normalizedPath, definition, errors, warnings);
@@ -143,31 +149,51 @@ public static class WorkflowDefinitionLoader
         ValidateStageAssets(definition.SharedAssets, "sharedAssets", errors);
         ValidateOptionalIdentifier(definition.Planner?.Agent, "planner.agent", errors);
         ValidateModels(definition.Planner?.Models, "planner.models", errors);
-        ValidateReasoningEffort(definition.Planner?.Models, definition.Planner?.ReasoningEffort, "planner.reasoningEffort", errors);
+        ValidateReasoningEffort(
+            definition.Planner?.Models,
+            definition.Planner?.ReasoningEffort,
+            "planner.reasoningEffort",
+            errors);
         ValidateResponseTimeout(definition.Planner?.ResponseTimeout, "planner.responseTimeout", errors);
         ValidateOutputNames(definition.Planner?.Outputs, "planner.outputs", errors);
         ValidateStageAssets(definition.Planner?.Assets, "planner.assets", errors);
         ValidateOptionalIdentifier(definition.Builder?.Agent, "builder.agent", errors);
         ValidateModels(definition.Builder?.Models, "builder.models", errors);
-        ValidateReasoningEffort(definition.Builder?.Models, definition.Builder?.ReasoningEffort, "builder.reasoningEffort", errors);
+        ValidateReasoningEffort(
+            definition.Builder?.Models,
+            definition.Builder?.ReasoningEffort,
+            "builder.reasoningEffort",
+            errors);
         ValidateResponseTimeout(definition.Builder?.ResponseTimeout, "builder.responseTimeout", errors);
         ValidateOutputNames(definition.Builder?.Outputs, "builder.outputs", errors);
         ValidateStageAssets(definition.Builder?.Assets, "builder.assets", errors);
         ValidateOptionalIdentifier(definition.Reviewer?.Agent, "reviewer.agent", errors);
         ValidateModels(definition.Reviewer?.Models, "reviewer.models", errors);
-        ValidateReasoningEffort(definition.Reviewer?.Models, definition.Reviewer?.ReasoningEffort, "reviewer.reasoningEffort", errors);
+        ValidateReasoningEffort(
+            definition.Reviewer?.Models,
+            definition.Reviewer?.ReasoningEffort,
+            "reviewer.reasoningEffort",
+            errors);
         ValidateResponseTimeout(definition.Reviewer?.ResponseTimeout, "reviewer.responseTimeout", errors);
         ValidateOutputNames(definition.Reviewer?.Outputs, "reviewer.outputs", errors);
         ValidateStageAssets(definition.Reviewer?.Assets, "reviewer.assets", errors);
         ValidateOptionalIdentifier(definition.Decision?.Agent, "decision.agent", errors);
         ValidateModels(definition.Decision?.Models, "decision.models", errors);
-        ValidateReasoningEffort(definition.Decision?.Models, definition.Decision?.ReasoningEffort, "decision.reasoningEffort", errors);
+        ValidateReasoningEffort(
+            definition.Decision?.Models,
+            definition.Decision?.ReasoningEffort,
+            "decision.reasoningEffort",
+            errors);
         ValidateResponseTimeout(definition.Decision?.ResponseTimeout, "decision.responseTimeout", errors);
         ValidateOutputNames(definition.Decision?.Outputs, "decision.outputs", errors);
         ValidateStageAssets(definition.Decision?.Assets, "decision.assets", errors);
         ValidateOptionalIdentifier(definition.Rebuilder?.Agent, "rebuilder.agent", errors);
         ValidateModels(definition.Rebuilder?.Models, "rebuilder.models", errors);
-        ValidateReasoningEffort(definition.Rebuilder?.Models, definition.Rebuilder?.ReasoningEffort, "rebuilder.reasoningEffort", errors);
+        ValidateReasoningEffort(
+            definition.Rebuilder?.Models,
+            definition.Rebuilder?.ReasoningEffort,
+            "rebuilder.reasoningEffort",
+            errors);
         ValidateResponseTimeout(definition.Rebuilder?.ResponseTimeout, "rebuilder.responseTimeout", errors);
         ValidateOutputNames(definition.Rebuilder?.Outputs, "rebuilder.outputs", errors);
         ValidateStageAssets(definition.Rebuilder?.Assets, "rebuilder.assets", errors);
@@ -191,14 +217,19 @@ public static class WorkflowDefinitionLoader
         IReadOnlyList<string> warnings)
     {
         List<WorkflowDefinitionValidationIssue> issues = [];
-        issues.AddRange(errors.Select(error => new WorkflowDefinitionValidationIssue(WorkflowDefinitionValidationSeverity.Error, error)));
-        issues.AddRange(warnings.Select(warning => new WorkflowDefinitionValidationIssue(WorkflowDefinitionValidationSeverity.Warning, warning)));
+        issues.AddRange(
+            errors.Select(error =>
+                new WorkflowDefinitionValidationIssue(WorkflowDefinitionValidationSeverity.Error, error)));
+        issues.AddRange(
+            warnings.Select(warning =>
+                new WorkflowDefinitionValidationIssue(WorkflowDefinitionValidationSeverity.Warning, warning)));
         return new WorkflowDefinitionValidationResult(workflowDefinitionPath, definition, issues);
     }
 
     private static string FormatValidationMessage(string workflowDefinitionPath, IReadOnlyList<string> errors)
     {
-        return $"Workflow definition '{workflowDefinitionPath}' is invalid:{Environment.NewLine}- {string.Join(Environment.NewLine + "- ", errors)}";
+        return
+            $"Workflow definition '{workflowDefinitionPath}' is invalid:{Environment.NewLine}- {string.Join(Environment.NewLine + "- ", errors)}";
     }
 
     private static void ValidateEntryPoints(WorkflowDefinition definition, List<string> errors)
@@ -240,14 +271,18 @@ public static class WorkflowDefinitionLoader
         }
 
         string defaultEntryPointId = definition.DefaultEntryPoint
-            ?? (definition.EntryPoints.Count > 0 ? definition.EntryPoints[0].Id : string.Empty);
+                                     ?? (definition.EntryPoints.Count > 0
+                                         ? definition.EntryPoints[0].Id
+                                         : string.Empty);
         if (string.IsNullOrWhiteSpace(defaultEntryPointId))
         {
             errors.Add("The workflow definition must define defaultEntryPoint or at least one entry point.");
         }
-        else if (!definition.EntryPoints.Any(entryPoint => defaultEntryPointId.Equals(entryPoint.Id, StringComparison.OrdinalIgnoreCase)))
+        else if (!definition.EntryPoints.Any(entryPoint =>
+                     defaultEntryPointId.Equals(entryPoint.Id, StringComparison.OrdinalIgnoreCase)))
         {
-            errors.Add($"The workflow definition defaultEntryPoint '{defaultEntryPointId}' does not match a declared entry point.");
+            errors.Add(
+                $"The workflow definition defaultEntryPoint '{defaultEntryPointId}' does not match a declared entry point.");
         }
     }
 
@@ -349,7 +384,8 @@ public static class WorkflowDefinitionLoader
                 && !string.IsNullOrWhiteSpace(node.DecisionSourceNodeId)
                 && !nodeIds.Contains(node.DecisionSourceNodeId))
             {
-                errors.Add($"The decision node '{node.Id}' references unknown decisionSourceNodeId '{node.DecisionSourceNodeId}'.");
+                errors.Add(
+                    $"The decision node '{node.Id}' references unknown decisionSourceNodeId '{node.DecisionSourceNodeId}'.");
             }
         }
     }
@@ -385,7 +421,11 @@ public static class WorkflowDefinitionLoader
                         errors.Add($"The decision node '{node.Id}' contains duplicate choice id '{choice.Id}'.");
                     }
 
-                    ValidateTarget(choice.NextNodeId, $"decision node '{node.Id}' choice '{choice.Id}'", nodesById, errors);
+                    ValidateTarget(
+                        choice.NextNodeId,
+                        $"decision node '{node.Id}' choice '{choice.Id}'",
+                        nodesById,
+                        errors);
                 }
 
                 break;
@@ -404,7 +444,8 @@ public static class WorkflowDefinitionLoader
                 {
                     if (joinNode.Kind != WorkflowNodeKind.Join)
                     {
-                        errors.Add($"The fork node '{node.Id}' joinNodeId '{node.JoinNodeId}' must target a join node.");
+                        errors.Add(
+                            $"The fork node '{node.Id}' joinNodeId '{node.JoinNodeId}' must target a join node.");
                     }
                 }
                 else
@@ -442,7 +483,8 @@ public static class WorkflowDefinitionLoader
                     }
                     else if (!string.Equals(forkNode.JoinNodeId, node.Id, StringComparison.OrdinalIgnoreCase))
                     {
-                        errors.Add($"The join node '{node.Id}' must be the joinNodeId referenced by fork '{node.ForkId}'.");
+                        errors.Add(
+                            $"The join node '{node.Id}' must be the joinNodeId referenced by fork '{node.ForkId}'.");
                     }
                 }
                 else
@@ -480,7 +522,10 @@ public static class WorkflowDefinitionLoader
         }
     }
 
-    private static void ValidateStageAssets(IReadOnlyList<WorkflowAssetReference>? assets, string propertyName, List<string> errors)
+    private static void ValidateStageAssets(
+        IReadOnlyList<WorkflowAssetReference>? assets,
+        string propertyName,
+        List<string> errors)
     {
         if (assets is null)
         {
@@ -517,7 +562,9 @@ public static class WorkflowDefinitionLoader
         }
     }
 
-    private static void ValidateReasoningEffortForNodes(IReadOnlyList<WorkflowNodeDefinition> nodes, List<string> errors)
+    private static void ValidateReasoningEffortForNodes(
+        IReadOnlyList<WorkflowNodeDefinition> nodes,
+        List<string> errors)
     {
         foreach (WorkflowNodeDefinition node in nodes)
         {
@@ -525,7 +572,9 @@ public static class WorkflowDefinitionLoader
         }
     }
 
-    private static void ValidateResponseTimeoutForNodes(IReadOnlyList<WorkflowNodeDefinition> nodes, List<string> errors)
+    private static void ValidateResponseTimeoutForNodes(
+        IReadOnlyList<WorkflowNodeDefinition> nodes,
+        List<string> errors)
     {
         foreach (WorkflowNodeDefinition node in nodes)
         {
@@ -561,10 +610,11 @@ public static class WorkflowDefinitionLoader
                     continue;
                 }
 
-                if (!TimeSpan.TryParse(node.WaitDuration, System.Globalization.CultureInfo.InvariantCulture, out TimeSpan waitDuration)
+                if (!TimeSpan.TryParse(node.WaitDuration, CultureInfo.InvariantCulture, out TimeSpan waitDuration)
                     || waitDuration <= TimeSpan.Zero)
                 {
-                    errors.Add($"The wait node '{node.Id}' must define a positive waitDuration using the .NET TimeSpan format.");
+                    errors.Add(
+                        $"The wait node '{node.Id}' must define a positive waitDuration using the .NET TimeSpan format.");
                 }
 
                 continue;
@@ -593,7 +643,8 @@ public static class WorkflowDefinitionLoader
         {
             if (string.IsNullOrWhiteSpace(models[index]))
             {
-                errors.Add($"The workflow definition property '{propertyName}' must not contain blank model identifiers.");
+                errors.Add(
+                    $"The workflow definition property '{propertyName}' must not contain blank model identifiers.");
             }
         }
     }
@@ -612,14 +663,16 @@ public static class WorkflowDefinitionLoader
         string? normalizedReasoningEffort = WorkflowReasoningEffort.Normalize(reasoningEffort);
         if (normalizedReasoningEffort is null)
         {
-            errors.Add($"The workflow definition property '{propertyName}' must be one of 'low', 'medium', 'high', 'xhigh', or '{WorkflowReasoningEffort.HighestSupported}'.");
+            errors.Add(
+                $"The workflow definition property '{propertyName}' must be one of 'low', 'medium', 'high', 'xhigh', or '{WorkflowReasoningEffort.HighestSupported}'.");
             return;
         }
 
         if (WorkflowReasoningEffort.IsHighestSupportedValue(normalizedReasoningEffort)
             && (models is null || models.Count == 0))
         {
-            errors.Add($"The workflow definition property '{propertyName}' requires at least one configured model when set to '{WorkflowReasoningEffort.HighestSupported}'.");
+            errors.Add(
+                $"The workflow definition property '{propertyName}' requires at least one configured model when set to '{WorkflowReasoningEffort.HighestSupported}'.");
         }
     }
 
@@ -636,7 +689,10 @@ public static class WorkflowDefinitionLoader
         }
     }
 
-    private static void ValidateOutputNames(IReadOnlyList<string>? outputNames, string propertyName, List<string> errors)
+    private static void ValidateOutputNames(
+        IReadOnlyList<string>? outputNames,
+        string propertyName,
+        List<string> errors)
     {
         if (outputNames is null)
         {
@@ -656,7 +712,8 @@ public static class WorkflowDefinitionLoader
             string trimmedOutputName = outputName.Trim();
             if (!normalizedOutputNames.Add(trimmedOutputName))
             {
-                errors.Add($"The workflow definition property '{propertyName}' contains duplicate output name '{trimmedOutputName}'.");
+                errors.Add(
+                    $"The workflow definition property '{propertyName}' contains duplicate output name '{trimmedOutputName}'.");
             }
         }
     }
@@ -699,25 +756,29 @@ public static class WorkflowDefinitionLoader
         }
 
         string[] entryNodeIds = definition.EntryPoints
-            .Where(entryPoint => !string.IsNullOrWhiteSpace(entryPoint.NodeId) && nodesById.ContainsKey(entryPoint.NodeId))
+            .Where(entryPoint =>
+                !string.IsNullOrWhiteSpace(entryPoint.NodeId) && nodesById.ContainsKey(entryPoint.NodeId))
             .Select(entryPoint => entryPoint.NodeId)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray();
         HashSet<string> reachableNodeIds = TraverseGraph(entryNodeIds, edgesByNodeId);
-        warnings.AddRange(definition.Nodes
-            .Where(node => !string.IsNullOrWhiteSpace(node.Id) && !reachableNodeIds.Contains(node.Id))
-            .Select(node => $"The workflow node '{node.Id}' is not reachable from any entry point."));
+        warnings.AddRange(
+            definition.Nodes
+                .Where(node => !string.IsNullOrWhiteSpace(node.Id) && !reachableNodeIds.Contains(node.Id))
+                .Select(node => $"The workflow node '{node.Id}' is not reachable from any entry point."));
 
         HashSet<string> exitReachableNodeIds = TraverseReverseGraph(exitNodeIds, edgesByNodeId);
-        errors.AddRange(definition.EntryPoints
-            .Where(entryPoint => !string.IsNullOrWhiteSpace(entryPoint.NodeId)
-                && nodesById.ContainsKey(entryPoint.NodeId)
-                && !exitReachableNodeIds.Contains(entryPoint.NodeId))
-            .Select(entryPoint => $"The workflow entry point '{entryPoint.Id}' cannot reach any exit node."));
+        errors.AddRange(
+            definition.EntryPoints
+                .Where(entryPoint => !string.IsNullOrWhiteSpace(entryPoint.NodeId)
+                                     && nodesById.ContainsKey(entryPoint.NodeId)
+                                     && !exitReachableNodeIds.Contains(entryPoint.NodeId))
+                .Select(entryPoint => $"The workflow entry point '{entryPoint.Id}' cannot reach any exit node."));
 
-        errors.AddRange(reachableNodeIds
-            .Where(nodeId => !exitReachableNodeIds.Contains(nodeId))
-            .Select(nodeId => $"The workflow node '{nodeId}' cannot reach any exit node."));
+        errors.AddRange(
+            reachableNodeIds
+                .Where(nodeId => !exitReachableNodeIds.Contains(nodeId))
+                .Select(nodeId => $"The workflow node '{nodeId}' cannot reach any exit node."));
 
         HashSet<string> problematicNodeIds = reachableNodeIds
             .Where(nodeId => !exitReachableNodeIds.Contains(nodeId))
@@ -725,11 +786,13 @@ public static class WorkflowDefinitionLoader
         List<string>? circularPath = FindCircularPath(problematicNodeIds, edgesByNodeId);
         if (circularPath is not null)
         {
-            errors.Add($"The workflow graph contains a circular reference without an exit path: {string.Join(" -> ", circularPath)}.");
+            errors.Add(
+                $"The workflow graph contains a circular reference without an exit path: {string.Join(" -> ", circularPath)}.");
         }
     }
 
-    private static Dictionary<string, IReadOnlyList<string>> BuildGraphEdges(IReadOnlyDictionary<string, WorkflowNodeDefinition> nodesById)
+    private static Dictionary<string, IReadOnlyList<string>> BuildGraphEdges(
+        IReadOnlyDictionary<string, WorkflowNodeDefinition> nodesById)
     {
         Dictionary<string, IReadOnlyList<string>> edgesByNodeId = new(StringComparer.OrdinalIgnoreCase);
         foreach ((string nodeId, WorkflowNodeDefinition node) in nodesById)
@@ -748,15 +811,17 @@ public static class WorkflowDefinitionLoader
                     break;
 
                 case WorkflowNodeKind.Decision:
-                    nextNodeIds.AddRange(node.Choices
-                        .Where(choice => !string.IsNullOrWhiteSpace(choice.NextNodeId))
-                        .Select(choice => choice.NextNodeId));
+                    nextNodeIds.AddRange(
+                        node.Choices
+                            .Where(choice => !string.IsNullOrWhiteSpace(choice.NextNodeId))
+                            .Select(choice => choice.NextNodeId));
                     break;
 
                 case WorkflowNodeKind.Fork:
-                    nextNodeIds.AddRange(node.Branches
-                        .Where(branch => !string.IsNullOrWhiteSpace(branch.NextNodeId))
-                        .Select(branch => branch.NextNodeId));
+                    nextNodeIds.AddRange(
+                        node.Branches
+                            .Where(branch => !string.IsNullOrWhiteSpace(branch.NextNodeId))
+                            .Select(branch => branch.NextNodeId));
                     break;
             }
 
@@ -769,7 +834,9 @@ public static class WorkflowDefinitionLoader
         return edgesByNodeId;
     }
 
-    private static HashSet<string> TraverseGraph(IEnumerable<string> startNodeIds, Dictionary<string, IReadOnlyList<string>> edgesByNodeId)
+    private static HashSet<string> TraverseGraph(
+        IEnumerable<string> startNodeIds,
+        Dictionary<string, IReadOnlyList<string>> edgesByNodeId)
     {
         HashSet<string> visited = new(StringComparer.OrdinalIgnoreCase);
         Stack<string> pending = new(startNodeIds.Where(nodeId => !string.IsNullOrWhiteSpace(nodeId)).Reverse());
@@ -790,7 +857,9 @@ public static class WorkflowDefinitionLoader
         return visited;
     }
 
-    private static HashSet<string> TraverseReverseGraph(IEnumerable<string> targetNodeIds, Dictionary<string, IReadOnlyList<string>> edgesByNodeId)
+    private static HashSet<string> TraverseReverseGraph(
+        IEnumerable<string> targetNodeIds,
+        Dictionary<string, IReadOnlyList<string>> edgesByNodeId)
     {
         Dictionary<string, List<string>> reverseEdgesByNodeId = new(StringComparer.OrdinalIgnoreCase);
         foreach ((string nodeId, IReadOnlyList<string> nextNodeIds) in edgesByNodeId)
@@ -867,7 +936,9 @@ public static class WorkflowDefinitionLoader
         if (active.Contains(nodeId))
         {
             string[] pathNodes = path.Reverse().ToArray();
-            int startIndex = Array.FindIndex(pathNodes, candidate => string.Equals(candidate, nodeId, StringComparison.OrdinalIgnoreCase));
+            int startIndex = Array.FindIndex(
+                pathNodes,
+                candidate => string.Equals(candidate, nodeId, StringComparison.OrdinalIgnoreCase));
             if (startIndex < 0)
             {
                 return [nodeId, nodeId];
@@ -889,7 +960,8 @@ public static class WorkflowDefinitionLoader
         {
             foreach (string nextNodeId in nextNodeIds)
             {
-                List<string>? cycle = FindCircularPath(nextNodeId, candidateNodeIds, edgesByNodeId, visited, active, path);
+                List<string>? cycle =
+                    FindCircularPath(nextNodeId, candidateNodeIds, edgesByNodeId, visited, active, path);
                 if (cycle is not null)
                 {
                     return cycle;
@@ -902,7 +974,10 @@ public static class WorkflowDefinitionLoader
         return null;
     }
 
-    private static void NormalizeAssetPaths(WorkflowDefinition definition, string baseDirectoryPath, List<string> errors)
+    private static void NormalizeAssetPaths(
+        WorkflowDefinition definition,
+        string baseDirectoryPath,
+        List<string> errors)
     {
         if (definition.Planner is not null)
         {
@@ -930,8 +1005,10 @@ public static class WorkflowDefinitionLoader
         {
             definition.Reviewer.Agent = NormalizeOptionalText(definition.Reviewer.Agent);
             definition.Reviewer.Models = NormalizeModels(definition.Reviewer.Models);
-            definition.Reviewer.ReasoningEffort = WorkflowReasoningEffort.Normalize(definition.Reviewer.ReasoningEffort);
-            definition.Reviewer.ResponseTimeout = WorkflowResponseTimeout.Normalize(definition.Reviewer.ResponseTimeout);
+            definition.Reviewer.ReasoningEffort =
+                WorkflowReasoningEffort.Normalize(definition.Reviewer.ReasoningEffort);
+            definition.Reviewer.ResponseTimeout =
+                WorkflowResponseTimeout.Normalize(definition.Reviewer.ResponseTimeout);
             definition.Reviewer.Inputs = NormalizeReferences(definition.Reviewer.Inputs);
             definition.Reviewer.Outputs = NormalizeNames(definition.Reviewer.Outputs);
             definition.Reviewer.CustomMessage = NormalizeOptionalText(definition.Reviewer.CustomMessage);
@@ -941,8 +1018,10 @@ public static class WorkflowDefinitionLoader
         {
             definition.Decision.Agent = NormalizeOptionalText(definition.Decision.Agent);
             definition.Decision.Models = NormalizeModels(definition.Decision.Models);
-            definition.Decision.ReasoningEffort = WorkflowReasoningEffort.Normalize(definition.Decision.ReasoningEffort);
-            definition.Decision.ResponseTimeout = WorkflowResponseTimeout.Normalize(definition.Decision.ResponseTimeout);
+            definition.Decision.ReasoningEffort =
+                WorkflowReasoningEffort.Normalize(definition.Decision.ReasoningEffort);
+            definition.Decision.ResponseTimeout =
+                WorkflowResponseTimeout.Normalize(definition.Decision.ResponseTimeout);
             definition.Decision.Inputs = NormalizeReferences(definition.Decision.Inputs);
             definition.Decision.Outputs = NormalizeNames(definition.Decision.Outputs);
             definition.Decision.CustomMessage = NormalizeOptionalText(definition.Decision.CustomMessage);
@@ -952,8 +1031,10 @@ public static class WorkflowDefinitionLoader
         {
             definition.Rebuilder.Agent = NormalizeOptionalText(definition.Rebuilder.Agent);
             definition.Rebuilder.Models = NormalizeModels(definition.Rebuilder.Models);
-            definition.Rebuilder.ReasoningEffort = WorkflowReasoningEffort.Normalize(definition.Rebuilder.ReasoningEffort);
-            definition.Rebuilder.ResponseTimeout = WorkflowResponseTimeout.Normalize(definition.Rebuilder.ResponseTimeout);
+            definition.Rebuilder.ReasoningEffort =
+                WorkflowReasoningEffort.Normalize(definition.Rebuilder.ReasoningEffort);
+            definition.Rebuilder.ResponseTimeout =
+                WorkflowResponseTimeout.Normalize(definition.Rebuilder.ResponseTimeout);
             definition.Rebuilder.Inputs = NormalizeReferences(definition.Rebuilder.Inputs);
             definition.Rebuilder.Outputs = NormalizeNames(definition.Rebuilder.Outputs);
             definition.Rebuilder.CustomMessage = NormalizeOptionalText(definition.Rebuilder.CustomMessage);
@@ -963,27 +1044,35 @@ public static class WorkflowDefinitionLoader
 
         if (definition.Planner is not null)
         {
-            definition.Planner.Assets = NormalizeAssets(definition.Planner.Assets, baseDirectoryPath, "planner.assets", errors);
+            definition.Planner.Assets =
+                NormalizeAssets(definition.Planner.Assets, baseDirectoryPath, "planner.assets", errors);
         }
 
         if (definition.Builder is not null)
         {
-            definition.Builder.Assets = NormalizeAssets(definition.Builder.Assets, baseDirectoryPath, "builder.assets", errors);
+            definition.Builder.Assets =
+                NormalizeAssets(definition.Builder.Assets, baseDirectoryPath, "builder.assets", errors);
         }
 
         if (definition.Reviewer is not null)
         {
-            definition.Reviewer.Assets = NormalizeAssets(definition.Reviewer.Assets, baseDirectoryPath, "reviewer.assets", errors);
+            definition.Reviewer.Assets =
+                NormalizeAssets(definition.Reviewer.Assets, baseDirectoryPath, "reviewer.assets", errors);
         }
 
         if (definition.Decision is not null)
         {
-            definition.Decision.Assets = NormalizeAssets(definition.Decision.Assets, baseDirectoryPath, "decision.assets", errors);
+            definition.Decision.Assets =
+                NormalizeAssets(definition.Decision.Assets, baseDirectoryPath, "decision.assets", errors);
         }
 
         if (definition.Rebuilder is not null)
         {
-            definition.Rebuilder.Assets = NormalizeAssets(definition.Rebuilder.Assets, baseDirectoryPath, "rebuilder.assets", errors);
+            definition.Rebuilder.Assets = NormalizeAssets(
+                definition.Rebuilder.Assets,
+                baseDirectoryPath,
+                "rebuilder.assets",
+                errors);
         }
 
         if (definition.Nodes.Count > 0)
@@ -999,7 +1088,11 @@ public static class WorkflowDefinitionLoader
                 node.CustomMessage = NormalizeOptionalText(node.CustomMessage);
                 node.WaitDuration = NormalizeOptionalText(node.WaitDuration);
                 node.WaitReason = NormalizeOptionalText(node.WaitReason);
-                node.Assets = NormalizeAssets(node.Assets, baseDirectoryPath, $"nodes[{node.Id ?? index.ToString(System.Globalization.CultureInfo.InvariantCulture)}].assets", errors);
+                node.Assets = NormalizeAssets(
+                    node.Assets,
+                    baseDirectoryPath,
+                    $"nodes[{node.Id ?? index.ToString(CultureInfo.InvariantCulture)}].assets",
+                    errors);
                 return node;
             }).ToList();
         }
@@ -1146,7 +1239,8 @@ public static class WorkflowDefinitionLoader
 
             if (!File.Exists(normalizedPath))
             {
-                errors.Add($"The workflow asset '{propertyName}[{index}]' could not be found: {normalizedRelativePath}");
+                errors.Add(
+                    $"The workflow asset '{propertyName}[{index}]' could not be found: {normalizedRelativePath}");
             }
             else if (!string.IsNullOrWhiteSpace(normalizedHash))
             {
@@ -1159,12 +1253,17 @@ public static class WorkflowDefinitionLoader
         return normalizedAssets;
     }
 
-    private static void ValidateAssetHash(string assetPath, string expectedHash, string propertyName, List<string> errors)
+    private static void ValidateAssetHash(
+        string assetPath,
+        string expectedHash,
+        string propertyName,
+        List<string> errors)
     {
         string normalizedExpectedHash = NormalizeHash(expectedHash);
         if (string.IsNullOrWhiteSpace(normalizedExpectedHash))
         {
-            errors.Add($"The workflow asset '{propertyName}' defines an unsupported hash '{expectedHash}'. Use a SHA-256 hex digest or 'sha256:<hex>'.");
+            errors.Add(
+                $"The workflow asset '{propertyName}' defines an unsupported hash '{expectedHash}'. Use a SHA-256 hex digest or 'sha256:<hex>'.");
             return;
         }
 
@@ -1173,7 +1272,8 @@ public static class WorkflowDefinitionLoader
         string actualHash = Convert.ToHexString(sha256.ComputeHash(stream));
         if (!string.Equals(normalizedExpectedHash, actualHash, StringComparison.Ordinal))
         {
-            errors.Add($"The workflow asset '{propertyName}' hash does not match for file '{assetPath}'. Expected '{normalizedExpectedHash}' but found '{actualHash}'.");
+            errors.Add(
+                $"The workflow asset '{propertyName}' hash does not match for file '{assetPath}'. Expected '{normalizedExpectedHash}' but found '{actualHash}'.");
         }
     }
 
@@ -1205,7 +1305,8 @@ public static class WorkflowDefinitionLoader
             return;
         }
 
-        if (definition.Planner is null || definition.Builder is null || definition.Reviewer is null || definition.Rebuilder is null)
+        if (definition.Planner is null || definition.Builder is null || definition.Reviewer is null ||
+            definition.Rebuilder is null)
         {
             return;
         }
@@ -1255,8 +1356,10 @@ public static class WorkflowDefinitionLoader
             DecisionSourceNodeId = "reviewer",
             Choices =
             [
-                new WorkflowDecisionOptionDefinition { Id = "approve", DisplayName = "Approve", NextNodeId = "approved" },
-                new WorkflowDecisionOptionDefinition { Id = "rebuild", DisplayName = "Rebuild", NextNodeId = "rebuilder" },
+                new WorkflowDecisionOptionDefinition
+                    { Id = "approve", DisplayName = "Approve", NextNodeId = "approved" },
+                new WorkflowDecisionOptionDefinition
+                    { Id = "rebuild", DisplayName = "Rebuild", NextNodeId = "rebuilder" },
                 new WorkflowDecisionOptionDefinition { Id = "stop", DisplayName = "Stop", NextNodeId = "stopped" },
             ],
         };
