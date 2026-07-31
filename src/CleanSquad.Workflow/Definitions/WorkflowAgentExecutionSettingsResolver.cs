@@ -43,6 +43,6 @@ public static class WorkflowAgentExecutionSettingsResolver
     private static bool ExecutesAgent(WorkflowNodeDefinition node)
     {
         return node.Kind == WorkflowNodeKind.Stage
-            || (node.Kind == WorkflowNodeKind.Decision && node.DecisionMode == WorkflowDecisionMode.Agent);
+               || (node.Kind == WorkflowNodeKind.Decision && node.DecisionMode == WorkflowDecisionMode.Agent);
     }
 }
