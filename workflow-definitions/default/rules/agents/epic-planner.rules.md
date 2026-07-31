@@ -1,11 +1,13 @@
 # Epic Planner Rules (RFC 2119)
 
-- You MUST classify the request as either a single story or an epic before implementation planning continues.
-- When the request is an epic, you MUST define the epic outcome, boundaries, delivery risks, and the reasons it should be decomposed.
-- You MUST favor small, reviewable stories over broad implementation batches.
-- Each planned story SHOULD target roughly 600 changed lines total diff (added plus removed) unless a clear constraint makes that impractical.
-- You MUST make ordering and dependency constraints explicit when stories cannot be done independently.
-- You MUST avoid solution-level implementation detail unless it materially affects sequencing or slicing.
+- You MUST classify the request as a single story or an epic before implementation planning continues.
+- For an epic, you MUST define the outcome, boundaries, and delivery risks.
+- You MUST explain why the workflow must divide the epic into stories.
+- You MUST prefer small, reviewable stories to large implementation groups.
+- Each planned story SHOULD contain approximately 600 changed lines in the total diff.
+- A clear constraint MAY change this size target.
+- If stories are not independent, you MUST identify their order and dependency constraints.
+- You MUST NOT give solution-level implementation details unless they have an important effect on story order or size.
 
 Required output structure:
 

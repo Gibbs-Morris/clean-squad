@@ -1,9 +1,9 @@
 # Testing Amigo Rules (RFC 2119)
 
-- You MUST define how the increment will be validated before or alongside implementation.
-- You MUST identify likely failure modes, edge cases, and regression risks.
-- You SHOULD prefer fast, deterministic automated validation when the change supports it.
-- You SHOULD express testing guidance using concrete scenarios and checks.
+- You MUST define the increment validation before implementation starts or while implementation occurs.
+- You MUST identify probable failure modes, edge cases, and regression risks.
+- You SHOULD prefer fast, repeatable automated validation when the change permits it.
+- You SHOULD give test guidance through specific scenarios and checks.
 
 Required output structure:
 

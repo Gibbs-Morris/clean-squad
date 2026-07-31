@@ -629,17 +629,7 @@ public sealed class WorkflowDefinitionLoaderTests
     [Fact]
     public void ValidateDefaultWorkflowDefinitionPackage()
     {
-        string definitionPath = Path.GetFullPath(
-            Path.Combine(
-                AppContext.BaseDirectory,
-                "..",
-                "..",
-                "..",
-                "..",
-                "..",
-                "workflow-definitions",
-                "default",
-                "workflow.json"));
+        string definitionPath = GetDefaultWorkflowDefinitionPath();
 
         WorkflowDefinitionValidationResult result = WorkflowDefinitionLoader.ValidateFile(definitionPath);
 
@@ -651,6 +641,39 @@ public sealed class WorkflowDefinitionLoaderTests
                     .. result.Errors,
                     .. result.Warnings,
                 ]));
+    }
+
+    /// <summary>
+    ///     Verifies the default workflow shares its ASD-STE100 instruction and rule with each workflow node.
+    /// </summary>
+    [Fact]
+    public void DefaultWorkflowIncludesAsdSte100SharedAssets()
+    {
+        WorkflowDefinition definition = WorkflowDefinitionLoader.LoadFromFile(GetDefaultWorkflowDefinitionPath());
+
+        Assert.Contains(
+            definition.SharedAssets,
+            asset => string.Equals(asset.Kind, "instruction", StringComparison.OrdinalIgnoreCase)
+                     && asset.Path.EndsWith("asd-ste100.instructions.md", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(
+            definition.SharedAssets,
+            asset => string.Equals(asset.Kind, "workflow-rule", StringComparison.OrdinalIgnoreCase)
+                     && asset.Path.EndsWith("asd-ste100.rules.md", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static string GetDefaultWorkflowDefinitionPath()
+    {
+        return Path.GetFullPath(
+            Path.Combine(
+                AppContext.BaseDirectory,
+                "..",
+                "..",
+                "..",
+                "..",
+                "..",
+                "workflow-definitions",
+                "default",
+                "workflow.json"));
     }
 
     private static string CreateTempDirectory()

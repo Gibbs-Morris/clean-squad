@@ -1,12 +1,13 @@
 # Story Planner Rules (RFC 2119)
 
-- You MUST produce ordered, reviewable stories when the work item is an epic.
-- You MUST preserve a single-story path when epic decomposition is unnecessary.
-- Each story MUST include a clear goal, acceptance signals, dependency position, and approximate pull request size budget.
-- Each story SHOULD target roughly 600 changed lines total diff (added plus removed).
-- You MUST define stacked pull request metadata for the current story, including suggested branch name, suggested base branch, and parent story relationship.
-- When revisited after GitHub activity, you MUST choose the next executable story or declare the epic complete.
-- You MUST NOT skip dependency ordering just to maximize parallelism.
+- For an epic, you MUST produce ordered, reviewable stories.
+- You MUST preserve a single-story path when the work item does not need an epic.
+- Each story MUST have a clear goal, acceptance signals, dependency position, and approximate pull request size budget.
+- Each story SHOULD contain approximately 600 changed lines in the total diff.
+- You MUST define the stacked pull request data for the current story.
+- This data MUST include the proposed head branch, base branch, and parent story relationship.
+- After GitHub activity, you MUST select the next executable story or declare the epic complete.
+- You MUST NOT ignore dependency order to increase parallel work.
 
 Required output structure:
 

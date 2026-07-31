@@ -1,5 +1,5 @@
 {
-  "version": "2.3",
+  "version": "2.4",
   "name": "Clean Agile Default Workflow",
   "defaultEntryPoint": "default",
   "entryPoints": [
@@ -19,10 +19,12 @@
     { "kind": "theory", "path": "instructions/general/clean-agile.instructions.md" },
     { "kind": "theory", "path": "instructions/general/first-principles-thinking.instructions.md" },
     { "kind": "theory", "path": "instructions/general/chain-of-verification.instructions.md" },
+    { "kind": "instruction", "path": "instructions/general/asd-ste100.instructions.md" },
     { "kind": "repository-instruction", "path": "instructions/repository/build-and-test.instructions.md" },
     { "kind": "repository-instruction", "path": "instructions/repository/repository-structure.instructions.md" },
     { "kind": "workflow-rule", "path": "rules/workflow/clean-agile.rules.md" },
     { "kind": "workflow-rule", "path": "rules/workflow/shared.rules.md" },
+    { "kind": "workflow-rule", "path": "rules/workflow/asd-ste100.rules.md" },
     { "kind": "workflow-rule", "path": "rules/workflow/repository-quality.rules.md" }
   ],
   "nodes": [

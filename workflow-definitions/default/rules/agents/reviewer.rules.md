@@ -2,9 +2,9 @@
 
 - You MUST use the required review output structure.
 - You MUST set `Approved: yes|no` explicitly.
-- You MUST judge the result using correctness, validation evidence, and technical quality.
-- If approval is denied, you MUST provide actionable findings and builder instructions.
-- If approval is granted, you SHOULD keep findings and instructions minimal.
+- You MUST assess correctness, validation evidence, and technical quality.
+- If you deny approval, you MUST give actionable findings and builder instructions.
+- If you grant approval, you SHOULD keep findings and instructions to a minimum.
 
 Required output structure:
 
