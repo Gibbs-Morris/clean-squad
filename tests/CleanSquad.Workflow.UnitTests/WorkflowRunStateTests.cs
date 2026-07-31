@@ -1,5 +1,4 @@
 using System;
-using CleanSquad.Workflow;
 using CleanSquad.Workflow.Orchestration;
 using CleanSquad.Workflow.UnitTests.TestFixtures;
 
@@ -26,7 +25,7 @@ public sealed class WorkflowRunStateTests
             SequenceNumber = 1,
             NodeId = "builder",
             ParallelGroupId = "group-1",
-            BranchId = "code",
+            BranchId = "code"
         });
         state.NextActivationSequenceNumber = 2;
         state.Steps.Add(new WorkflowStepState
@@ -35,7 +34,7 @@ public sealed class WorkflowRunStateTests
             NodeId = "planner",
             Status = WorkflowStepStatus.InProgress,
             ActivationSequenceNumber = 2,
-            StartedAtUtc = timeProvider.GetUtcNow(),
+            StartedAtUtc = timeProvider.GetUtcNow()
         });
         state.Steps.Add(new WorkflowStepState
         {
@@ -45,7 +44,7 @@ public sealed class WorkflowRunStateTests
             ActivationSequenceNumber = 1,
             ParallelGroupId = "group-1",
             BranchId = "code",
-            StartedAtUtc = timeProvider.GetUtcNow(),
+            StartedAtUtc = timeProvider.GetUtcNow()
         });
 
         state.PrepareForResume(timeProvider);
@@ -75,7 +74,7 @@ public sealed class WorkflowRunStateTests
             WaitDuration = "00:05:00",
             Reason = "Wait for delayed review comments.",
             WaitStartedAtUtc = timeProvider.GetUtcNow(),
-            WaitUntilUtc = timeProvider.GetUtcNow().AddMinutes(5),
+            WaitUntilUtc = timeProvider.GetUtcNow().AddMinutes(5)
         });
 
         state.PrepareForResume(timeProvider);
@@ -108,7 +107,7 @@ public sealed class WorkflowRunStateTests
             Status = WorkflowStepStatus.Completed,
             OutputPath = "first.md",
             StartedAtUtc = TimeProvider.System.GetUtcNow(),
-            CompletedAtUtc = TimeProvider.System.GetUtcNow(),
+            CompletedAtUtc = TimeProvider.System.GetUtcNow()
         });
         state.Steps.Add(new WorkflowStepState
         {
@@ -117,7 +116,7 @@ public sealed class WorkflowRunStateTests
             Status = WorkflowStepStatus.Failed,
             OutputPath = "failed.md",
             StartedAtUtc = TimeProvider.System.GetUtcNow(),
-            CompletedAtUtc = TimeProvider.System.GetUtcNow(),
+            CompletedAtUtc = TimeProvider.System.GetUtcNow()
         });
         state.Steps.Add(new WorkflowStepState
         {
@@ -126,7 +125,7 @@ public sealed class WorkflowRunStateTests
             Status = WorkflowStepStatus.Completed,
             OutputPath = "latest.md",
             StartedAtUtc = TimeProvider.System.GetUtcNow(),
-            CompletedAtUtc = TimeProvider.System.GetUtcNow(),
+            CompletedAtUtc = TimeProvider.System.GetUtcNow()
         });
 
         string? outputPath = state.GetLatestOutputPath("builder");

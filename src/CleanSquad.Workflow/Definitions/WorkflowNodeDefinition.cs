@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using CleanSquad.Workflow;
 
 namespace CleanSquad.Workflow.Definitions;
 

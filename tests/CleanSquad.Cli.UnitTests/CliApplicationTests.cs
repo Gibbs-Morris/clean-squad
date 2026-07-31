@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -38,14 +39,14 @@ public sealed class CliApplicationTests
     [Fact]
     public async Task InvokeAsyncUsesBrandingConfigurationWhenPresentAsync()
     {
-        string tempDirectoryPath = Path.Combine(Path.GetTempPath(), $"clean-squad-cli-branding-{System.Guid.NewGuid():N}");
+        string tempDirectoryPath = Path.Combine(Path.GetTempPath(), $"clean-squad-cli-branding-{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDirectoryPath);
 
         try
         {
             string configurationPath = Path.Combine(tempDirectoryPath, "clean-squad.cli.json");
             string configurationJson = string.Join(
-                System.Environment.NewLine,
+                Environment.NewLine,
                 "{",
                 "  \"applicationName\": \"Acme Workflow Kit\",",
                 "  \"applicationDescription\": \"Acme Workflow Kit command-line interface.\",",
@@ -58,7 +59,8 @@ public sealed class CliApplicationTests
             await File.WriteAllTextAsync(configurationPath, configurationJson, Encoding.UTF8);
             using StringWriter outputWriter = new();
 
-            int exitCode = await CliApplication.InvokeAsync([], currentDirectory: tempDirectoryPath, outputWriter: outputWriter);
+            int exitCode =
+                await CliApplication.InvokeAsync([], currentDirectory: tempDirectoryPath, outputWriter: outputWriter);
 
             Assert.Equal(0, exitCode);
             Assert.Equal("Acme SDLC: 3 ready-to-run tasks.", outputWriter.ToString().Trim());

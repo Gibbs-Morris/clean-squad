@@ -23,10 +23,10 @@ public sealed class WorkflowDefinitionLoaderTests
         {
             string assetsDirectoryPath = Path.Combine(tempDirectoryPath, "assets");
             Directory.CreateDirectory(assetsDirectoryPath);
-            File.WriteAllText(Path.Combine(assetsDirectoryPath, "planner.md"), "planner", System.Text.Encoding.UTF8);
-            File.WriteAllText(Path.Combine(assetsDirectoryPath, "builder.md"), "builder", System.Text.Encoding.UTF8);
-            File.WriteAllText(Path.Combine(assetsDirectoryPath, "reviewer.md"), "reviewer", System.Text.Encoding.UTF8);
-            File.WriteAllText(Path.Combine(assetsDirectoryPath, "rebuilder.md"), "rebuilder", System.Text.Encoding.UTF8);
+            File.WriteAllText(Path.Combine(assetsDirectoryPath, "planner.md"), "planner", Encoding.UTF8);
+            File.WriteAllText(Path.Combine(assetsDirectoryPath, "builder.md"), "builder", Encoding.UTF8);
+            File.WriteAllText(Path.Combine(assetsDirectoryPath, "reviewer.md"), "reviewer", Encoding.UTF8);
+            File.WriteAllText(Path.Combine(assetsDirectoryPath, "rebuilder.md"), "rebuilder", Encoding.UTF8);
             string definitionPath = Path.Combine(tempDirectoryPath, "workflow.json");
             string definitionJson = string.Join(
                 Environment.NewLine,
@@ -38,7 +38,7 @@ public sealed class WorkflowDefinitionLoaderTests
                 "  \"rebuilder\": { \"assets\": [{ \"kind\": \"agent\", \"path\": \"assets/rebuilder.md\" }] },",
                 "  \"policy\": { \"decisionMode\": \"Rules\", \"maxReviewCycles\": 2, \"maxRebuilds\": 1 }",
                 "}");
-            File.WriteAllText(definitionPath, definitionJson, System.Text.Encoding.UTF8);
+            File.WriteAllText(definitionPath, definitionJson, Encoding.UTF8);
 
             WorkflowDefinition definition = WorkflowDefinitionLoader.LoadFromFile(definitionPath);
 
@@ -63,10 +63,10 @@ public sealed class WorkflowDefinitionLoaderTests
         {
             string assetsDirectoryPath = Path.Combine(tempDirectoryPath, "assets");
             Directory.CreateDirectory(assetsDirectoryPath);
-            File.WriteAllText(Path.Combine(assetsDirectoryPath, "planner.md"), "planner", System.Text.Encoding.UTF8);
-            File.WriteAllText(Path.Combine(assetsDirectoryPath, "builder.md"), "builder", System.Text.Encoding.UTF8);
-            File.WriteAllText(Path.Combine(assetsDirectoryPath, "reviewer.md"), "reviewer", System.Text.Encoding.UTF8);
-            File.WriteAllText(Path.Combine(assetsDirectoryPath, "rebuilder.md"), "rebuilder", System.Text.Encoding.UTF8);
+            File.WriteAllText(Path.Combine(assetsDirectoryPath, "planner.md"), "planner", Encoding.UTF8);
+            File.WriteAllText(Path.Combine(assetsDirectoryPath, "builder.md"), "builder", Encoding.UTF8);
+            File.WriteAllText(Path.Combine(assetsDirectoryPath, "reviewer.md"), "reviewer", Encoding.UTF8);
+            File.WriteAllText(Path.Combine(assetsDirectoryPath, "rebuilder.md"), "rebuilder", Encoding.UTF8);
             string definitionPath = Path.Combine(tempDirectoryPath, "workflow.json");
             string definitionJson = string.Join(
                 Environment.NewLine,
@@ -78,10 +78,10 @@ public sealed class WorkflowDefinitionLoaderTests
                 "  \"rebuilder\": { \"assets\": [{ \"kind\": \"agent\", \"path\": \"assets/rebuilder.md\" }] },",
                 "  \"policy\": { \"decisionMode\": \"Agent\", \"maxReviewCycles\": 2, \"maxRebuilds\": 1 }",
                 "}");
-            File.WriteAllText(definitionPath, definitionJson, System.Text.Encoding.UTF8);
+            File.WriteAllText(definitionPath, definitionJson, Encoding.UTF8);
 
-            InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
-                () => WorkflowDefinitionLoader.LoadFromFile(definitionPath));
+            InvalidOperationException exception =
+                Assert.Throws<InvalidOperationException>(() => WorkflowDefinitionLoader.LoadFromFile(definitionPath));
             Assert.Contains("decision stage", exception.Message, StringComparison.OrdinalIgnoreCase);
         }
         finally
@@ -102,10 +102,10 @@ public sealed class WorkflowDefinitionLoaderTests
         {
             string assetsDirectoryPath = Path.Combine(tempDirectoryPath, "assets");
             Directory.CreateDirectory(assetsDirectoryPath);
-            File.WriteAllText(Path.Combine(assetsDirectoryPath, "planner.md"), "planner", System.Text.Encoding.UTF8);
-            File.WriteAllText(Path.Combine(assetsDirectoryPath, "builder.md"), "builder", System.Text.Encoding.UTF8);
-            File.WriteAllText(Path.Combine(assetsDirectoryPath, "reviewer.md"), "reviewer", System.Text.Encoding.UTF8);
-            File.WriteAllText(Path.Combine(assetsDirectoryPath, "rebuilder.md"), "rebuilder", System.Text.Encoding.UTF8);
+            File.WriteAllText(Path.Combine(assetsDirectoryPath, "planner.md"), "planner", Encoding.UTF8);
+            File.WriteAllText(Path.Combine(assetsDirectoryPath, "builder.md"), "builder", Encoding.UTF8);
+            File.WriteAllText(Path.Combine(assetsDirectoryPath, "reviewer.md"), "reviewer", Encoding.UTF8);
+            File.WriteAllText(Path.Combine(assetsDirectoryPath, "rebuilder.md"), "rebuilder", Encoding.UTF8);
             string definitionPath = Path.Combine(tempDirectoryPath, "workflow.json");
             string definitionJson = string.Join(
                 Environment.NewLine,
@@ -127,7 +127,7 @@ public sealed class WorkflowDefinitionLoaderTests
                 "  \"rebuilder\": { \"assets\": [{ \"kind\": \"agent\", \"path\": \"assets/rebuilder.md\" }] },",
                 "  \"policy\": { \"decisionMode\": \"Rules\", \"maxReviewCycles\": 2, \"maxRebuilds\": 1 }",
                 "}");
-            File.WriteAllText(definitionPath, definitionJson, System.Text.Encoding.UTF8);
+            File.WriteAllText(definitionPath, definitionJson, Encoding.UTF8);
 
             WorkflowDefinition definition = WorkflowDefinitionLoader.LoadFromFile(definitionPath);
 
@@ -155,8 +155,8 @@ public sealed class WorkflowDefinitionLoaderTests
         {
             string assetsDirectoryPath = Path.Combine(tempDirectoryPath, "assets");
             Directory.CreateDirectory(assetsDirectoryPath);
-            File.WriteAllText(Path.Combine(assetsDirectoryPath, "shared.md"), "shared", System.Text.Encoding.UTF8);
-            File.WriteAllText(Path.Combine(assetsDirectoryPath, "research.md"), "research", System.Text.Encoding.UTF8);
+            File.WriteAllText(Path.Combine(assetsDirectoryPath, "shared.md"), "shared", Encoding.UTF8);
+            File.WriteAllText(Path.Combine(assetsDirectoryPath, "research.md"), "research", Encoding.UTF8);
             string definitionPath = Path.Combine(tempDirectoryPath, "workflow.json");
             string definitionJson = string.Join(
                 Environment.NewLine,
@@ -179,7 +179,7 @@ public sealed class WorkflowDefinitionLoaderTests
                 "  ],",
                 "  \"policy\": { \"decisionMode\": \"Rules\", \"maxReviewCycles\": 2, \"maxRebuilds\": 1 }",
                 "}");
-            File.WriteAllText(definitionPath, definitionJson, System.Text.Encoding.UTF8);
+            File.WriteAllText(definitionPath, definitionJson, Encoding.UTF8);
 
             WorkflowDefinition definition = WorkflowDefinitionLoader.LoadFromFile(definitionPath);
 
@@ -204,7 +204,7 @@ public sealed class WorkflowDefinitionLoaderTests
         {
             string assetsDirectoryPath = Path.Combine(tempDirectoryPath, "assets");
             Directory.CreateDirectory(assetsDirectoryPath);
-            File.WriteAllText(Path.Combine(assetsDirectoryPath, "research.md"), "research", System.Text.Encoding.UTF8);
+            File.WriteAllText(Path.Combine(assetsDirectoryPath, "research.md"), "research", Encoding.UTF8);
             string definitionPath = Path.Combine(tempDirectoryPath, "workflow.json");
             string definitionJson = string.Join(
                 Environment.NewLine,
@@ -225,7 +225,7 @@ public sealed class WorkflowDefinitionLoaderTests
                 "  ],",
                 "  \"policy\": { \"decisionMode\": \"Rules\", \"maxReviewCycles\": 2, \"maxRebuilds\": 1 }",
                 "}");
-            File.WriteAllText(definitionPath, definitionJson, System.Text.Encoding.UTF8);
+            File.WriteAllText(definitionPath, definitionJson, Encoding.UTF8);
 
             WorkflowDefinition definition = WorkflowDefinitionLoader.LoadFromFile(definitionPath);
 
@@ -249,10 +249,10 @@ public sealed class WorkflowDefinitionLoaderTests
         {
             string assetsDirectoryPath = Path.Combine(tempDirectoryPath, "assets");
             Directory.CreateDirectory(assetsDirectoryPath);
-            File.WriteAllText(Path.Combine(assetsDirectoryPath, "planner.md"), "planner", System.Text.Encoding.UTF8);
-            File.WriteAllText(Path.Combine(assetsDirectoryPath, "builder.md"), "builder", System.Text.Encoding.UTF8);
-            File.WriteAllText(Path.Combine(assetsDirectoryPath, "reviewer.md"), "reviewer", System.Text.Encoding.UTF8);
-            File.WriteAllText(Path.Combine(assetsDirectoryPath, "rebuilder.md"), "rebuilder", System.Text.Encoding.UTF8);
+            File.WriteAllText(Path.Combine(assetsDirectoryPath, "planner.md"), "planner", Encoding.UTF8);
+            File.WriteAllText(Path.Combine(assetsDirectoryPath, "builder.md"), "builder", Encoding.UTF8);
+            File.WriteAllText(Path.Combine(assetsDirectoryPath, "reviewer.md"), "reviewer", Encoding.UTF8);
+            File.WriteAllText(Path.Combine(assetsDirectoryPath, "rebuilder.md"), "rebuilder", Encoding.UTF8);
             string definitionPath = Path.Combine(tempDirectoryPath, "workflow.json");
             string definitionJson = string.Join(
                 Environment.NewLine,
@@ -265,9 +265,10 @@ public sealed class WorkflowDefinitionLoaderTests
                 "  \"rebuilder\": { \"assets\": [{ \"kind\": \"agent\", \"path\": \"assets/rebuilder.md\" }] },",
                 "  \"policy\": { \"decisionMode\": \"Rules\", \"maxReviewCycles\": 2, \"maxRebuilds\": 1 }",
                 "}");
-            File.WriteAllText(definitionPath, definitionJson, System.Text.Encoding.UTF8);
+            File.WriteAllText(definitionPath, definitionJson, Encoding.UTF8);
 
-            InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() => WorkflowDefinitionLoader.LoadFromFile(definitionPath));
+            InvalidOperationException exception =
+                Assert.Throws<InvalidOperationException>(() => WorkflowDefinitionLoader.LoadFromFile(definitionPath));
 
             Assert.Contains("package.supportEmail", exception.Message, StringComparison.OrdinalIgnoreCase);
         }
@@ -289,10 +290,10 @@ public sealed class WorkflowDefinitionLoaderTests
         {
             string assetsDirectoryPath = Path.Combine(tempDirectoryPath, "assets");
             Directory.CreateDirectory(assetsDirectoryPath);
-            File.WriteAllText(Path.Combine(assetsDirectoryPath, "planner.md"), "planner", System.Text.Encoding.UTF8);
-            File.WriteAllText(Path.Combine(assetsDirectoryPath, "builder.md"), "builder", System.Text.Encoding.UTF8);
-            File.WriteAllText(Path.Combine(assetsDirectoryPath, "reviewer.md"), "reviewer", System.Text.Encoding.UTF8);
-            File.WriteAllText(Path.Combine(assetsDirectoryPath, "rebuilder.md"), "rebuilder", System.Text.Encoding.UTF8);
+            File.WriteAllText(Path.Combine(assetsDirectoryPath, "planner.md"), "planner", Encoding.UTF8);
+            File.WriteAllText(Path.Combine(assetsDirectoryPath, "builder.md"), "builder", Encoding.UTF8);
+            File.WriteAllText(Path.Combine(assetsDirectoryPath, "reviewer.md"), "reviewer", Encoding.UTF8);
+            File.WriteAllText(Path.Combine(assetsDirectoryPath, "rebuilder.md"), "rebuilder", Encoding.UTF8);
             string definitionPath = Path.Combine(tempDirectoryPath, "workflow.json");
             string definitionJson = string.Join(
                 Environment.NewLine,
@@ -310,10 +311,11 @@ public sealed class WorkflowDefinitionLoaderTests
                 "  \"rebuilder\": { \"assets\": [{ \"kind\": \"agent\", \"path\": \"assets/rebuilder.md\" }] },",
                 "  \"policy\": { \"decisionMode\": \"Rules\", \"maxReviewCycles\": 2, \"maxRebuilds\": 1 }",
                 "}");
-            File.WriteAllText(definitionPath, definitionJson, System.Text.Encoding.UTF8);
+            File.WriteAllText(definitionPath, definitionJson, Encoding.UTF8);
 
             WorkflowDefinition definition = WorkflowDefinitionLoader.LoadFromFile(definitionPath);
-            WorkflowNodeDefinition planner = Assert.Single(definition.Nodes, node => string.Equals(node.Id, "planner", StringComparison.OrdinalIgnoreCase));
+            WorkflowNodeDefinition planner = Assert.Single(definition.Nodes,
+                node => string.Equals(node.Id, "planner", StringComparison.OrdinalIgnoreCase));
 
             Assert.Equal("planner-agent", planner.Agent);
             Assert.Equal(["planMarkdown", "riskSummary"], planner.Outputs);
@@ -339,7 +341,7 @@ public sealed class WorkflowDefinitionLoaderTests
             string assetsDirectoryPath = Path.Combine(tempDirectoryPath, "assets");
             Directory.CreateDirectory(assetsDirectoryPath);
             string assetPath = Path.Combine(assetsDirectoryPath, "planner.md");
-            File.WriteAllText(assetPath, "planner", System.Text.Encoding.UTF8);
+            File.WriteAllText(assetPath, "planner", Encoding.UTF8);
             string definitionPath = Path.Combine(tempDirectoryPath, "workflow.json");
             string definitionJson = string.Join(
                 Environment.NewLine,
@@ -359,12 +361,13 @@ public sealed class WorkflowDefinitionLoaderTests
                 "  ],",
                 "  \"policy\": { \"decisionMode\": \"Rules\", \"maxReviewCycles\": 2, \"maxRebuilds\": 1 }",
                 "}");
-            File.WriteAllText(definitionPath, definitionJson, System.Text.Encoding.UTF8);
+            File.WriteAllText(definitionPath, definitionJson, Encoding.UTF8);
 
             WorkflowDefinitionValidationResult result = WorkflowDefinitionLoader.ValidateFile(definitionPath);
 
             Assert.False(result.IsValid);
-            Assert.Contains(result.Errors, error => error.Contains("hash does not match", StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(result.Errors,
+                error => error.Contains("hash does not match", StringComparison.OrdinalIgnoreCase));
         }
         finally
         {
@@ -386,8 +389,8 @@ public sealed class WorkflowDefinitionLoaderTests
             Directory.CreateDirectory(assetsDirectoryPath);
             string plannerAssetPath = Path.Combine(assetsDirectoryPath, "planner.md");
             string reviewerAssetPath = Path.Combine(assetsDirectoryPath, "reviewer.md");
-            File.WriteAllText(plannerAssetPath, "planner", System.Text.Encoding.UTF8);
-            File.WriteAllText(reviewerAssetPath, "reviewer", System.Text.Encoding.UTF8);
+            File.WriteAllText(plannerAssetPath, "planner", Encoding.UTF8);
+            File.WriteAllText(reviewerAssetPath, "reviewer", Encoding.UTF8);
             string plannerHash = ComputeSha256(plannerAssetPath);
             string reviewerHash = ComputeSha256(reviewerAssetPath);
             string definitionPath = Path.Combine(tempDirectoryPath, "workflow.json");
@@ -402,27 +405,31 @@ public sealed class WorkflowDefinitionLoaderTests
                 "      \"id\": \"planner\",",
                 "      \"kind\": \"Stage\",",
                 "      \"role\": \"Planner\",",
-                "      \"assets\": [{ \"kind\": \"agent\", \"path\": \"assets/planner.md\", \"hash\": \"sha256:" + plannerHash + "\" }],",
+                "      \"assets\": [{ \"kind\": \"agent\", \"path\": \"assets/planner.md\", \"hash\": \"sha256:" +
+                plannerHash + "\" }],",
                 "      \"next\": \"reviewer\"",
                 "    },",
                 "    {",
                 "      \"id\": \"reviewer\",",
                 "      \"kind\": \"Stage\",",
                 "      \"role\": \"Reviewer\",",
-                "      \"assets\": [{ \"kind\": \"agent\", \"path\": \"assets/reviewer.md\", \"hash\": \"sha256:" + reviewerHash + "\" }],",
+                "      \"assets\": [{ \"kind\": \"agent\", \"path\": \"assets/reviewer.md\", \"hash\": \"sha256:" +
+                reviewerHash + "\" }],",
                 "      \"next\": \"planner\"",
                 "    },",
                 "    { \"id\": \"approved\", \"kind\": \"Exit\", \"exitStatus\": \"Approved\" }",
                 "  ],",
                 "  \"policy\": { \"decisionMode\": \"Rules\", \"maxReviewCycles\": 2, \"maxRebuilds\": 1 }",
                 "}");
-            File.WriteAllText(definitionPath, definitionJson, System.Text.Encoding.UTF8);
+            File.WriteAllText(definitionPath, definitionJson, Encoding.UTF8);
 
             WorkflowDefinitionValidationResult result = WorkflowDefinitionLoader.ValidateFile(definitionPath);
 
             Assert.False(result.IsValid);
-            Assert.Contains(result.Errors, error => error.Contains("circular reference", StringComparison.OrdinalIgnoreCase));
-            Assert.Contains(result.Errors, error => error.Contains("cannot reach any exit node", StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(result.Errors,
+                error => error.Contains("circular reference", StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(result.Errors,
+                error => error.Contains("cannot reach any exit node", StringComparison.OrdinalIgnoreCase));
         }
         finally
         {
@@ -442,7 +449,7 @@ public sealed class WorkflowDefinitionLoaderTests
         {
             string assetsDirectoryPath = Path.Combine(tempDirectoryPath, "assets");
             Directory.CreateDirectory(assetsDirectoryPath);
-            File.WriteAllText(Path.Combine(assetsDirectoryPath, "planner.md"), "planner", System.Text.Encoding.UTF8);
+            File.WriteAllText(Path.Combine(assetsDirectoryPath, "planner.md"), "planner", Encoding.UTF8);
             string definitionPath = Path.Combine(tempDirectoryPath, "workflow.json");
             string definitionJson = string.Join(
                 Environment.NewLine,
@@ -463,12 +470,13 @@ public sealed class WorkflowDefinitionLoaderTests
                 "  ],",
                 "  \"policy\": { \"decisionMode\": \"Rules\", \"maxReviewCycles\": 2, \"maxRebuilds\": 1 }",
                 "}");
-            File.WriteAllText(definitionPath, definitionJson, System.Text.Encoding.UTF8);
+            File.WriteAllText(definitionPath, definitionJson, Encoding.UTF8);
 
             WorkflowDefinitionValidationResult result = WorkflowDefinitionLoader.ValidateFile(definitionPath);
 
             Assert.True(result.IsValid);
-            Assert.Contains(result.Warnings, warning => warning.Contains("not reachable", StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(result.Warnings,
+                warning => warning.Contains("not reachable", StringComparison.OrdinalIgnoreCase));
         }
         finally
         {
@@ -504,7 +512,7 @@ public sealed class WorkflowDefinitionLoaderTests
                 "  ],",
                 "  \"policy\": { \"decisionMode\": \"Rules\", \"maxReviewCycles\": 2, \"maxRebuilds\": 1 }",
                 "}");
-            File.WriteAllText(definitionPath, definitionJson, System.Text.Encoding.UTF8);
+            File.WriteAllText(definitionPath, definitionJson, Encoding.UTF8);
 
             WorkflowDefinitionValidationResult result = WorkflowDefinitionLoader.ValidateFile(definitionPath);
 
@@ -546,13 +554,15 @@ public sealed class WorkflowDefinitionLoaderTests
                 "  ],",
                 "  \"policy\": { \"decisionMode\": \"Rules\", \"maxReviewCycles\": 2, \"maxRebuilds\": 1 }",
                 "}");
-            File.WriteAllText(definitionPath, definitionJson, System.Text.Encoding.UTF8);
+            File.WriteAllText(definitionPath, definitionJson, Encoding.UTF8);
 
             WorkflowDefinitionValidationResult result = WorkflowDefinitionLoader.ValidateFile(definitionPath);
 
             Assert.False(result.IsValid);
-            Assert.Contains(result.Errors, error => error.Contains("reasoningEffort", StringComparison.OrdinalIgnoreCase));
-            Assert.Contains(result.Errors, error => error.Contains("configured model", StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(result.Errors,
+                error => error.Contains("reasoningEffort", StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(result.Errors,
+                error => error.Contains("configured model", StringComparison.OrdinalIgnoreCase));
         }
         finally
         {
@@ -589,12 +599,13 @@ public sealed class WorkflowDefinitionLoaderTests
                 "  ],",
                 "  \"policy\": { \"decisionMode\": \"Rules\", \"maxReviewCycles\": 2, \"maxRebuilds\": 1 }",
                 "}");
-            File.WriteAllText(definitionPath, definitionJson, System.Text.Encoding.UTF8);
+            File.WriteAllText(definitionPath, definitionJson, Encoding.UTF8);
 
             WorkflowDefinitionValidationResult result = WorkflowDefinitionLoader.ValidateFile(definitionPath);
 
             Assert.False(result.IsValid);
-            Assert.Contains(result.Errors, error => error.Contains("responseTimeout", StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(result.Errors,
+                error => error.Contains("responseTimeout", StringComparison.OrdinalIgnoreCase));
         }
         finally
         {
@@ -628,7 +639,7 @@ public sealed class WorkflowDefinitionLoaderTests
                 Environment.NewLine,
                 [
                     .. result.Errors,
-                    .. result.Warnings,
+                    .. result.Warnings
                 ]));
     }
 

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text.Json.Serialization;
-using CleanSquad.Workflow;
 using CleanSquad.Workflow.Decisions;
 
 namespace CleanSquad.Workflow.Orchestration;
@@ -113,7 +112,8 @@ public sealed class WorkflowRunState
     /// <param name="entryNodeId">The first node identifier to enqueue for execution.</param>
     /// <param name="timeProvider">The time provider used to capture deterministic timestamps.</param>
     /// <returns>A new initialized workflow state ready for execution.</returns>
-    public static WorkflowRunState Create(string runId, string workflowName, string entryNodeId, TimeProvider timeProvider)
+    public static WorkflowRunState Create(string runId, string workflowName, string entryNodeId,
+        TimeProvider timeProvider)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(runId);
         ArgumentException.ThrowIfNullOrWhiteSpace(workflowName);
@@ -127,7 +127,7 @@ public sealed class WorkflowRunState
             WorkflowName = workflowName,
             EntryNodeId = entryNodeId,
             StartedAtUtc = now,
-            UpdatedAtUtc = now,
+            UpdatedAtUtc = now
         };
         state.Enqueue(entryNodeId);
         return state;
@@ -143,12 +143,12 @@ public sealed class WorkflowRunState
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(nodeId);
 
-        this.PendingActivations.Add(new WorkflowPendingActivation
+        PendingActivations.Add(new WorkflowPendingActivation
         {
-            SequenceNumber = this.NextActivationSequenceNumber++,
+            SequenceNumber = NextActivationSequenceNumber++,
             NodeId = nodeId,
             ParallelGroupId = parallelGroupId,
-            BranchId = branchId,
+            BranchId = branchId
         });
     }
 
@@ -162,22 +162,22 @@ public sealed class WorkflowRunState
 
         DateTimeOffset now = timeProvider.GetUtcNow();
         bool recoveredExecutableWork = false;
-        foreach (WorkflowStepState step in this.Steps
+        foreach (WorkflowStepState step in Steps
                      .Where(step => step.Status is WorkflowStepStatus.InProgress or WorkflowStepStatus.Failed)
                      .OrderBy(step => step.ActivationSequenceNumber))
         {
-            bool alreadyQueued = this.PendingActivations.Any(activation =>
+            bool alreadyQueued = PendingActivations.Any(activation =>
                 string.Equals(activation.NodeId, step.NodeId, StringComparison.OrdinalIgnoreCase)
                 && string.Equals(activation.ParallelGroupId, step.ParallelGroupId, StringComparison.OrdinalIgnoreCase)
                 && string.Equals(activation.BranchId, step.BranchId, StringComparison.OrdinalIgnoreCase));
             if (!alreadyQueued)
             {
-                this.PendingActivations.Add(new WorkflowPendingActivation
+                PendingActivations.Add(new WorkflowPendingActivation
                 {
-                    SequenceNumber = this.NextActivationSequenceNumber++,
+                    SequenceNumber = NextActivationSequenceNumber++,
                     NodeId = step.NodeId,
                     ParallelGroupId = step.ParallelGroupId,
-                    BranchId = step.BranchId,
+                    BranchId = step.BranchId
                 });
             }
 
@@ -187,49 +187,49 @@ public sealed class WorkflowRunState
             recoveredExecutableWork = true;
         }
 
-        WorkflowWaitState[] expiredWaits = this.WaitingNodes
+        WorkflowWaitState[] expiredWaits = WaitingNodes
             .Where(wait => wait.WaitUntilUtc <= now)
             .OrderBy(wait => wait.WaitUntilUtc)
             .ThenBy(wait => wait.NodeId, StringComparer.OrdinalIgnoreCase)
             .ToArray();
         foreach (WorkflowWaitState wait in expiredWaits)
         {
-            bool alreadyQueued = this.PendingActivations.Any(activation =>
+            bool alreadyQueued = PendingActivations.Any(activation =>
                 string.Equals(activation.NodeId, wait.NextNodeId, StringComparison.OrdinalIgnoreCase)
                 && string.Equals(activation.ParallelGroupId, wait.ParallelGroupId, StringComparison.OrdinalIgnoreCase)
                 && string.Equals(activation.BranchId, wait.BranchId, StringComparison.OrdinalIgnoreCase));
             if (!alreadyQueued)
             {
-                this.PendingActivations.Add(new WorkflowPendingActivation
+                PendingActivations.Add(new WorkflowPendingActivation
                 {
-                    SequenceNumber = this.NextActivationSequenceNumber++,
+                    SequenceNumber = NextActivationSequenceNumber++,
                     NodeId = wait.NextNodeId,
                     ParallelGroupId = wait.ParallelGroupId,
-                    BranchId = wait.BranchId,
+                    BranchId = wait.BranchId
                 });
             }
 
-            this.WaitingNodes.Remove(wait);
+            WaitingNodes.Remove(wait);
             recoveredExecutableWork = true;
         }
 
-        WorkflowPendingActivation[] orderedActivations = this.PendingActivations
+        WorkflowPendingActivation[] orderedActivations = PendingActivations
             .OrderBy(activation => activation.SequenceNumber)
             .ToArray();
-        this.PendingActivations.Clear();
+        PendingActivations.Clear();
         foreach (WorkflowPendingActivation activation in orderedActivations)
         {
-            this.PendingActivations.Add(activation);
+            PendingActivations.Add(activation);
         }
 
-        recoveredExecutableWork |= this.PendingActivations.Count > 0;
+        recoveredExecutableWork |= PendingActivations.Count > 0;
 
-        bool shouldResume = this.Status is WorkflowRunStatus.Failed or WorkflowRunStatus.Stopped
-            || (this.Status == WorkflowRunStatus.Paused && recoveredExecutableWork);
+        bool shouldResume = Status is WorkflowRunStatus.Failed or WorkflowRunStatus.Stopped
+                            || (Status == WorkflowRunStatus.Paused && recoveredExecutableWork);
         if (shouldResume)
         {
-            this.Status = WorkflowRunStatus.Running;
-            this.CompletedAtUtc = null;
+            Status = WorkflowRunStatus.Running;
+            CompletedAtUtc = null;
         }
     }
 
@@ -240,13 +240,13 @@ public sealed class WorkflowRunState
     /// <returns>The updated visit count for the node.</returns>
     public int IncrementNodeVisit(string nodeId)
     {
-        if (!this.NodeVisitCounts.TryGetValue(nodeId, out int currentCount))
+        if (!NodeVisitCounts.TryGetValue(nodeId, out int currentCount))
         {
             currentCount = 0;
         }
 
         currentCount++;
-        this.NodeVisitCounts[nodeId] = currentCount;
+        NodeVisitCounts[nodeId] = currentCount;
         return currentCount;
     }
 
@@ -259,8 +259,10 @@ public sealed class WorkflowRunState
     /// </returns>
     public string? GetLatestOutputPath(string nodeId)
     {
-        return this.Steps
-            .Where(step => step.Status == WorkflowStepStatus.Completed && string.Equals(step.NodeId, nodeId, StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(step.OutputPath))
+        return Steps
+            .Where(step => step.Status == WorkflowStepStatus.Completed &&
+                           string.Equals(step.NodeId, nodeId, StringComparison.OrdinalIgnoreCase) &&
+                           !string.IsNullOrWhiteSpace(step.OutputPath))
             .OrderByDescending(step => step.StepNumber)
             .Select(step => step.OutputPath)
             .FirstOrDefault();

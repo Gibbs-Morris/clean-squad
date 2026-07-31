@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using CleanSquad.Workflow;
 using CleanSquad.Workflow.Decisions;
 using CleanSquad.Workflow.Definitions;
 using CleanSquad.Workflow.Orchestration;
@@ -29,16 +29,18 @@ public sealed class WorkflowOrchestratorTests
 
         try
         {
-            string definitionPath = await CreateLegacyWorkflowDefinitionAsync(tempDirectoryPath, WorkflowDecisionMode.Rules);
+            string definitionPath =
+                await CreateLegacyWorkflowDefinitionAsync(tempDirectoryPath, WorkflowDecisionMode.Rules);
             string requestPath = Path.Combine(tempDirectoryPath, "request.md");
-            await File.WriteAllTextAsync(requestPath, "# Request\n", System.Text.Encoding.UTF8);
+            await File.WriteAllTextAsync(requestPath, "# Request\n", Encoding.UTF8);
 
             FakeWorkflowAgentRunner runner = new([
                 "# Plan\n## Goal\nShip it\n",
                 "# Build\n## Summary\nBuild summary\n",
-                "# Review\nApproved: yes\n## Verdict\nLooks good.\n## Findings\n- None.\n## Builder Instructions\n- None.\n",
+                "# Review\nApproved: yes\n## Verdict\nLooks good.\n## Findings\n- None.\n## Builder Instructions\n- None.\n"
             ]);
-            MarkdownArtifactService artifactService = new(new FixedTimeProvider(new DateTimeOffset(2026, 4, 11, 14, 0, 0, TimeSpan.Zero)));
+            MarkdownArtifactService artifactService =
+                new(new FixedTimeProvider(new DateTimeOffset(2026, 4, 11, 14, 0, 0, TimeSpan.Zero)));
             WorkflowOrchestrator orchestrator = new(
                 artifactService,
                 runner,
@@ -72,15 +74,16 @@ public sealed class WorkflowOrchestratorTests
         {
             string definitionPath = await CreateGraphWorkflowDefinitionAsync(tempDirectoryPath);
             string requestPath = Path.Combine(tempDirectoryPath, "request.md");
-            await File.WriteAllTextAsync(requestPath, "# Request\n", System.Text.Encoding.UTF8);
+            await File.WriteAllTextAsync(requestPath, "# Request\n", Encoding.UTF8);
 
             FakeWorkflowAgentRunner runner = new([
                 "# Research\n## Code Insights\n- Code path\n",
                 "# Research\n## Test Insights\n- Test path\n",
                 "# Build\n## Summary\nBuild summary\n",
-                "# Review\nApproved: yes\n## Verdict\nLooks good.\n## Findings\n- None.\n## Builder Instructions\n- None.\n",
+                "# Review\nApproved: yes\n## Verdict\nLooks good.\n## Findings\n- None.\n## Builder Instructions\n- None.\n"
             ]);
-            MarkdownArtifactService artifactService = new(new FixedTimeProvider(new DateTimeOffset(2026, 4, 11, 15, 0, 0, TimeSpan.Zero)));
+            MarkdownArtifactService artifactService =
+                new(new FixedTimeProvider(new DateTimeOffset(2026, 4, 11, 15, 0, 0, TimeSpan.Zero)));
             WorkflowOrchestrator orchestrator = new(
                 artifactService,
                 runner,
@@ -97,13 +100,22 @@ public sealed class WorkflowOrchestratorTests
             WorkflowRunState state = artifactService.ReadState(artifacts);
 
             Assert.Equal(WorkflowRunStatus.Approved, result.Status);
-            Assert.Equal(2, runner.Calls.Count(call => string.Equals(call.AgentName, "Research", StringComparison.Ordinal)));
-            Assert.Contains(runner.Calls, call => string.Equals(call.AgentName, "Research", StringComparison.Ordinal) && call.ModelIds.SequenceEqual(["model-code-fast"]));
-            Assert.Contains(runner.Calls, call => string.Equals(call.AgentName, "Research", StringComparison.Ordinal) && call.ModelIds.SequenceEqual(["model-test-deep"]));
+            Assert.Equal(2,
+                runner.Calls.Count(call => string.Equals(call.AgentName, "Research", StringComparison.Ordinal)));
+            Assert.Contains(runner.Calls,
+                call => string.Equals(call.AgentName, "Research", StringComparison.Ordinal) &&
+                        call.ModelIds.SequenceEqual(["model-code-fast"]));
+            Assert.Contains(runner.Calls,
+                call => string.Equals(call.AgentName, "Research", StringComparison.Ordinal) &&
+                        call.ModelIds.SequenceEqual(["model-test-deep"]));
             Assert.Equal(4, runner.Calls.Count);
             Assert.True(File.Exists(Path.Combine(result.RunDirectoryPath, "events.ndjson")));
-            Assert.Contains(state.Steps, step => string.Equals(step.NodeId, "code-research", StringComparison.Ordinal) && step.Models.SequenceEqual(["model-code-fast"]));
-            Assert.Contains(state.Steps, step => string.Equals(step.NodeId, "test-research", StringComparison.Ordinal) && step.Models.SequenceEqual(["model-test-deep"]));
+            Assert.Contains(state.Steps,
+                step => string.Equals(step.NodeId, "code-research", StringComparison.Ordinal) &&
+                        step.Models.SequenceEqual(["model-code-fast"]));
+            Assert.Contains(state.Steps,
+                step => string.Equals(step.NodeId, "test-research", StringComparison.Ordinal) &&
+                        step.Models.SequenceEqual(["model-test-deep"]));
         }
         finally
         {
@@ -124,15 +136,16 @@ public sealed class WorkflowOrchestratorTests
         {
             string definitionPath = await CreateGraphWorkflowDefinitionAsync(tempDirectoryPath);
             string requestPath = Path.Combine(tempDirectoryPath, "request.md");
-            await File.WriteAllTextAsync(requestPath, "# Request\n", System.Text.Encoding.UTF8);
+            await File.WriteAllTextAsync(requestPath, "# Request\n", Encoding.UTF8);
 
             FakeWorkflowAgentRunner failingRunner = new(
                 [
-                    "# Research\n## Code Insights\n- Code path\n",
+                    "# Research\n## Code Insights\n- Code path\n"
                 ],
-                exceptionAtCall: 2,
-                exceptionFactory: static (_, _) => new TimeoutException("SendAndWaitAsync timed out after 00:01:00"));
-            MarkdownArtifactService artifactService = new(new FixedTimeProvider(new DateTimeOffset(2026, 4, 12, 20, 0, 0, TimeSpan.Zero)));
+                2,
+                static (_, _) => new TimeoutException("SendAndWaitAsync timed out after 00:01:00"));
+            MarkdownArtifactService artifactService =
+                new(new FixedTimeProvider(new DateTimeOffset(2026, 4, 12, 20, 0, 0, TimeSpan.Zero)));
             WorkflowOrchestrator failingOrchestrator = new(
                 artifactService,
                 failingRunner,
@@ -141,17 +154,20 @@ public sealed class WorkflowOrchestratorTests
             InvalidOperationException exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
                 failingOrchestrator.ExecuteAsync(tempDirectoryPath, definitionPath, requestPath));
 
-            string runDirectoryPath = Directory.GetDirectories(Path.Combine(tempDirectoryPath, ".workflow-testing", "workflow-runs")).Single();
+            string runDirectoryPath = Directory
+                .GetDirectories(Path.Combine(tempDirectoryPath, ".workflow-testing", "workflow-runs")).Single();
             WorkflowArtifacts artifacts = artifactService.LoadRunArtifacts(runDirectoryPath);
             WorkflowRunState failedState = artifactService.ReadState(artifacts);
-            WorkflowStepState codeResearchStep = Assert.Single(failedState.Steps, step => string.Equals(step.NodeId, "code-research", StringComparison.Ordinal));
-            WorkflowStepState testResearchStep = Assert.Single(failedState.Steps, step => string.Equals(step.NodeId, "test-research", StringComparison.Ordinal));
+            WorkflowStepState codeResearchStep = Assert.Single(failedState.Steps,
+                step => string.Equals(step.NodeId, "code-research", StringComparison.Ordinal));
+            WorkflowStepState testResearchStep = Assert.Single(failedState.Steps,
+                step => string.Equals(step.NodeId, "test-research", StringComparison.Ordinal));
             WorkflowStepState failedResearchStep = Assert.Single(
-              [codeResearchStep, testResearchStep],
-              step => step.Status == WorkflowStepStatus.Failed);
+                [codeResearchStep, testResearchStep],
+                step => step.Status == WorkflowStepStatus.Failed);
             WorkflowStepState completedResearchStep = Assert.Single(
-              [codeResearchStep, testResearchStep],
-              step => step.Status == WorkflowStepStatus.Completed);
+                [codeResearchStep, testResearchStep],
+                step => step.Status == WorkflowStepStatus.Completed);
 
             Assert.Equal("SendAndWaitAsync timed out after 00:01:00", exception.Message);
             Assert.IsType<TimeoutException>(exception.InnerException);
@@ -159,12 +175,13 @@ public sealed class WorkflowOrchestratorTests
             Assert.Equal("SendAndWaitAsync timed out after 00:01:00", failedResearchStep.Message);
             Assert.NotNull(completedResearchStep.CompletedAtUtc);
             Assert.True(File.Exists(failedResearchStep.OutputPath));
-            Assert.Contains("# Stage Failure", await File.ReadAllTextAsync(failedResearchStep.OutputPath!), StringComparison.Ordinal);
+            Assert.Contains("# Stage Failure", await File.ReadAllTextAsync(failedResearchStep.OutputPath),
+                StringComparison.Ordinal);
 
             FakeWorkflowAgentRunner resumeRunner = new([
                 "# Research\n## Test Insights\n- Recovered test path\n",
                 "# Build\n## Summary\nRecovered build\n",
-                "# Review\nApproved: yes\n## Verdict\nLooks good.\n## Findings\n- None.\n## Builder Instructions\n- None.\n",
+                "# Review\nApproved: yes\n## Verdict\nLooks good.\n## Findings\n- None.\n## Builder Instructions\n- None.\n"
             ]);
             WorkflowOrchestrator resumeOrchestrator = new(
                 artifactService,
@@ -185,7 +202,7 @@ public sealed class WorkflowOrchestratorTests
         {
             Directory.Delete(tempDirectoryPath, true);
         }
-      }
+    }
 
     /// <summary>
     ///     Verifies a stage can declare an explicit agent, custom message, inputs, outputs, and model.
@@ -200,13 +217,14 @@ public sealed class WorkflowOrchestratorTests
         {
             string definitionPath = await CreateAgentConfiguredWorkflowDefinitionAsync(tempDirectoryPath);
             string requestPath = Path.Combine(tempDirectoryPath, "request.md");
-            await File.WriteAllTextAsync(requestPath, "# Request\n", System.Text.Encoding.UTF8);
+            await File.WriteAllTextAsync(requestPath, "# Request\n", Encoding.UTF8);
 
             FakeWorkflowAgentRunner runner = new([
-            "# Plan\n## Goal\nPlan the change\n",
-                "# Build\n## Summary\nCompleted\n",
+                "# Plan\n## Goal\nPlan the change\n",
+                "# Build\n## Summary\nCompleted\n"
             ]);
-            MarkdownArtifactService artifactService = new(new FixedTimeProvider(new DateTimeOffset(2026, 4, 11, 17, 0, 0, TimeSpan.Zero)));
+            MarkdownArtifactService artifactService =
+                new(new FixedTimeProvider(new DateTimeOffset(2026, 4, 11, 17, 0, 0, TimeSpan.Zero)));
             WorkflowOrchestrator orchestrator = new(
                 artifactService,
                 runner,
@@ -215,8 +233,10 @@ public sealed class WorkflowOrchestratorTests
             WorkflowRunResult result = await orchestrator.ExecuteAsync(tempDirectoryPath, definitionPath, requestPath);
             WorkflowArtifacts artifacts = artifactService.LoadRunArtifacts(result.RunDirectoryPath);
             WorkflowRunState state = artifactService.ReadState(artifacts);
-            AgentCall call = Assert.Single(runner.Calls, call => string.Equals(call.AgentName, "builder-agent", StringComparison.Ordinal));
-            WorkflowStepState step = Assert.Single(state.Steps, step => string.Equals(step.NodeId, "builder", StringComparison.OrdinalIgnoreCase));
+            AgentCall call = Assert.Single(runner.Calls,
+                call => string.Equals(call.AgentName, "builder-agent", StringComparison.Ordinal));
+            WorkflowStepState step = Assert.Single(state.Steps,
+                step => string.Equals(step.NodeId, "builder", StringComparison.OrdinalIgnoreCase));
 
             Assert.Equal(WorkflowRunStatus.Approved, result.Status);
             Assert.Equal(2, runner.Calls.Count);
@@ -252,51 +272,53 @@ public sealed class WorkflowOrchestratorTests
 
         try
         {
-              FixedTimeProvider timeProvider = new(new DateTimeOffset(2026, 4, 13, 9, 0, 0, TimeSpan.Zero));
-              string definitionPath = await CreateWaitWorkflowDefinitionAsync(tempDirectoryPath);
-              string requestPath = Path.Combine(tempDirectoryPath, "request.md");
-              await File.WriteAllTextAsync(requestPath, "# Request\n", System.Text.Encoding.UTF8);
+            FixedTimeProvider timeProvider = new(new DateTimeOffset(2026, 4, 13, 9, 0, 0, TimeSpan.Zero));
+            string definitionPath = await CreateWaitWorkflowDefinitionAsync(tempDirectoryPath);
+            string requestPath = Path.Combine(tempDirectoryPath, "request.md");
+            await File.WriteAllTextAsync(requestPath, "# Request\n", Encoding.UTF8);
 
-              FakeWorkflowAgentRunner runner = new([
-                  "# Build\n## Summary\nBuilt the change\n",
-              ]);
-              MarkdownArtifactService artifactService = new(timeProvider);
-              WorkflowOrchestrator orchestrator = new(
-                  artifactService,
-                  runner,
-                  new WorkflowDecisionResolver(runner),
-                  timeProvider: timeProvider);
+            FakeWorkflowAgentRunner runner = new([
+                "# Build\n## Summary\nBuilt the change\n"
+            ]);
+            MarkdownArtifactService artifactService = new(timeProvider);
+            WorkflowOrchestrator orchestrator = new(
+                artifactService,
+                runner,
+                new WorkflowDecisionResolver(runner),
+                timeProvider: timeProvider);
 
-              WorkflowRunResult pausedResult = await orchestrator.ExecuteAsync(tempDirectoryPath, definitionPath, requestPath);
-              WorkflowArtifacts artifacts = artifactService.LoadRunArtifacts(pausedResult.RunDirectoryPath);
-              WorkflowRunState pausedState = artifactService.ReadState(artifacts);
+            WorkflowRunResult pausedResult =
+                await orchestrator.ExecuteAsync(tempDirectoryPath, definitionPath, requestPath);
+            WorkflowArtifacts artifacts = artifactService.LoadRunArtifacts(pausedResult.RunDirectoryPath);
+            WorkflowRunState pausedState = artifactService.ReadState(artifacts);
 
-              Assert.Equal(WorkflowRunStatus.Paused, pausedResult.Status);
-              Assert.Single(runner.Calls);
-              WorkflowWaitState waitState = Assert.Single(pausedState.WaitingNodes);
-              Assert.Equal("approved", waitState.NextNodeId);
-              Assert.Contains(pausedState.Steps, step => string.Equals(step.NodeId, "wait-for-review-lag", StringComparison.OrdinalIgnoreCase));
+            Assert.Equal(WorkflowRunStatus.Paused, pausedResult.Status);
+            Assert.Single(runner.Calls);
+            WorkflowWaitState waitState = Assert.Single(pausedState.WaitingNodes);
+            Assert.Equal("approved", waitState.NextNodeId);
+            Assert.Contains(pausedState.Steps,
+                step => string.Equals(step.NodeId, "wait-for-review-lag", StringComparison.OrdinalIgnoreCase));
 
-              timeProvider.Advance(TimeSpan.FromMinutes(5));
+            timeProvider.Advance(TimeSpan.FromMinutes(5));
 
-              WorkflowRunResult resumedResult = await orchestrator.ExecuteAsync(
-                  new WorkflowExecutionRequest(
-                      tempDirectoryPath,
-                      null,
-                      null,
-                      ResumePath: pausedResult.RunDirectoryPath));
+            WorkflowRunResult resumedResult = await orchestrator.ExecuteAsync(
+                new WorkflowExecutionRequest(
+                    tempDirectoryPath,
+                    null,
+                    null,
+                    ResumePath: pausedResult.RunDirectoryPath));
 
-              WorkflowRunState resumedState = artifactService.ReadState(artifacts);
+            WorkflowRunState resumedState = artifactService.ReadState(artifacts);
 
-              Assert.Equal(WorkflowRunStatus.Approved, resumedResult.Status);
-              Assert.Empty(resumedState.WaitingNodes);
-              Assert.Single(runner.Calls);
+            Assert.Equal(WorkflowRunStatus.Approved, resumedResult.Status);
+            Assert.Empty(resumedState.WaitingNodes);
+            Assert.Single(runner.Calls);
         }
         finally
         {
-              Directory.Delete(tempDirectoryPath, true);
+            Directory.Delete(tempDirectoryPath, true);
         }
-      }
+    }
 
     /// <summary>
     ///     Verifies a failed workflow can be resumed from persisted state.
@@ -309,16 +331,18 @@ public sealed class WorkflowOrchestratorTests
 
         try
         {
-            string definitionPath = await CreateLegacyWorkflowDefinitionAsync(tempDirectoryPath, WorkflowDecisionMode.Rules);
+            string definitionPath =
+                await CreateLegacyWorkflowDefinitionAsync(tempDirectoryPath, WorkflowDecisionMode.Rules);
             string requestPath = Path.Combine(tempDirectoryPath, "request.md");
-            await File.WriteAllTextAsync(requestPath, "# Request\n", System.Text.Encoding.UTF8);
+            await File.WriteAllTextAsync(requestPath, "# Request\n", Encoding.UTF8);
 
             FakeWorkflowAgentRunner failingRunner = new(
                 [
-                    "# Plan\n## Goal\nShip it\n",
+                    "# Plan\n## Goal\nShip it\n"
                 ],
-                exceptionAtCall: 2);
-            MarkdownArtifactService artifactService = new(new FixedTimeProvider(new DateTimeOffset(2026, 4, 11, 16, 0, 0, TimeSpan.Zero)));
+                2);
+            MarkdownArtifactService artifactService =
+                new(new FixedTimeProvider(new DateTimeOffset(2026, 4, 11, 16, 0, 0, TimeSpan.Zero)));
             WorkflowOrchestrator failingOrchestrator = new(
                 artifactService,
                 failingRunner,
@@ -327,11 +351,12 @@ public sealed class WorkflowOrchestratorTests
             await Assert.ThrowsAsync<InvalidOperationException>(() =>
                 failingOrchestrator.ExecuteAsync(tempDirectoryPath, definitionPath, requestPath));
 
-            string runDirectoryPath = Directory.GetDirectories(Path.Combine(tempDirectoryPath, ".workflow-testing", "workflow-runs")).Single();
+            string runDirectoryPath = Directory
+                .GetDirectories(Path.Combine(tempDirectoryPath, ".workflow-testing", "workflow-runs")).Single();
 
             FakeWorkflowAgentRunner resumeRunner = new([
                 "# Build\n## Summary\nRecovered build\n",
-                "# Review\nApproved: yes\n## Verdict\nLooks good.\n## Findings\n- None.\n## Builder Instructions\n- None.\n",
+                "# Review\nApproved: yes\n## Verdict\nLooks good.\n## Findings\n- None.\n## Builder Instructions\n- None.\n"
             ]);
             WorkflowOrchestrator resumeOrchestrator = new(
                 artifactService,
@@ -355,16 +380,17 @@ public sealed class WorkflowOrchestratorTests
         }
     }
 
-    private static async Task<string> CreateLegacyWorkflowDefinitionAsync(string tempDirectoryPath, WorkflowDecisionMode decisionMode)
+    private static async Task<string> CreateLegacyWorkflowDefinitionAsync(string tempDirectoryPath,
+        WorkflowDecisionMode decisionMode)
     {
         string assetsDirectoryPath = Path.Combine(tempDirectoryPath, "assets");
         Directory.CreateDirectory(assetsDirectoryPath);
-        await File.WriteAllTextAsync(Path.Combine(assetsDirectoryPath, "shared.md"), "shared", System.Text.Encoding.UTF8);
-        await File.WriteAllTextAsync(Path.Combine(assetsDirectoryPath, "planner.md"), "planner", System.Text.Encoding.UTF8);
-        await File.WriteAllTextAsync(Path.Combine(assetsDirectoryPath, "builder.md"), "builder", System.Text.Encoding.UTF8);
-        await File.WriteAllTextAsync(Path.Combine(assetsDirectoryPath, "reviewer.md"), "reviewer", System.Text.Encoding.UTF8);
-        await File.WriteAllTextAsync(Path.Combine(assetsDirectoryPath, "rebuilder.md"), "rebuilder", System.Text.Encoding.UTF8);
-        await File.WriteAllTextAsync(Path.Combine(assetsDirectoryPath, "decision.md"), "decision", System.Text.Encoding.UTF8);
+        await File.WriteAllTextAsync(Path.Combine(assetsDirectoryPath, "shared.md"), "shared", Encoding.UTF8);
+        await File.WriteAllTextAsync(Path.Combine(assetsDirectoryPath, "planner.md"), "planner", Encoding.UTF8);
+        await File.WriteAllTextAsync(Path.Combine(assetsDirectoryPath, "builder.md"), "builder", Encoding.UTF8);
+        await File.WriteAllTextAsync(Path.Combine(assetsDirectoryPath, "reviewer.md"), "reviewer", Encoding.UTF8);
+        await File.WriteAllTextAsync(Path.Combine(assetsDirectoryPath, "rebuilder.md"), "rebuilder", Encoding.UTF8);
+        await File.WriteAllTextAsync(Path.Combine(assetsDirectoryPath, "decision.md"), "decision", Encoding.UTF8);
         string definitionPath = Path.Combine(tempDirectoryPath, "workflow.json");
         string definitionJson = $@"{{
       ""name"": ""Test Workflow"",
@@ -376,7 +402,7 @@ public sealed class WorkflowOrchestratorTests
       ""rebuilder"": {{ ""displayName"": ""Rebuilder"", ""models"": [""model-rebuild""], ""assets"": [{{ ""kind"": ""agent"", ""path"": ""assets/rebuilder.md"" }}] }},
       ""policy"": {{ ""decisionMode"": ""{decisionMode}"", ""maxReviewCycles"": 2, ""maxRebuilds"": 1 }}
     }}";
-        await File.WriteAllTextAsync(definitionPath, definitionJson, System.Text.Encoding.UTF8);
+        await File.WriteAllTextAsync(definitionPath, definitionJson, Encoding.UTF8);
         return definitionPath;
     }
 
@@ -384,115 +410,115 @@ public sealed class WorkflowOrchestratorTests
     {
         string assetsDirectoryPath = Path.Combine(tempDirectoryPath, "assets");
         Directory.CreateDirectory(assetsDirectoryPath);
-        await File.WriteAllTextAsync(Path.Combine(assetsDirectoryPath, "shared.md"), "shared", System.Text.Encoding.UTF8);
-        await File.WriteAllTextAsync(Path.Combine(assetsDirectoryPath, "code.md"), "code research", System.Text.Encoding.UTF8);
-        await File.WriteAllTextAsync(Path.Combine(assetsDirectoryPath, "tests.md"), "test research", System.Text.Encoding.UTF8);
-        await File.WriteAllTextAsync(Path.Combine(assetsDirectoryPath, "builder.md"), "builder", System.Text.Encoding.UTF8);
-        await File.WriteAllTextAsync(Path.Combine(assetsDirectoryPath, "reviewer.md"), "reviewer", System.Text.Encoding.UTF8);
+        await File.WriteAllTextAsync(Path.Combine(assetsDirectoryPath, "shared.md"), "shared", Encoding.UTF8);
+        await File.WriteAllTextAsync(Path.Combine(assetsDirectoryPath, "code.md"), "code research", Encoding.UTF8);
+        await File.WriteAllTextAsync(Path.Combine(assetsDirectoryPath, "tests.md"), "test research", Encoding.UTF8);
+        await File.WriteAllTextAsync(Path.Combine(assetsDirectoryPath, "builder.md"), "builder", Encoding.UTF8);
+        await File.WriteAllTextAsync(Path.Combine(assetsDirectoryPath, "reviewer.md"), "reviewer", Encoding.UTF8);
         string definitionPath = Path.Combine(tempDirectoryPath, "workflow.graph.json");
         string definitionJson = """
-{
-  "name": "Graph Workflow",
-  "defaultEntryPoint": "default",
-  "entryPoints": [
-    { "id": "default", "nodeId": "research-fork" },
-    { "id": "research", "nodeId": "research-fork" }
-  ],
-  "sharedAssets": [
-    { "kind": "instruction", "path": "assets/shared.md" }
-  ],
-  "nodes": [
-    {
-      "id": "research-fork",
-      "kind": "Fork",
-      "joinNodeId": "research-join",
-      "branches": [
-        { "id": "code", "nextNodeId": "code-research" },
-        { "id": "testing", "nextNodeId": "test-research" }
-      ]
-    },
-    {
-      "id": "code-research",
-      "kind": "Stage",
-      "role": "Research",
-      "models": ["model-code-fast"],
-      "inputs": ["request"],
-      "assets": [
-        { "kind": "agent", "path": "assets/code.md" }
-      ],
-      "next": "research-join"
-    },
-    {
-      "id": "test-research",
-      "kind": "Stage",
-      "role": "Research",
-      "models": ["model-test-deep"],
-      "inputs": ["request"],
-      "assets": [
-        { "kind": "agent", "path": "assets/tests.md" }
-      ],
-      "next": "research-join"
-    },
-    {
-      "id": "research-join",
-      "kind": "Join",
-      "forkId": "research-fork",
-      "next": "builder"
-    },
-    {
-      "id": "builder",
-      "kind": "Stage",
-      "role": "Builder",
-      "inputs": ["request", "node:code-research", "node:test-research"],
-      "assets": [
-        { "kind": "agent", "path": "assets/builder.md" }
-      ],
-      "next": "reviewer"
-    },
-    {
-      "id": "reviewer",
-      "kind": "Stage",
-      "role": "Reviewer",
-      "inputs": ["request", "node:builder"],
-      "assets": [
-        { "kind": "agent", "path": "assets/reviewer.md" }
-      ],
-      "next": "review-decision"
-    },
-    {
-      "id": "review-decision",
-      "kind": "Decision",
-      "role": "Decision",
-      "decisionMode": "Rules",
-      "ruleSet": "legacy-review",
-      "decisionSourceNodeId": "reviewer",
-      "choices": [
-        { "id": "approve", "nextNodeId": "approved" },
-        { "id": "stop", "nextNodeId": "stopped" },
-        { "id": "rebuild", "nextNodeId": "builder" }
-      ]
-    },
-    {
-      "id": "approved",
-      "kind": "Exit",
-      "exitStatus": "Approved"
-    },
-    {
-      "id": "stopped",
-      "kind": "Exit",
-      "exitStatus": "Stopped"
-    }
-  ],
-  "policy": {
-    "decisionMode": "Rules",
-    "maxReviewCycles": 2,
-    "maxRebuilds": 1,
-    "maxParallelism": 2,
-    "maxNodeVisits": 8
-  }
-}
-""";
-        await File.WriteAllTextAsync(definitionPath, definitionJson, System.Text.Encoding.UTF8);
+                                {
+                                  "name": "Graph Workflow",
+                                  "defaultEntryPoint": "default",
+                                  "entryPoints": [
+                                    { "id": "default", "nodeId": "research-fork" },
+                                    { "id": "research", "nodeId": "research-fork" }
+                                  ],
+                                  "sharedAssets": [
+                                    { "kind": "instruction", "path": "assets/shared.md" }
+                                  ],
+                                  "nodes": [
+                                    {
+                                      "id": "research-fork",
+                                      "kind": "Fork",
+                                      "joinNodeId": "research-join",
+                                      "branches": [
+                                        { "id": "code", "nextNodeId": "code-research" },
+                                        { "id": "testing", "nextNodeId": "test-research" }
+                                      ]
+                                    },
+                                    {
+                                      "id": "code-research",
+                                      "kind": "Stage",
+                                      "role": "Research",
+                                      "models": ["model-code-fast"],
+                                      "inputs": ["request"],
+                                      "assets": [
+                                        { "kind": "agent", "path": "assets/code.md" }
+                                      ],
+                                      "next": "research-join"
+                                    },
+                                    {
+                                      "id": "test-research",
+                                      "kind": "Stage",
+                                      "role": "Research",
+                                      "models": ["model-test-deep"],
+                                      "inputs": ["request"],
+                                      "assets": [
+                                        { "kind": "agent", "path": "assets/tests.md" }
+                                      ],
+                                      "next": "research-join"
+                                    },
+                                    {
+                                      "id": "research-join",
+                                      "kind": "Join",
+                                      "forkId": "research-fork",
+                                      "next": "builder"
+                                    },
+                                    {
+                                      "id": "builder",
+                                      "kind": "Stage",
+                                      "role": "Builder",
+                                      "inputs": ["request", "node:code-research", "node:test-research"],
+                                      "assets": [
+                                        { "kind": "agent", "path": "assets/builder.md" }
+                                      ],
+                                      "next": "reviewer"
+                                    },
+                                    {
+                                      "id": "reviewer",
+                                      "kind": "Stage",
+                                      "role": "Reviewer",
+                                      "inputs": ["request", "node:builder"],
+                                      "assets": [
+                                        { "kind": "agent", "path": "assets/reviewer.md" }
+                                      ],
+                                      "next": "review-decision"
+                                    },
+                                    {
+                                      "id": "review-decision",
+                                      "kind": "Decision",
+                                      "role": "Decision",
+                                      "decisionMode": "Rules",
+                                      "ruleSet": "legacy-review",
+                                      "decisionSourceNodeId": "reviewer",
+                                      "choices": [
+                                        { "id": "approve", "nextNodeId": "approved" },
+                                        { "id": "stop", "nextNodeId": "stopped" },
+                                        { "id": "rebuild", "nextNodeId": "builder" }
+                                      ]
+                                    },
+                                    {
+                                      "id": "approved",
+                                      "kind": "Exit",
+                                      "exitStatus": "Approved"
+                                    },
+                                    {
+                                      "id": "stopped",
+                                      "kind": "Exit",
+                                      "exitStatus": "Stopped"
+                                    }
+                                  ],
+                                  "policy": {
+                                    "decisionMode": "Rules",
+                                    "maxReviewCycles": 2,
+                                    "maxRebuilds": 1,
+                                    "maxParallelism": 2,
+                                    "maxNodeVisits": 8
+                                  }
+                                }
+                                """;
+        await File.WriteAllTextAsync(definitionPath, definitionJson, Encoding.UTF8);
         return definitionPath;
     }
 
@@ -500,58 +526,58 @@ public sealed class WorkflowOrchestratorTests
     {
         string assetsDirectoryPath = Path.Combine(tempDirectoryPath, "assets");
         Directory.CreateDirectory(assetsDirectoryPath);
-        await File.WriteAllTextAsync(Path.Combine(assetsDirectoryPath, "planner.md"), "planner", System.Text.Encoding.UTF8);
-        await File.WriteAllTextAsync(Path.Combine(assetsDirectoryPath, "builder.md"), "builder", System.Text.Encoding.UTF8);
+        await File.WriteAllTextAsync(Path.Combine(assetsDirectoryPath, "planner.md"), "planner", Encoding.UTF8);
+        await File.WriteAllTextAsync(Path.Combine(assetsDirectoryPath, "builder.md"), "builder", Encoding.UTF8);
         string definitionPath = Path.Combine(tempDirectoryPath, "workflow.agent.json");
         string definitionJson = """
-{
-  "name": "Agent Config Workflow",
-  "defaultEntryPoint": "default",
-  "entryPoints": [
-    { "id": "default", "nodeId": "planner" }
-  ],
-  "nodes": [
-    {
-      "id": "planner",
-      "kind": "Stage",
-      "role": "Planner",
-      "assets": [
-        { "kind": "agent", "path": "assets/planner.md" }
-      ],
-      "next": "builder"
-    },
-    {
-      "id": "builder",
-      "kind": "Stage",
-      "role": "Builder",
-      "agent": "builder-agent",
-      "models": ["model-build-fast"],
-      "reasoningEffort": "high",
-      "responseTimeout": "00:12:00",
-      "inputs": ["request", "node:planner"],
-      "outputs": ["buildSummary"],
-      "customMessage": "Focus on the requested file only.",
-      "assets": [
-        { "kind": "agent", "path": "assets/builder.md" }
-      ],
-      "next": "approved"
-    },
-    {
-      "id": "approved",
-      "kind": "Exit",
-      "exitStatus": "Approved"
-    }
-  ],
-  "policy": {
-    "decisionMode": "Rules",
-    "maxReviewCycles": 2,
-    "maxRebuilds": 1,
-    "maxParallelism": 1,
-    "maxNodeVisits": 8
-  }
-}
-""";
-        await File.WriteAllTextAsync(definitionPath, definitionJson, System.Text.Encoding.UTF8);
+                                {
+                                  "name": "Agent Config Workflow",
+                                  "defaultEntryPoint": "default",
+                                  "entryPoints": [
+                                    { "id": "default", "nodeId": "planner" }
+                                  ],
+                                  "nodes": [
+                                    {
+                                      "id": "planner",
+                                      "kind": "Stage",
+                                      "role": "Planner",
+                                      "assets": [
+                                        { "kind": "agent", "path": "assets/planner.md" }
+                                      ],
+                                      "next": "builder"
+                                    },
+                                    {
+                                      "id": "builder",
+                                      "kind": "Stage",
+                                      "role": "Builder",
+                                      "agent": "builder-agent",
+                                      "models": ["model-build-fast"],
+                                      "reasoningEffort": "high",
+                                      "responseTimeout": "00:12:00",
+                                      "inputs": ["request", "node:planner"],
+                                      "outputs": ["buildSummary"],
+                                      "customMessage": "Focus on the requested file only.",
+                                      "assets": [
+                                        { "kind": "agent", "path": "assets/builder.md" }
+                                      ],
+                                      "next": "approved"
+                                    },
+                                    {
+                                      "id": "approved",
+                                      "kind": "Exit",
+                                      "exitStatus": "Approved"
+                                    }
+                                  ],
+                                  "policy": {
+                                    "decisionMode": "Rules",
+                                    "maxReviewCycles": 2,
+                                    "maxRebuilds": 1,
+                                    "maxParallelism": 1,
+                                    "maxNodeVisits": 8
+                                  }
+                                }
+                                """;
+        await File.WriteAllTextAsync(definitionPath, definitionJson, Encoding.UTF8);
         return definitionPath;
     }
 
@@ -559,49 +585,49 @@ public sealed class WorkflowOrchestratorTests
     {
         string assetsDirectoryPath = Path.Combine(tempDirectoryPath, "assets");
         Directory.CreateDirectory(assetsDirectoryPath);
-        await File.WriteAllTextAsync(Path.Combine(assetsDirectoryPath, "builder.md"), "builder", System.Text.Encoding.UTF8);
+        await File.WriteAllTextAsync(Path.Combine(assetsDirectoryPath, "builder.md"), "builder", Encoding.UTF8);
         string definitionPath = Path.Combine(tempDirectoryPath, "workflow.wait.json");
         string definitionJson = """
-{
-  "name": "Wait Workflow",
-  "defaultEntryPoint": "default",
-  "entryPoints": [
-    { "id": "default", "nodeId": "builder" }
-  ],
-  "nodes": [
-    {
-      "id": "builder",
-      "kind": "Stage",
-      "role": "Builder",
-      "assets": [
-        { "kind": "agent", "path": "assets/builder.md" }
-      ],
-      "next": "wait-for-review-lag"
-    },
-    {
-      "id": "wait-for-review-lag",
-      "kind": "Wait",
-      "displayName": "Wait For Review Lag",
-      "waitDuration": "00:05:00",
-      "waitReason": "Wait for delayed automated review comments.",
-      "next": "approved"
-    },
-    {
-      "id": "approved",
-      "kind": "Exit",
-      "exitStatus": "Approved"
-    }
-  ],
-  "policy": {
-    "decisionMode": "Rules",
-    "maxReviewCycles": 2,
-    "maxRebuilds": 1,
-    "maxParallelism": 1,
-    "maxNodeVisits": 8
-  }
-}
-""";
-        await File.WriteAllTextAsync(definitionPath, definitionJson, System.Text.Encoding.UTF8);
+                                {
+                                  "name": "Wait Workflow",
+                                  "defaultEntryPoint": "default",
+                                  "entryPoints": [
+                                    { "id": "default", "nodeId": "builder" }
+                                  ],
+                                  "nodes": [
+                                    {
+                                      "id": "builder",
+                                      "kind": "Stage",
+                                      "role": "Builder",
+                                      "assets": [
+                                        { "kind": "agent", "path": "assets/builder.md" }
+                                      ],
+                                      "next": "wait-for-review-lag"
+                                    },
+                                    {
+                                      "id": "wait-for-review-lag",
+                                      "kind": "Wait",
+                                      "displayName": "Wait For Review Lag",
+                                      "waitDuration": "00:05:00",
+                                      "waitReason": "Wait for delayed automated review comments.",
+                                      "next": "approved"
+                                    },
+                                    {
+                                      "id": "approved",
+                                      "kind": "Exit",
+                                      "exitStatus": "Approved"
+                                    }
+                                  ],
+                                  "policy": {
+                                    "decisionMode": "Rules",
+                                    "maxReviewCycles": 2,
+                                    "maxRebuilds": 1,
+                                    "maxParallelism": 1,
+                                    "maxNodeVisits": 8
+                                  }
+                                }
+                                """;
+        await File.WriteAllTextAsync(definitionPath, definitionJson, Encoding.UTF8);
         return definitionPath;
     }
 
@@ -614,10 +640,10 @@ public sealed class WorkflowOrchestratorTests
 
     private sealed class FakeWorkflowAgentRunner : IWorkflowAgentRunner
     {
-        private readonly object syncLock = new();
-        private readonly Queue<string> responses;
         private readonly int? exceptionAtCall;
         private readonly Func<int, string, Exception>? exceptionFactory;
+        private readonly Queue<string> responses;
+        private readonly object syncLock = new();
         private int callCount;
 
         public FakeWorkflowAgentRunner(
@@ -644,16 +670,18 @@ public sealed class WorkflowOrchestratorTests
             cancellationToken.ThrowIfCancellationRequested();
             int callNumber;
             string response;
-            lock (this.syncLock)
+            lock (syncLock)
             {
-                callNumber = ++this.callCount;
-                this.Calls.Add(new AgentCall(agentName, prompt, attachmentFilePaths, modelIds.ToArray(), reasoningEffort, responseTimeout));
-                if (this.exceptionAtCall.HasValue && callNumber == this.exceptionAtCall.Value)
+                callNumber = ++callCount;
+                Calls.Add(new AgentCall(agentName, prompt, attachmentFilePaths, modelIds.ToArray(), reasoningEffort,
+                    responseTimeout));
+                if (exceptionAtCall.HasValue && callNumber == exceptionAtCall.Value)
                 {
-                    throw this.exceptionFactory?.Invoke(callNumber, agentName) ?? new InvalidOperationException($"Boom on {agentName}");
+                    throw exceptionFactory?.Invoke(callNumber, agentName) ??
+                          new InvalidOperationException($"Boom on {agentName}");
                 }
 
-                response = this.responses.Dequeue();
+                response = responses.Dequeue();
             }
 
             return Task.FromResult(response);

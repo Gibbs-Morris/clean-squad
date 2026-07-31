@@ -39,7 +39,7 @@ public static class WorkflowReasoningEffort
         [Low] = 0,
         [Medium] = 1,
         [High] = 2,
-        [ExtraHigh] = 3,
+        [ExtraHigh] = 3
     };
 
     /// <summary>
@@ -117,7 +117,8 @@ public static class WorkflowReasoningEffort
 
         List<string> normalizedValues = supportedReasoningEfforts
             .Select(Normalize)
-            .Where(static value => value is not null && !string.Equals(value, HighestSupported, StringComparison.Ordinal))
+            .Where(static value =>
+                value is not null && !string.Equals(value, HighestSupported, StringComparison.Ordinal))
             .Select(static value => value!)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();

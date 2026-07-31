@@ -23,5 +23,5 @@ public enum WorkflowDecisionAction
     /// <summary>
     ///     Follow a named non-legacy branch.
     /// </summary>
-    Branch,
+    Branch
 }
