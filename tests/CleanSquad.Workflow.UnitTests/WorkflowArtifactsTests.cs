@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using CleanSquad.Workflow.Storage;
 using CleanSquad.Workflow.UnitTests.TestFixtures;
 
@@ -15,15 +16,16 @@ public sealed class WorkflowArtifactsTests
     [Fact]
     public void CreateUsesDeterministicRunPaths()
     {
+        string workspaceRootPath = Path.Combine(Path.GetTempPath(), "workspace");
         WorkflowArtifacts artifacts = WorkflowArtifacts.Create(
-            "C:\\workspace",
-            "C:\\workspace\\workflow-definitions\\default\\workflow.json",
-            "C:\\workspace\\workflow-demo\\request.md",
+            workspaceRootPath,
+            Path.Combine(workspaceRootPath, "workflow-definitions", "default", "workflow.json"),
+            Path.Combine(workspaceRootPath, "workflow-demo", "request.md"),
             new FixedTimeProvider(new DateTimeOffset(2026, 4, 11, 12, 0, 0, TimeSpan.Zero)));
 
         Assert.Equal("20260411-120000-request", artifacts.RunId);
         Assert.EndsWith(
-            ".workflow-testing\\workflow-runs\\20260411-120000-request",
+            Path.Combine(".workflow-testing", "workflow-runs", "20260411-120000-request"),
             artifacts.RunDirectoryPath,
             StringComparison.Ordinal);
         Assert.EndsWith("build-01.md", artifacts.GetBuildMarkdownPath(1), StringComparison.Ordinal);
@@ -37,10 +39,11 @@ public sealed class WorkflowArtifactsTests
     [Fact]
     public void CreateUsesConfiguredStorageDirectories()
     {
+        string workspaceRootPath = Path.Combine(Path.GetTempPath(), "workspace");
         WorkflowArtifacts artifacts = WorkflowArtifacts.Create(
-            "C:\\workspace",
-            "C:\\workspace\\workflow-definitions\\default\\workflow.json",
-            "C:\\workspace\\workflow-demo\\request.md",
+            workspaceRootPath,
+            Path.Combine(workspaceRootPath, "workflow-definitions", "default", "workflow.json"),
+            Path.Combine(workspaceRootPath, "workflow-demo", "request.md"),
             new FixedTimeProvider(new DateTimeOffset(2026, 4, 11, 12, 0, 0, TimeSpan.Zero)),
             new WorkflowStorageOptions
             {
@@ -49,7 +52,7 @@ public sealed class WorkflowArtifactsTests
             });
 
         Assert.EndsWith(
-            ".runtime-data\\runs\\20260411-120000-request",
+            Path.Combine(".runtime-data", "runs", "20260411-120000-request"),
             artifacts.RunDirectoryPath,
             StringComparison.Ordinal);
     }
