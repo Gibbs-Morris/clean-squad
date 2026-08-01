@@ -766,6 +766,10 @@ public sealed class WorkflowDefinitionLoaderTests
                 result.Definition.Nodes,
                 node => string.Equals(node.Id, amigoNodeId, StringComparison.Ordinal));
             Assert.Contains("node:three-amigos-master-reviewer", amigo.Inputs);
+            Assert.Contains("node:business-amigo", amigo.Inputs);
+            Assert.Contains("node:development-amigo", amigo.Inputs);
+            Assert.Contains("node:testing-amigo", amigo.Inputs);
+            Assert.Contains("reconcile all attached prior Three Amigos artifacts", amigo.CustomMessage, StringComparison.Ordinal);
         }
 
         string[] threeAmigosReviewerNodeIds =
