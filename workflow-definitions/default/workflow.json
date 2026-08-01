@@ -658,7 +658,7 @@
         "node:testing-amigo"
       ],
       "outputs": ["buildSummary", "validationEvidence"],
-      "customMessage": "Implement the selected story using the approved architecture and Three Amigos guidance.",
+      "customMessage": "Inspect the configured working directory, then implement and validate the selected story using the approved architecture and Three Amigos guidance.",
       "assets": [
         { "kind": "agent-persona", "path": "agents/builder.agent.md" },
         { "kind": "agent-rule", "path": "rules/agents/builder.rules.md" }
@@ -825,7 +825,7 @@
       "responseTimeout": "00:15:00",
       "inputs": ["request", "node:story-selection", "node:solution-design", "node:c4-code", "node:builder", "node:code-master-reviewer", "node:github-poll", "node:rebuilder"],
       "outputs": ["reworkSummary", "updatedValidation"],
-      "customMessage": "Apply the smallest correction set needed for the selected story.",
+      "customMessage": "Inspect the current working-directory changes and apply the smallest validated correction set needed for the selected story.",
       "assets": [
         { "kind": "agent-persona", "path": "agents/rebuilder.agent.md" },
         { "kind": "agent-rule", "path": "rules/agents/rebuilder.rules.md" }

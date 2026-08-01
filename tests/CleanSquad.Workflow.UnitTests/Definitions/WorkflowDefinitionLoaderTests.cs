@@ -752,6 +752,14 @@ public sealed class WorkflowDefinitionLoaderTests
             result.Definition.Nodes,
             node => string.Equals(node.Id, "enterprise-architecture", StringComparison.Ordinal));
         Assert.Contains("node:architecture-master-reviewer", enterpriseArchitecture.Inputs);
+        WorkflowNodeDefinition builder = Assert.Single(
+            result.Definition.Nodes,
+            node => string.Equals(node.Id, "builder", StringComparison.Ordinal));
+        Assert.Contains("configured working directory", builder.CustomMessage, StringComparison.Ordinal);
+        WorkflowNodeDefinition rebuilder = Assert.Single(
+            result.Definition.Nodes,
+            node => string.Equals(node.Id, "rebuilder", StringComparison.Ordinal));
+        Assert.Contains("working-directory changes", rebuilder.CustomMessage, StringComparison.Ordinal);
         foreach (string amigoNodeId in new[] { "business-amigo", "development-amigo", "testing-amigo" })
         {
             WorkflowNodeDefinition amigo = Assert.Single(
