@@ -70,10 +70,9 @@ jobs:
         run: |
           dotnet build ${{ github.workspace }}/${{ matrix.solution }} --configuration ${{ env.CONFIGURATION }} --no-restore --no-incremental -p:Version=${{ steps.gitversion.outputs.SemVer }}
 
-      - name: Run Unit Tests
+      - name: Validate Workflows and Run Unit Tests
         run: |
-          mkdir -p "${{ github.workspace }}/.scratchpad/coverage-test-results"
-          dotnet test ${{ github.workspace }}/${{ matrix.solution }} --no-build --configuration ${{ env.CONFIGURATION }} --filter "FullyQualifiedName~.UnitTests." --logger "trx;LogFileName=test_results.trx" --results-directory ${{ github.workspace }}/.scratchpad/coverage-test-results
+          pwsh -File ./scripts/test.ps1 -Configuration ${{ env.CONFIGURATION }} -NoRestore -NoBuild
 
       - name: Upload Test Results
         uses: actions/upload-artifact@v4

@@ -45,6 +45,38 @@ try {
         Invoke-CheckedCommand -FilePath 'dotnet' -ArgumentList $buildArguments
     }
 
+    $workflowDefinitionsPath = Join-Path $RepositoryRoot 'workflow-definitions'
+    $workflowDefinitionPaths = @(
+        Get-ChildItem -LiteralPath $workflowDefinitionsPath -Filter 'workflow.json' -File -Recurse |
+            Sort-Object -Property FullName |
+            Select-Object -ExpandProperty FullName
+    )
+    if ($workflowDefinitionPaths.Count -eq 0) {
+        throw "No workflow definitions were found under '$workflowDefinitionsPath'."
+    }
+
+    $cliProjectPath = Join-Path $RepositoryRoot 'src/CleanSquad.Cli'
+    foreach ($workflowDefinitionPath in $workflowDefinitionPaths) {
+        $relativeWorkflowDefinitionPath = [System.IO.Path]::GetRelativePath(
+            $RepositoryRoot,
+            $workflowDefinitionPath)
+        Write-Host "Validating workflow definition: $relativeWorkflowDefinitionPath" -ForegroundColor Cyan
+        Invoke-CheckedCommand -FilePath 'dotnet' -ArgumentList @(
+            'run'
+            '--project'
+            $cliProjectPath
+            '--configuration'
+            $Configuration
+            '--no-build'
+            '--no-restore'
+            '--'
+            'workflow'
+            'validate'
+            '--definition'
+            $workflowDefinitionPath
+        )
+    }
+
     $null = New-Item -ItemType Directory -Path $resultsDirectory -Force
 
     Invoke-CheckedCommand -FilePath 'dotnet' -ArgumentList @(

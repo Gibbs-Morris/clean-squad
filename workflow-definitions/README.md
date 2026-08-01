@@ -13,6 +13,8 @@ This folder contains reusable workflow-definition packages.
 
 ## Conventions
 
+- Give every checked-in package a `workflow.json`; `scripts/test.ps1` and the unit-test CI job discover and validate
+  every matching definition automatically.
 - Keep workflow orchestration concerns in `workflow.json`.
 - Set shared agent execution preferences under top-level `agentDefaults`; use node properties only when a stage or
   agent-backed decision needs an override.
