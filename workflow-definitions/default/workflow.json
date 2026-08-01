@@ -168,7 +168,7 @@
       "decisionMode": "Agent",
       "inputs": ["request", "node:story-selection", "node:increment-framing"],
       "outputs": ["architectureRoutingChoice"],
-      "customMessage": "Choose architecture-needed for material system or code-shape change; choose skip-architecture for narrow docs, markdown, wording, or trivial work.",
+      "customMessage": "Choose architecture-needed for material production-code, system-boundary, dependency, or deployment-shape changes. Choose skip-architecture for narrow docs, markdown, wording, trivial work, and isolated workflow-definition examples that reuse the existing runtime and schema.",
       "assets": [
         { "kind": "agent-persona", "path": "agents/decision.agent.md" },
         { "kind": "agent-rule", "path": "rules/agents/decision.rules.md" }
