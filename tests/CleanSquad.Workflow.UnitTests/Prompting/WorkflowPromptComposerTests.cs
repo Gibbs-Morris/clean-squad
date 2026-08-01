@@ -148,6 +148,29 @@ public sealed class WorkflowPromptComposerTests
         Assert.Contains("- medium", prompt, StringComparison.Ordinal);
     }
 
+    /// <summary>
+    ///     Verifies repository work is not limited to the attached markdown context.
+    /// </summary>
+    /// <returns>A task that represents the asynchronous test.</returns>
+    [Fact]
+    public async Task CreatePromptAsyncAllowsRequiredRepositoryWorkAsync()
+    {
+        WorkflowDefinition definition = new() { Name = "Repository Work Prompt Test" };
+        WorkflowNodeDefinition node = new()
+        {
+            Id = "builder",
+            Kind = WorkflowNodeKind.Stage,
+            Role = "Implementation",
+        };
+
+        string prompt = await WorkflowPromptComposer.ComposeAsync(definition, node, ["request.md"]);
+
+        Assert.Contains("authoritative task context", prompt, StringComparison.Ordinal);
+        Assert.Contains("Use the configured working directory", prompt, StringComparison.Ordinal);
+        Assert.Contains("repository inspection, implementation", prompt, StringComparison.Ordinal);
+        Assert.DoesNotContain("Use only the workflow assets", prompt, StringComparison.Ordinal);
+    }
+
     private static string CreateTempDirectory()
     {
         string tempDirectoryPath = Path.Combine(Path.GetTempPath(), $"clean-squad-prompt-{Guid.NewGuid():N}");

@@ -168,7 +168,7 @@
       "decisionMode": "Agent",
       "inputs": ["request", "node:story-selection", "node:increment-framing"],
       "outputs": ["architectureRoutingChoice"],
-      "customMessage": "Choose architecture-needed for material system or code-shape change; choose skip-architecture for narrow docs, markdown, wording, or trivial work.",
+      "customMessage": "Choose architecture-needed for material production-code, system-boundary, dependency, or deployment-shape changes. Choose skip-architecture for narrow docs, markdown, wording, trivial work, and isolated workflow-definition examples that reuse the existing runtime and schema.",
       "assets": [
         { "kind": "agent-persona", "path": "agents/decision.agent.md" },
         { "kind": "agent-rule", "path": "rules/agents/decision.rules.md" }
@@ -185,9 +185,9 @@
       "role": "Architecture",
       "agent": "enterprise-architect",
       "responseTimeout": "00:10:00",
-      "inputs": ["request", "node:story-selection", "node:increment-framing"],
+      "inputs": ["request", "node:story-selection", "node:increment-framing", "node:architecture-master-reviewer"],
       "outputs": ["enterpriseArchitectureScope", "enterpriseConstraints", "enterpriseDependencyMap"],
-      "customMessage": "Define enterprise scope, boundaries, dependencies, and guardrails proportionately for the current story and epic context.",
+      "customMessage": "Define enterprise scope, boundaries, dependencies, and guardrails proportionately for the current story and epic context. On rework, address the attached architecture master review findings.",
       "assets": [
         { "kind": "agent-persona", "path": "agents/enterprise-architect.agent.md" },
         { "kind": "agent-rule", "path": "rules/agents/enterprise-architect.rules.md" }
@@ -445,9 +445,9 @@
       "displayName": "Business Amigo",
       "role": "Business",
       "agent": "business-amigo",
-      "inputs": ["request", "node:story-selection", "node:increment-framing", "node:solution-design"],
+      "inputs": ["request", "node:story-selection", "node:increment-framing", "node:solution-design", "node:business-amigo", "node:development-amigo", "node:testing-amigo", "node:three-amigos-master-reviewer"],
       "outputs": ["businessOutcome", "acceptanceExamples"],
-      "customMessage": "Clarify business outcomes and done-meaning for the selected story.",
+      "customMessage": "Clarify business outcomes and done-meaning for the selected story. On rework, reconcile all attached prior Three Amigos artifacts into one contract, treat the master findings as authoritative, and use the Business acceptance example when the master has not selected a canonical example.",
       "assets": [
         { "kind": "agent-persona", "path": "agents/business-amigo.agent.md" },
         { "kind": "agent-rule", "path": "rules/agents/business-amigo.rules.md" }
@@ -460,9 +460,9 @@
       "displayName": "Development Amigo",
       "role": "Development",
       "agent": "development-amigo",
-      "inputs": ["request", "node:story-selection", "node:increment-framing", "node:solution-design", "node:c4-container", "node:c4-component", "node:c4-code"],
+      "inputs": ["request", "node:story-selection", "node:increment-framing", "node:solution-design", "node:c4-container", "node:c4-component", "node:c4-code", "node:business-amigo", "node:development-amigo", "node:testing-amigo", "node:three-amigos-master-reviewer"],
       "outputs": ["technicalApproach", "technicalRisks"],
-      "customMessage": "Clarify the simplest safe implementation path for the selected story.",
+      "customMessage": "Clarify the simplest safe implementation path for the selected story. On rework, reconcile all attached prior Three Amigos artifacts into one contract, treat the master findings as authoritative, and use the Business acceptance example when the master has not selected a canonical example.",
       "assets": [
         { "kind": "agent-persona", "path": "agents/development-amigo.agent.md" },
         { "kind": "agent-rule", "path": "rules/agents/development-amigo.rules.md" }
@@ -475,9 +475,9 @@
       "displayName": "Testing Amigo",
       "role": "Testing",
       "agent": "testing-amigo",
-      "inputs": ["request", "node:story-selection", "node:increment-framing", "node:solution-design", "node:c4-system-context", "node:c4-container"],
+      "inputs": ["request", "node:story-selection", "node:increment-framing", "node:solution-design", "node:c4-system-context", "node:c4-container", "node:business-amigo", "node:development-amigo", "node:testing-amigo", "node:three-amigos-master-reviewer"],
       "outputs": ["testScenarios", "validationPlan"],
-      "customMessage": "Clarify scenarios, risks, and validation for the selected story.",
+      "customMessage": "Clarify scenarios, risks, and validation for the selected story. On rework, reconcile all attached prior Three Amigos artifacts into one contract, treat the master findings as authoritative, and use the Business acceptance example when the master has not selected a canonical example.",
       "assets": [
         { "kind": "agent-persona", "path": "agents/testing-amigo.agent.md" },
         { "kind": "agent-rule", "path": "rules/agents/testing-amigo.rules.md" }
@@ -507,7 +507,7 @@
       "agent": "solution-architect-reviewer",
       "inputs": ["request", "node:story-selection", "node:solution-design", "node:business-amigo", "node:development-amigo", "node:testing-amigo"],
       "outputs": ["threeAmigosSolutionArchitectureReview"],
-      "customMessage": "Review Three Amigos artifacts only for the selected story.",
+      "customMessage": "Review Three Amigos artifacts only for the selected story. When architecture was intentionally skipped, do not require solution-design or C4 artifacts; repository-specific details may remain implementation discovery when the plan defines how to verify them.",
       "assets": [
         { "kind": "agent-persona", "path": "agents/solution-architect-reviewer.agent.md" },
         { "kind": "agent-rule", "path": "rules/agents/specialist-reviewer.rules.md" }
@@ -522,7 +522,7 @@
       "agent": "principal-engineer-reviewer",
       "inputs": ["request", "node:story-selection", "node:solution-design", "node:business-amigo", "node:development-amigo", "node:testing-amigo"],
       "outputs": ["threeAmigosPrincipalEngineerReview"],
-      "customMessage": "Review Three Amigos artifacts only for the selected story.",
+      "customMessage": "Review Three Amigos artifacts only for the selected story. When architecture was intentionally skipped, do not require solution-design or C4 artifacts; repository-specific details may remain implementation discovery when the plan defines how to verify them.",
       "assets": [
         { "kind": "agent-persona", "path": "agents/principal-engineer-reviewer.agent.md" },
         { "kind": "agent-rule", "path": "rules/agents/specialist-reviewer.rules.md" }
@@ -537,7 +537,7 @@
       "agent": "devops-engineer-reviewer",
       "inputs": ["request", "node:story-selection", "node:solution-design", "node:business-amigo", "node:development-amigo", "node:testing-amigo"],
       "outputs": ["threeAmigosDevOpsReview"],
-      "customMessage": "Review Three Amigos artifacts only for the selected story.",
+      "customMessage": "Review Three Amigos artifacts only for the selected story. When architecture was intentionally skipped, do not require solution-design or C4 artifacts; repository-specific details may remain implementation discovery when the plan defines how to verify them.",
       "assets": [
         { "kind": "agent-persona", "path": "agents/devops-engineer-reviewer.agent.md" },
         { "kind": "agent-rule", "path": "rules/agents/specialist-reviewer.rules.md" }
@@ -552,7 +552,7 @@
       "agent": "platform-engineer-reviewer",
       "inputs": ["request", "node:story-selection", "node:solution-design", "node:business-amigo", "node:development-amigo", "node:testing-amigo"],
       "outputs": ["threeAmigosPlatformReview"],
-      "customMessage": "Review Three Amigos artifacts only for the selected story.",
+      "customMessage": "Review Three Amigos artifacts only for the selected story. When architecture was intentionally skipped, do not require solution-design or C4 artifacts; repository-specific details may remain implementation discovery when the plan defines how to verify them.",
       "assets": [
         { "kind": "agent-persona", "path": "agents/platform-engineer-reviewer.agent.md" },
         { "kind": "agent-rule", "path": "rules/agents/specialist-reviewer.rules.md" }
@@ -567,7 +567,7 @@
       "agent": "developer-evangelist-reviewer",
       "inputs": ["request", "node:story-selection", "node:solution-design", "node:business-amigo", "node:development-amigo", "node:testing-amigo"],
       "outputs": ["threeAmigosDeveloperEvangelistReview"],
-      "customMessage": "Review Three Amigos artifacts only for the selected story.",
+      "customMessage": "Review Three Amigos artifacts only for the selected story. When architecture was intentionally skipped, do not require solution-design or C4 artifacts; repository-specific details may remain implementation discovery when the plan defines how to verify them.",
       "assets": [
         { "kind": "agent-persona", "path": "agents/developer-evangelist-reviewer.agent.md" },
         { "kind": "agent-rule", "path": "rules/agents/specialist-reviewer.rules.md" }
@@ -582,7 +582,7 @@
       "agent": "ux-designer-reviewer",
       "inputs": ["request", "node:story-selection", "node:solution-design", "node:business-amigo", "node:development-amigo", "node:testing-amigo"],
       "outputs": ["threeAmigosUxReview"],
-      "customMessage": "Review Three Amigos artifacts only for the selected story.",
+      "customMessage": "Review Three Amigos artifacts only for the selected story. When architecture was intentionally skipped, do not require solution-design or C4 artifacts; repository-specific details may remain implementation discovery when the plan defines how to verify them.",
       "assets": [
         { "kind": "agent-persona", "path": "agents/ux-designer-reviewer.agent.md" },
         { "kind": "agent-rule", "path": "rules/agents/specialist-reviewer.rules.md" }
@@ -610,7 +610,7 @@
         "node:three-amigos-ux-designer-reviewer"
       ],
       "outputs": ["threeAmigosReviewVerdict", "threeAmigosReviewFindings"],
-      "customMessage": "Synthesize Three Amigos review feedback for the selected story.",
+      "customMessage": "Synthesize Three Amigos review feedback for the selected story. Do not introduce missing architecture artifacts as a finding when architecture was intentionally skipped.",
       "assets": [
         { "kind": "agent-persona", "path": "agents/master-reviewer.agent.md" },
         { "kind": "agent-rule", "path": "rules/agents/master-reviewer.rules.md" }
@@ -658,7 +658,7 @@
         "node:testing-amigo"
       ],
       "outputs": ["buildSummary", "validationEvidence"],
-      "customMessage": "Implement the selected story using the approved architecture and Three Amigos guidance.",
+      "customMessage": "Inspect the configured working directory, then implement and validate the selected story using the approved architecture and Three Amigos guidance.",
       "assets": [
         { "kind": "agent-persona", "path": "agents/builder.agent.md" },
         { "kind": "agent-rule", "path": "rules/agents/builder.rules.md" }
@@ -825,7 +825,7 @@
       "responseTimeout": "00:15:00",
       "inputs": ["request", "node:story-selection", "node:solution-design", "node:c4-code", "node:builder", "node:code-master-reviewer", "node:github-poll", "node:rebuilder"],
       "outputs": ["reworkSummary", "updatedValidation"],
-      "customMessage": "Apply the smallest correction set needed for the selected story.",
+      "customMessage": "Inspect the current working-directory changes and apply the smallest validated correction set needed for the selected story.",
       "assets": [
         { "kind": "agent-persona", "path": "agents/rebuilder.agent.md" },
         { "kind": "agent-rule", "path": "rules/agents/rebuilder.rules.md" }
@@ -931,7 +931,7 @@
   "policy": {
     "decisionMode": "Rules",
     "maxReviewCycles": 2,
-    "maxRebuilds": 1,
+    "maxRebuilds": 2,
     "maxParallelism": 6,
     "maxNodeVisits": 30
   }

@@ -51,7 +51,7 @@ Run the CI-equivalent unit-test sequence:
 pwsh -File ./scripts/test.ps1
 ```
 
-The script restores, builds in Release, and runs tests matching `FullyQualifiedName~.UnitTests.`. It writes TRX results to `.scratchpad/coverage-test-results`, matching `unit-tests.yml`.
+The script restores, builds in Release, validates every checked-in `workflow-definitions/**/workflow.json` through the CLI, and runs tests matching `FullyQualifiedName~.UnitTests.`. It writes TRX results to `.scratchpad/coverage-test-results`, matching `unit-tests.yml`.
 
 Useful options:
 

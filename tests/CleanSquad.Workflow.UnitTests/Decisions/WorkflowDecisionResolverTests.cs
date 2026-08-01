@@ -213,12 +213,60 @@ public sealed class WorkflowDecisionResolverTests
         Assert.Equal("stopped", decision.NextNodeId);
     }
 
+    /// <summary>
+    ///     Verifies code review uses the rebuild limit instead of the planning-review cycle limit.
+    /// </summary>
+    /// <returns>A task that represents the asynchronous test.</returns>
+    [Fact]
+    public async Task ResolveAsyncAllowsConfiguredRebuildAfterTwoCodeReviewsAsync()
+    {
+        WorkflowDecisionResolver resolver = new(new FakeWorkflowAgentRunner([]));
+        WorkflowDecisionContext context = CreateContext(
+            WorkflowDecisionMode.Rules,
+            "clean-agile-review",
+            "Approved: no\n## Consolidated Assessment\nCode needs another focused correction.\n",
+            state =>
+            {
+                for (int stepNumber = 1; stepNumber <= 2; stepNumber++)
+                {
+                    state.Steps.Add(
+                        new WorkflowStepState
+                        {
+                            StepNumber = stepNumber,
+                            NodeId = "code-master-review",
+                            Status = WorkflowStepStatus.Completed,
+                            StartedAtUtc = TimeProvider.System.GetUtcNow(),
+                            CompletedAtUtc = TimeProvider.System.GetUtcNow(),
+                        });
+                }
+
+                state.Steps.Add(
+                    new WorkflowStepState
+                    {
+                        StepNumber = 3,
+                        NodeId = "rebuilder",
+                        Status = WorkflowStepStatus.Completed,
+                        StartedAtUtc = TimeProvider.System.GetUtcNow(),
+                        CompletedAtUtc = TimeProvider.System.GetUtcNow(),
+                    });
+            },
+            node => node.DecisionSourceNodeId = "code-master-review",
+            definition => definition.Policy.MaxRebuilds = 2);
+
+        WorkflowDecision decision = await resolver.ResolveAsync(context);
+
+        Assert.Equal(WorkflowDecisionAction.Rebuild, decision.Action);
+        Assert.Equal("rebuild", decision.ChoiceId);
+        Assert.Equal("rebuilder", decision.NextNodeId);
+    }
+
     private static WorkflowDecisionContext CreateContext(
         WorkflowDecisionMode decisionMode,
         string? ruleSet,
         string sourceMarkdown,
         Action<WorkflowRunState>? configureState = null,
-        Action<WorkflowNodeDefinition>? configureNode = null)
+        Action<WorkflowNodeDefinition>? configureNode = null,
+        Action<WorkflowDefinition>? configureDefinition = null)
     {
         string tempDirectoryPath = Path.Combine(Path.GetTempPath(), $"clean-squad-decision-{Guid.NewGuid():N}");
         WorkflowDefinition definition = new()
@@ -231,6 +279,7 @@ public sealed class WorkflowDecisionResolverTests
                 MaxReviewCycles = 2,
             },
         };
+        configureDefinition?.Invoke(definition);
         WorkflowNodeDefinition node = new()
         {
             Id = "review-decision",

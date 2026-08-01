@@ -69,7 +69,9 @@ public static class WorkflowPromptComposer
                 You are executing the '{displayName}' node for the '{definition.Name}' workflow.
                 Role: {roleName}
                 Agent: {agentName}
-                Use only the workflow assets and markdown context listed below.
+                Treat the workflow assets and markdown context listed below as authoritative task context.
+                Use the configured working directory when this node requires repository inspection, implementation,
+                validation, or verified external state. Do not expand the task beyond this node and the selected story.
                 {executionContract}
 
                 ## Stage Configuration
