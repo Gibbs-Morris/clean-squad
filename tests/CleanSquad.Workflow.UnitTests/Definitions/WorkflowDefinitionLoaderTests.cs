@@ -741,6 +741,7 @@ public sealed class WorkflowDefinitionLoaderTests
                 ]));
         Assert.NotNull(result.Definition);
         Assert.Equal(["gpt-5.6-sol"], result.Definition.AgentDefaults.Models);
+        Assert.Equal(2, result.Definition.Policy.MaxRebuilds);
         WorkflowNodeDefinition architectureScopeDecision = Assert.Single(
             result.Definition.Nodes,
             node => string.Equals(node.Id, "architecture-scope-decision", StringComparison.Ordinal));

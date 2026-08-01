@@ -931,7 +931,7 @@
   "policy": {
     "decisionMode": "Rules",
     "maxReviewCycles": 2,
-    "maxRebuilds": 1,
+    "maxRebuilds": 2,
     "maxParallelism": 6,
     "maxNodeVisits": 30
   }
