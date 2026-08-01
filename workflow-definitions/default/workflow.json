@@ -507,7 +507,7 @@
       "agent": "solution-architect-reviewer",
       "inputs": ["request", "node:story-selection", "node:solution-design", "node:business-amigo", "node:development-amigo", "node:testing-amigo"],
       "outputs": ["threeAmigosSolutionArchitectureReview"],
-      "customMessage": "Review Three Amigos artifacts only for the selected story.",
+      "customMessage": "Review Three Amigos artifacts only for the selected story. When architecture was intentionally skipped, do not require solution-design or C4 artifacts; repository-specific details may remain implementation discovery when the plan defines how to verify them.",
       "assets": [
         { "kind": "agent-persona", "path": "agents/solution-architect-reviewer.agent.md" },
         { "kind": "agent-rule", "path": "rules/agents/specialist-reviewer.rules.md" }
@@ -522,7 +522,7 @@
       "agent": "principal-engineer-reviewer",
       "inputs": ["request", "node:story-selection", "node:solution-design", "node:business-amigo", "node:development-amigo", "node:testing-amigo"],
       "outputs": ["threeAmigosPrincipalEngineerReview"],
-      "customMessage": "Review Three Amigos artifacts only for the selected story.",
+      "customMessage": "Review Three Amigos artifacts only for the selected story. When architecture was intentionally skipped, do not require solution-design or C4 artifacts; repository-specific details may remain implementation discovery when the plan defines how to verify them.",
       "assets": [
         { "kind": "agent-persona", "path": "agents/principal-engineer-reviewer.agent.md" },
         { "kind": "agent-rule", "path": "rules/agents/specialist-reviewer.rules.md" }
@@ -537,7 +537,7 @@
       "agent": "devops-engineer-reviewer",
       "inputs": ["request", "node:story-selection", "node:solution-design", "node:business-amigo", "node:development-amigo", "node:testing-amigo"],
       "outputs": ["threeAmigosDevOpsReview"],
-      "customMessage": "Review Three Amigos artifacts only for the selected story.",
+      "customMessage": "Review Three Amigos artifacts only for the selected story. When architecture was intentionally skipped, do not require solution-design or C4 artifacts; repository-specific details may remain implementation discovery when the plan defines how to verify them.",
       "assets": [
         { "kind": "agent-persona", "path": "agents/devops-engineer-reviewer.agent.md" },
         { "kind": "agent-rule", "path": "rules/agents/specialist-reviewer.rules.md" }
@@ -552,7 +552,7 @@
       "agent": "platform-engineer-reviewer",
       "inputs": ["request", "node:story-selection", "node:solution-design", "node:business-amigo", "node:development-amigo", "node:testing-amigo"],
       "outputs": ["threeAmigosPlatformReview"],
-      "customMessage": "Review Three Amigos artifacts only for the selected story.",
+      "customMessage": "Review Three Amigos artifacts only for the selected story. When architecture was intentionally skipped, do not require solution-design or C4 artifacts; repository-specific details may remain implementation discovery when the plan defines how to verify them.",
       "assets": [
         { "kind": "agent-persona", "path": "agents/platform-engineer-reviewer.agent.md" },
         { "kind": "agent-rule", "path": "rules/agents/specialist-reviewer.rules.md" }
@@ -567,7 +567,7 @@
       "agent": "developer-evangelist-reviewer",
       "inputs": ["request", "node:story-selection", "node:solution-design", "node:business-amigo", "node:development-amigo", "node:testing-amigo"],
       "outputs": ["threeAmigosDeveloperEvangelistReview"],
-      "customMessage": "Review Three Amigos artifacts only for the selected story.",
+      "customMessage": "Review Three Amigos artifacts only for the selected story. When architecture was intentionally skipped, do not require solution-design or C4 artifacts; repository-specific details may remain implementation discovery when the plan defines how to verify them.",
       "assets": [
         { "kind": "agent-persona", "path": "agents/developer-evangelist-reviewer.agent.md" },
         { "kind": "agent-rule", "path": "rules/agents/specialist-reviewer.rules.md" }
@@ -582,7 +582,7 @@
       "agent": "ux-designer-reviewer",
       "inputs": ["request", "node:story-selection", "node:solution-design", "node:business-amigo", "node:development-amigo", "node:testing-amigo"],
       "outputs": ["threeAmigosUxReview"],
-      "customMessage": "Review Three Amigos artifacts only for the selected story.",
+      "customMessage": "Review Three Amigos artifacts only for the selected story. When architecture was intentionally skipped, do not require solution-design or C4 artifacts; repository-specific details may remain implementation discovery when the plan defines how to verify them.",
       "assets": [
         { "kind": "agent-persona", "path": "agents/ux-designer-reviewer.agent.md" },
         { "kind": "agent-rule", "path": "rules/agents/specialist-reviewer.rules.md" }
@@ -610,7 +610,7 @@
         "node:three-amigos-ux-designer-reviewer"
       ],
       "outputs": ["threeAmigosReviewVerdict", "threeAmigosReviewFindings"],
-      "customMessage": "Synthesize Three Amigos review feedback for the selected story.",
+      "customMessage": "Synthesize Three Amigos review feedback for the selected story. Do not introduce missing architecture artifacts as a finding when architecture was intentionally skipped.",
       "assets": [
         { "kind": "agent-persona", "path": "agents/master-reviewer.agent.md" },
         { "kind": "agent-rule", "path": "rules/agents/master-reviewer.rules.md" }

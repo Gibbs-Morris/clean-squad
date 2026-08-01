@@ -759,6 +759,23 @@ public sealed class WorkflowDefinitionLoaderTests
                 node => string.Equals(node.Id, amigoNodeId, StringComparison.Ordinal));
             Assert.Contains("node:three-amigos-master-reviewer", amigo.Inputs);
         }
+
+        string[] threeAmigosReviewerNodeIds =
+        [
+            "three-amigos-solution-architect-reviewer",
+            "three-amigos-principal-engineer-reviewer",
+            "three-amigos-devops-engineer-reviewer",
+            "three-amigos-platform-engineer-reviewer",
+            "three-amigos-developer-evangelist-reviewer",
+            "three-amigos-ux-designer-reviewer",
+        ];
+        foreach (string reviewerNodeId in threeAmigosReviewerNodeIds)
+        {
+            WorkflowNodeDefinition reviewer = Assert.Single(
+                result.Definition.Nodes,
+                node => string.Equals(node.Id, reviewerNodeId, StringComparison.Ordinal));
+            Assert.Contains("architecture was intentionally skipped", reviewer.CustomMessage, StringComparison.Ordinal);
+        }
     }
 
     private static string CreateTempDirectory()
