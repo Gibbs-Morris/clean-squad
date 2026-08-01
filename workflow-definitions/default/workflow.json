@@ -445,9 +445,9 @@
       "displayName": "Business Amigo",
       "role": "Business",
       "agent": "business-amigo",
-      "inputs": ["request", "node:story-selection", "node:increment-framing", "node:solution-design"],
+      "inputs": ["request", "node:story-selection", "node:increment-framing", "node:solution-design", "node:three-amigos-master-reviewer"],
       "outputs": ["businessOutcome", "acceptanceExamples"],
-      "customMessage": "Clarify business outcomes and done-meaning for the selected story.",
+      "customMessage": "Clarify business outcomes and done-meaning for the selected story. On rework, resolve the attached master review findings using repository evidence.",
       "assets": [
         { "kind": "agent-persona", "path": "agents/business-amigo.agent.md" },
         { "kind": "agent-rule", "path": "rules/agents/business-amigo.rules.md" }
@@ -460,9 +460,9 @@
       "displayName": "Development Amigo",
       "role": "Development",
       "agent": "development-amigo",
-      "inputs": ["request", "node:story-selection", "node:increment-framing", "node:solution-design", "node:c4-container", "node:c4-component", "node:c4-code"],
+      "inputs": ["request", "node:story-selection", "node:increment-framing", "node:solution-design", "node:c4-container", "node:c4-component", "node:c4-code", "node:three-amigos-master-reviewer"],
       "outputs": ["technicalApproach", "technicalRisks"],
-      "customMessage": "Clarify the simplest safe implementation path for the selected story.",
+      "customMessage": "Clarify the simplest safe implementation path for the selected story. On rework, resolve the attached master review findings using repository evidence.",
       "assets": [
         { "kind": "agent-persona", "path": "agents/development-amigo.agent.md" },
         { "kind": "agent-rule", "path": "rules/agents/development-amigo.rules.md" }
@@ -475,9 +475,9 @@
       "displayName": "Testing Amigo",
       "role": "Testing",
       "agent": "testing-amigo",
-      "inputs": ["request", "node:story-selection", "node:increment-framing", "node:solution-design", "node:c4-system-context", "node:c4-container"],
+      "inputs": ["request", "node:story-selection", "node:increment-framing", "node:solution-design", "node:c4-system-context", "node:c4-container", "node:three-amigos-master-reviewer"],
       "outputs": ["testScenarios", "validationPlan"],
-      "customMessage": "Clarify scenarios, risks, and validation for the selected story.",
+      "customMessage": "Clarify scenarios, risks, and validation for the selected story. On rework, resolve the attached master review findings using repository evidence.",
       "assets": [
         { "kind": "agent-persona", "path": "agents/testing-amigo.agent.md" },
         { "kind": "agent-rule", "path": "rules/agents/testing-amigo.rules.md" }

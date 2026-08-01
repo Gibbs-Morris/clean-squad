@@ -752,6 +752,13 @@ public sealed class WorkflowDefinitionLoaderTests
             result.Definition.Nodes,
             node => string.Equals(node.Id, "enterprise-architecture", StringComparison.Ordinal));
         Assert.Contains("node:architecture-master-reviewer", enterpriseArchitecture.Inputs);
+        foreach (string amigoNodeId in new[] { "business-amigo", "development-amigo", "testing-amigo" })
+        {
+            WorkflowNodeDefinition amigo = Assert.Single(
+                result.Definition.Nodes,
+                node => string.Equals(node.Id, amigoNodeId, StringComparison.Ordinal));
+            Assert.Contains("node:three-amigos-master-reviewer", amigo.Inputs);
+        }
     }
 
     private static string CreateTempDirectory()
