@@ -6,6 +6,8 @@
 
 CleanSquad is a .NET workflow CLI that runs structured, graph-based agent workflows. You define a workflow as a directed graph of named nodes — each node carrying a role, a prompt, and declared inputs and outputs — and the CLI orchestrates execution: resolving the graph, invoking each node in order, persisting state between runs, and producing a final output. The repository also ships a knowledge base of engineering principles and a rich documentation tree organized by the Diátaxis framework.
 
+> **Before treating the current implementation as the final boundary of the product, read [VISION.md](VISION.md).** It describes CleanSquad's long-term direction as a durable, declarative graph-based work orchestration runtime — SDLC-first but domain-general.
+
 ## Repository layout
 
 | Path | Purpose |

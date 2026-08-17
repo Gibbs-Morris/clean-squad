@@ -4,6 +4,11 @@ Documentation for the CleanSquad command-line interface, organised by the [Diát
 
 ---
 
+> **Architectural vision →** [VISION.md](../VISION.md)
+> The North Star document explaining CleanSquad's long-term direction as a graph-based work orchestration runtime. Read this before treating the current implementation as the final product boundary.
+
+---
+
 > **New to CleanSquad? Start here →** [Run your first workflow](tutorial/run-your-first-workflow.md)
 > Validate a definition, write a request, and complete a full workflow run from scratch. Takes about ten minutes.
 
