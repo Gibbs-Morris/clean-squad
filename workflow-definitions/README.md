@@ -20,6 +20,8 @@ This folder contains reusable workflow-definition packages.
 - Keep reusable theory or reasoning guidance separate from repository guidance.
 - Express enforceable constraints as RFC 2119 rules using MUST, SHOULD, and MUST NOT.
 - Prefer shared assets for cross-cutting guidance and node assets for role-specific behavior.
+- Use ASD-STE100 Simplified Technical English for natural-language workflow instructions and outputs.
+- Preserve literal code, commands, paths, identifiers, schemas, logs, quoted text, and required output tokens.
 
 ## Agent model inheritance
 
@@ -68,3 +70,4 @@ In practice that means the default graph should:
 - implement with technical excellence and fast feedback
 - review against working, validated output
 - rework in small focused loops when necessary
+- communicate requirements, plans, findings, and instructions in ASD-STE100 Simplified Technical English
