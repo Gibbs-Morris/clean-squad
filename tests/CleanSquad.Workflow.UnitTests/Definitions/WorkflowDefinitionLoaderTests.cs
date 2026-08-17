@@ -741,6 +741,54 @@ public sealed class WorkflowDefinitionLoaderTests
                 ]));
         Assert.NotNull(result.Definition);
         Assert.Equal(["gpt-5.6-sol"], result.Definition.AgentDefaults.Models);
+        Assert.Equal(2, result.Definition.Policy.MaxRebuilds);
+        WorkflowNodeDefinition architectureScopeDecision = Assert.Single(
+            result.Definition.Nodes,
+            node => string.Equals(node.Id, "architecture-scope-decision", StringComparison.Ordinal));
+        Assert.Contains(
+            "isolated workflow-definition examples",
+            architectureScopeDecision.CustomMessage,
+            StringComparison.Ordinal);
+        WorkflowNodeDefinition enterpriseArchitecture = Assert.Single(
+            result.Definition.Nodes,
+            node => string.Equals(node.Id, "enterprise-architecture", StringComparison.Ordinal));
+        Assert.Contains("node:architecture-master-reviewer", enterpriseArchitecture.Inputs);
+        WorkflowNodeDefinition builder = Assert.Single(
+            result.Definition.Nodes,
+            node => string.Equals(node.Id, "builder", StringComparison.Ordinal));
+        Assert.Contains("configured working directory", builder.CustomMessage, StringComparison.Ordinal);
+        WorkflowNodeDefinition rebuilder = Assert.Single(
+            result.Definition.Nodes,
+            node => string.Equals(node.Id, "rebuilder", StringComparison.Ordinal));
+        Assert.Contains("working-directory changes", rebuilder.CustomMessage, StringComparison.Ordinal);
+        foreach (string amigoNodeId in new[] { "business-amigo", "development-amigo", "testing-amigo" })
+        {
+            WorkflowNodeDefinition amigo = Assert.Single(
+                result.Definition.Nodes,
+                node => string.Equals(node.Id, amigoNodeId, StringComparison.Ordinal));
+            Assert.Contains("node:three-amigos-master-reviewer", amigo.Inputs);
+            Assert.Contains("node:business-amigo", amigo.Inputs);
+            Assert.Contains("node:development-amigo", amigo.Inputs);
+            Assert.Contains("node:testing-amigo", amigo.Inputs);
+            Assert.Contains("reconcile all attached prior Three Amigos artifacts", amigo.CustomMessage, StringComparison.Ordinal);
+        }
+
+        string[] threeAmigosReviewerNodeIds =
+        [
+            "three-amigos-solution-architect-reviewer",
+            "three-amigos-principal-engineer-reviewer",
+            "three-amigos-devops-engineer-reviewer",
+            "three-amigos-platform-engineer-reviewer",
+            "three-amigos-developer-evangelist-reviewer",
+            "three-amigos-ux-designer-reviewer",
+        ];
+        foreach (string reviewerNodeId in threeAmigosReviewerNodeIds)
+        {
+            WorkflowNodeDefinition reviewer = Assert.Single(
+                result.Definition.Nodes,
+                node => string.Equals(node.Id, reviewerNodeId, StringComparison.Ordinal));
+            Assert.Contains("architecture was intentionally skipped", reviewer.CustomMessage, StringComparison.Ordinal);
+        }
     }
 
     private static string CreateTempDirectory()

@@ -119,8 +119,11 @@ public sealed partial class WorkflowDecisionResolver : IWorkflowDecisionResolver
             ? context.Node.Id
             : context.Node.DecisionSourceNodeId;
         int reviewCount = CountCompletedSteps(context.State, decisionSourceNodeId);
+        WorkflowDecisionOptionDefinition? reworkChoice = FindChoiceOrDefault(context.Node, "rework");
+        WorkflowDecisionOptionDefinition? rebuildChoice = FindChoiceOrDefault(context.Node, "rebuild");
 
-        if (reviewCount >= context.Definition.Policy.MaxReviewCycles || HasReachedRebuildLimit(context))
+        if ((reworkChoice is not null && reviewCount >= context.Definition.Policy.MaxReviewCycles) ||
+            (rebuildChoice is not null && HasReachedRebuildLimit(context)))
         {
             WorkflowDecisionOptionDefinition stopChoice = FindChoice(context.Node, "stop");
             return new WorkflowDecision(
@@ -132,7 +135,6 @@ public sealed partial class WorkflowDecisionResolver : IWorkflowDecisionResolver
                 stopChoice.NextNodeId);
         }
 
-        WorkflowDecisionOptionDefinition? reworkChoice = FindChoiceOrDefault(context.Node, "rework");
         if (reworkChoice is not null)
         {
             return new WorkflowDecision(
@@ -144,7 +146,6 @@ public sealed partial class WorkflowDecisionResolver : IWorkflowDecisionResolver
                 reworkChoice.NextNodeId);
         }
 
-        WorkflowDecisionOptionDefinition? rebuildChoice = FindChoiceOrDefault(context.Node, "rebuild");
         if (rebuildChoice is not null)
         {
             return new WorkflowDecision(
